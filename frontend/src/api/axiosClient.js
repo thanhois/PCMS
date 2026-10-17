@@ -2,7 +2,6 @@ import axios from 'axios';
 
 /**
  * Lưu trữ JWT accessToken trực tiếp trong bộ nhớ (in-memory).
- * TUYỆT ĐỐI KHÔNG lưu vào localStorage hay sessionStorage để phòng chống XSS đánh cắp token.
  */
 let inMemoryAccessToken = null;
 let unauthorizedCallback = null;
