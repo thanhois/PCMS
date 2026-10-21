@@ -30,4 +30,12 @@ public class Medicine {
 
     @Column(name = "unitPrice", nullable = false, precision = 12, scale = 2)
     private BigDecimal unitPrice;
+
+    @Builder.Default
+    @Column(name = "status", length = 20)
+    private String status = "ACTIVE";
+
+    @Builder.Default
+    @Column(name = "minThreshold")
+    private Integer minThreshold = 20;
 }

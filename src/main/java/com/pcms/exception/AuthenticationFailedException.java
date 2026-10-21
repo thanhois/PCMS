@@ -17,16 +17,24 @@ public class AuthenticationFailedException extends AppException {
     }
 
     public static AuthenticationFailedException invalidCredentials() {
-        return new AuthenticationFailedException(HttpStatus.UNAUTHORIZED, "Incorrect username or password");
+        return new AuthenticationFailedException(HttpStatus.UNAUTHORIZED,
+                "Tên đăng nhập hoặc mật khẩu không chính xác");
     }
 
     public static AuthenticationFailedException locked() {
         return new AuthenticationFailedException(HttpStatus.LOCKED,
-                "Your account has been locked, please contact the administrator");
+                "Tài khoản đang tạm khóa do nhập sai mật khẩu quá nhiều lần. Vui lòng thử lại sau 15 phút hoặc bấm Quên mật khẩu.");
+    }
+
+    public static AuthenticationFailedException temporarilyLocked(long remainingMinutes) {
+        long mins = Math.max(1, remainingMinutes);
+        return new AuthenticationFailedException(HttpStatus.LOCKED,
+                "Bạn đã nhập sai mật khẩu quá 5 lần. Tài khoản tạm khóa trong " + mins
+                        + " phút nữa (hoặc bấm Quên mật khẩu để mở lại ngay).");
     }
 
     public static AuthenticationFailedException inactive() {
         return new AuthenticationFailedException(HttpStatus.FORBIDDEN,
-                "Your account is inactive, please contact the administrator");
+                "Tài khoản của bạn đã bị vô hiệu hóa, vui lòng liên hệ Quản trị viên");
     }
 }

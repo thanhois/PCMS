@@ -55,6 +55,15 @@ export default function Navbar() {
                 <strong>{user.fullName}</strong>
                 <small>{getRoleLabel(user.role)}</small>
               </div>
+              {user.role === 'ADMIN' ? (
+                <Link
+                  to="/admin/overview"
+                  className="vtn-btn-yellow"
+                  style={{ padding: '6px 12px', fontSize: 12.5, textDecoration: 'none' }}
+                >
+                  Vào trang Quản trị
+                </Link>
+              ) : null}
               <button type="button" className="vtn-btn-logout" onClick={handleLogout}>
                 Đăng xuất
               </button>

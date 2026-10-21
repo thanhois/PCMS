@@ -30,4 +30,8 @@ public class Service {
 
     @Column(name = "price", nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
+
+    @Builder.Default
+    @Column(name = "status", length = 20)
+    private String status = "ACTIVE";
 }

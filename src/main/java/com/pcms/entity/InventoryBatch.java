@@ -34,4 +34,7 @@ public class InventoryBatch {
 
     @Column(name = "quantityInStock", nullable = false)
     private Integer quantityInStock;
+
+    @Column(name = "supplier", length = 150)
+    private String supplier;
 }

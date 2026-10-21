@@ -54,10 +54,14 @@ public class UserAccount {
     @JoinColumn(name = "branchId", nullable = true)
     private Branch branch;
 
-    /** Số lần đăng nhập sai liên tiếp (BR-01 UC02: khóa sau 5 lần). */
+    /** Số lần đăng nhập sai liên tiếp (tạm khóa 15 phút sau 5 lần). */
     @Builder.Default
     @Column(name = "failedLoginAttempts", nullable = false)
     private Integer failedLoginAttempts = 0;
+
+    /** Thời điểm kết thúc tạm khóa đăng nhập (tự động mở lại khi qua mốc này). */
+    @Column(name = "lockUntil")
+    private LocalDateTime lockUntil;
 
     /** SHA-256 hash của token reset password (không lưu token gốc). */
     @Column(name = "resetTokenHash", length = 64)

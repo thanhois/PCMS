@@ -14,6 +14,7 @@ import com.pcms.exception.AuthenticationFailedException;
 import com.pcms.exception.BadRequestException;
 import com.pcms.exception.DuplicateResourceException;
 import com.pcms.exception.ResourceNotFoundException;
+import com.pcms.repository.AuditLogRepository;
 import com.pcms.repository.PetOwnerRepository;
 import com.pcms.repository.RoleRepository;
 import com.pcms.repository.UserAccountRepository;
@@ -30,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
@@ -46,6 +48,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserAccountRepository userAccountRepository;
     private final PetOwnerRepository petOwnerRepository;
     private final RoleRepository roleRepository;
+    private final AuditLogRepository auditLogRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final EmailService emailService;
@@ -100,6 +103,10 @@ public class AuthServiceImpl implements AuthService {
         owner.setUserAccount(account);
         petOwnerRepository.save(owner);
 
+        saveAudit(account, "REGISTER_ACCOUNT",
+                "UserAccount #" + account.getUserId() + " (" + account.getUsername() + ")",
+                "Đăng ký tài khoản Chủ thú cưng mới \"" + account.getFullName() + "\".");
+
         log.info("Registered new pet owner account userId={} ownerId={}", account.getUserId(), owner.getOwnerId());
         return UserInfoResponse.from(account);
     }
@@ -114,11 +121,21 @@ public class AuthServiceImpl implements AuthService {
         UserAccount user = userAccountRepository.findByUsernameOrEmail(login)
                 .orElseThrow(AuthenticationFailedException::invalidCredentials);
 
-        if (user.getStatus() == AccountStatus.LOCKED) {
-            throw AuthenticationFailedException.locked();
-        }
         if (user.getStatus() == AccountStatus.INACTIVE) {
             throw AuthenticationFailedException.inactive();
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (user.getLockUntil() != null) {
+            if (user.getLockUntil().isAfter(now)) {
+                long remainingMinutes = Duration.between(now, user.getLockUntil()).toMinutes() + 1;
+                throw AuthenticationFailedException.temporarilyLocked(remainingMinutes);
+            } else {
+                // Hết thời gian tạm khóa 15 phút -> tự động mở khóa và reset bộ đếm
+                user.setLockUntil(null);
+                user.setFailedLoginAttempts(0);
+                userAccountRepository.save(user);
+            }
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
@@ -126,27 +143,40 @@ public class AuthServiceImpl implements AuthService {
             // handleFailedLogin ném exception phù hợp
         }
 
-        if (user.getFailedLoginAttempts() != null && user.getFailedLoginAttempts() > 0) {
+        if ((user.getFailedLoginAttempts() != null && user.getFailedLoginAttempts() > 0) || user.getLockUntil() != null) {
             user.setFailedLoginAttempts(0);
+            user.setLockUntil(null);
             userAccountRepository.save(user);
         }
 
         UserPrincipal principal = new UserPrincipal(user);
         String token = jwtTokenProvider.generateToken(principal);
+
+        String roleCode = user.getRole() != null ? user.getRole().getRoleName() : "USER";
+        saveAudit(user, "LOGIN",
+                "UserAccount #" + user.getUserId() + " (" + user.getUsername() + ")",
+                "Đăng nhập hệ thống thành công với vai trò " + roleCode + ".");
+
         return new AuthResponse(token, "Bearer", jwtTokenProvider.getExpirationSeconds(), UserInfoResponse.from(user));
     }
 
-    /** khóa tài khoản sau N lần đăng nhập sai liên tiếp. */
+    /** Tạm khóa tài khoản 15 phút sau N lần đăng nhập sai liên tiếp (tự động mở lại sau 15 phút). */
     private void handleFailedLogin(UserAccount user) {
         int maxAttempts = appProperties.security().maxFailedLoginAttempts();
         int attempts = (user.getFailedLoginAttempts() == null ? 0 : user.getFailedLoginAttempts()) + 1;
         user.setFailedLoginAttempts(attempts);
 
         if (attempts >= maxAttempts) {
-            user.setStatus(AccountStatus.LOCKED);
+            long lockMinutes = 15;
+            user.setLockUntil(LocalDateTime.now().plusMinutes(lockMinutes));
+            user.setFailedLoginAttempts(0);
             userAccountRepository.save(user);
-            log.warn("Account {} locked after {} failed login attempts", user.getUsername(), attempts);
-            throw AuthenticationFailedException.locked();
+            saveAudit(user, "LOCK_ACCOUNT",
+                    "UserAccount #" + user.getUserId() + " (" + user.getUsername() + ")",
+                    "Tạm khóa đăng nhập " + lockMinutes + " phút do nhập sai mật khẩu " + attempts + " lần liên tiếp.");
+            log.warn("Account {} temporarily locked for {} minutes after {} failed login attempts",
+                    user.getUsername(), lockMinutes, attempts);
+            throw AuthenticationFailedException.temporarilyLocked(lockMinutes);
         }
 
         userAccountRepository.save(user);
@@ -198,7 +228,11 @@ public class AuthServiceImpl implements AuthService {
         user.setResetTokenHash(null);     // token chỉ dùng 1 lần
         user.setResetTokenExpiry(null);
         user.setFailedLoginAttempts(0);
+        user.setLockUntil(null);          // mở khóa ngay nếu đang bị tạm khóa
         userAccountRepository.save(user);
+        saveAudit(user, "RESET_PASSWORD",
+                "UserAccount #" + user.getUserId() + " (" + user.getUsername() + ")",
+                "Người dùng đặt lại mật khẩu qua liên kết email thành công.");
         log.info("Password reset successfully for user {}", user.getUsername());
     }
 
@@ -212,6 +246,16 @@ public class AuthServiceImpl implements AuthService {
     }
 
     // Helpers
+    private void saveAudit(UserAccount actor, String actionType, String targetEntity, String details) {
+        if (actor == null) return;
+        String formatted = "[" + actionType + "] [" + targetEntity + "] " + details;
+        auditLogRepository.save(AuditLog.builder()
+                .userAccount(actor)
+                .actionTime(LocalDateTime.now().withNano(0))
+                .actionDetails(formatted)
+                .build());
+    }
+
     private static String normalizeEmail(String email) {
         return email.trim().toLowerCase();
     }

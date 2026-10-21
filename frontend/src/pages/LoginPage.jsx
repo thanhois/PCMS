@@ -55,11 +55,19 @@ export default function LoginPage() {
 
     setSubmitting(true);
     try {
-      await login({
+      const response = await login({
         login: formData.login.trim(),
         password: formData.password,
       });
-      navigate('/', { replace: true });
+      const loggedInRole = response?.data?.user?.role;
+      if (loggedInRole === 'ADMIN') {
+        const target = location.state?.from?.startsWith('/admin')
+          ? location.state.from
+          : '/admin/overview';
+        navigate(target, { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     } catch (err) {
       if (err.fieldErrors && Object.keys(err.fieldErrors).length > 0) {
         setErrors((prev) => ({ ...prev, ...err.fieldErrors }));

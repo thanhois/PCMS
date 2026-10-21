@@ -8,6 +8,7 @@ public final class RoleName {
     public static final String ADMIN = "ADMIN";
     public static final String VETERINARIAN = "VETERINARIAN";
     public static final String RECEPTIONIST = "RECEPTIONIST";
+    public static final String INVENTORY_MANAGER = "INVENTORY_MANAGER";
     public static final String PET_OWNER = "PET_OWNER";
 
     private RoleName() {
