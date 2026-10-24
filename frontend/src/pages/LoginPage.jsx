@@ -65,6 +65,14 @@ export default function LoginPage() {
           ? location.state.from
           : '/admin/overview';
         navigate(target, { replace: true });
+      } else if (loggedInRole === 'VETERINARIAN') {
+        const target = location.state?.from?.startsWith('/vet')
+          ? location.state.from
+          : '/vet/workbench';
+        navigate(target, { replace: true });
+      } else if (loggedInRole === 'PET_OWNER') {
+        const target = location.state?.from || '/owner/medical-history';
+        navigate(target, { replace: true });
       } else {
         navigate('/', { replace: true });
       }

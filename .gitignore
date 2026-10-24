@@ -42,3 +42,7 @@ build/
 .qodo/
 node_modules/
 dist/
+
+### Local database files ###
+data/
+*.db

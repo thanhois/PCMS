@@ -39,6 +39,10 @@ public class Appointment {
     @Column(name = "status", nullable = false, length = 30)
     private String status;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "veterinarianId")
+    private UserAccount veterinarian;
+
     @Column(name = "notes", length = 1000)
     private String notes;
 }

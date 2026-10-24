@@ -55,15 +55,63 @@ export default function Navbar() {
                 <strong>{user.fullName}</strong>
                 <small>{getRoleLabel(user.role)}</small>
               </div>
-              {user.role === 'ADMIN' ? (
+              {user.role === 'ADMIN' && (
+                <>
+                  <Link
+                    to="/admin/overview"
+                    className="vtn-btn-yellow"
+                    style={{ padding: '6px 12px', fontSize: 12.5, textDecoration: 'none' }}
+                  >
+                    Trang Quản trị
+                  </Link>
+                  <Link
+                    to="/vet/workbench"
+                    style={{
+                      background: '#0d9488',
+                      color: '#ffffff',
+                      padding: '6px 12px',
+                      borderRadius: 6,
+                      fontSize: 12.5,
+                      textDecoration: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Bác sĩ thú y
+                  </Link>
+                </>
+              )}
+              {user.role === 'VETERINARIAN' && (
                 <Link
-                  to="/admin/overview"
-                  className="vtn-btn-yellow"
-                  style={{ padding: '6px 12px', fontSize: 12.5, textDecoration: 'none' }}
+                  to="/vet/workbench"
+                  style={{
+                    background: '#0d9488',
+                    color: '#ffffff',
+                    padding: '6px 14px',
+                    borderRadius: 6,
+                    fontSize: 12.5,
+                    textDecoration: 'none',
+                    fontWeight: 700,
+                  }}
                 >
-                  Vào trang Quản trị
+                  🩺 Ca khám Bác sĩ
                 </Link>
-              ) : null}
+              )}
+              {user.role === 'PET_OWNER' && (
+                <Link
+                  to="/owner/medical-history"
+                  style={{
+                    background: '#0d9488',
+                    color: '#ffffff',
+                    padding: '6px 14px',
+                    borderRadius: 6,
+                    fontSize: 12.5,
+                    textDecoration: 'none',
+                    fontWeight: 700,
+                  }}
+                >
+                  🐾 Sổ khám Thú cưng
+                </Link>
+              )}
               <button type="button" className="vtn-btn-logout" onClick={handleLogout}>
                 Đăng xuất
               </button>

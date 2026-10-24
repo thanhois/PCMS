@@ -41,4 +41,12 @@ public class MedicalRecord {
 
     @Column(name = "treatmentPlan", length = 2000)
     private String treatmentPlan;
+
+    @Builder.Default
+    @Column(name = "status", length = 30)
+    private String status = "COMPLETED";
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "appointmentId")
+    private Appointment appointment;
 }
