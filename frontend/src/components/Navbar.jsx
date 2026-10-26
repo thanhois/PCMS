@@ -64,6 +64,15 @@ export default function Navbar() {
                   Vào trang Quản trị
                 </Link>
               ) : null}
+              {user.role === 'RECEPTIONIST' || user.role === 'ADMIN' ? (
+                <Link
+                  to="/receptionist/dashboard"
+                  className="vtn-btn-yellow"
+                  style={{ padding: '6px 12px', fontSize: 12.5, textDecoration: 'none' }}
+                >
+                  Quầy Lễ tân
+                </Link>
+              ) : null}
               <button type="button" className="vtn-btn-logout" onClick={handleLogout}>
                 Đăng xuất
               </button>

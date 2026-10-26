@@ -5,7 +5,8 @@
 export default function ConfirmDialog({
   open,
   title = 'Xác nhận thao tác',
-  description = 'Bạn có chắc chắn muốn thực hiện thao tác này không?',
+  description,
+  message,
   confirmLabel = 'Xác nhận',
   cancelLabel = 'Hủy bỏ',
   variant = 'danger', // 'danger' | 'primary'
@@ -19,7 +20,7 @@ export default function ConfirmDialog({
     <div className="pcms-modal-backdrop" role="dialog" aria-modal="true">
       <div className="pcms-modal-card">
         <h3 className="pcms-modal-title">{title}</h3>
-        <p className="pcms-modal-desc">{description}</p>
+        <p className="pcms-modal-desc">{message || description || 'Bạn có chắc chắn muốn thực hiện thao tác này không?'}</p>
         <div className="pcms-modal-actions">
           <button
             type="button"

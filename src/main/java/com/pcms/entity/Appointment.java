@@ -30,6 +30,14 @@ public class Appointment {
     @JoinColumn(name = "petId", nullable = false)
     private Pet pet;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "veterinarianId")
+    private UserAccount veterinarian;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "serviceId")
+    private Service service;
+
     @Column(name = "appointmentDate", nullable = false)
     private LocalDateTime appointmentDate;
 
@@ -39,6 +47,15 @@ public class Appointment {
     @Column(name = "status", nullable = false, length = 30)
     private String status;
 
+    @Column(name = "shift", length = 20)
+    private String shift;
+
     @Column(name = "notes", length = 1000)
     private String notes;
+
+    @Column(name = "rejectionReason", length = 500)
+    private String rejectionReason;
+
+    @Column(name = "checkInTime")
+    private LocalDateTime checkInTime;
 }

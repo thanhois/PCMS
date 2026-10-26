@@ -44,4 +44,8 @@ public class Pet {
 
     @Column(name = "weight", precision = 6, scale = 2)
     private BigDecimal weight;
+
+    @Builder.Default
+    @Column(name = "status", length = 20)
+    private String status = "ACTIVE";
 }

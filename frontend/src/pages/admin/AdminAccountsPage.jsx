@@ -522,7 +522,7 @@ export default function AdminAccountsPage() {
             </h3>
             <p className="pcms-modal-desc">
               {isEditMode
-                ? 'Cập nhật họ tên, số điện thoại và vai trò công tác (Email và Username cố định theo BR-01).'
+                ? 'Cập nhật họ tên, số điện thoại và vai trò công tác (Email và Username cố định).'
                 : 'Nhập thông tin nhân sự để cấp tài khoản truy cập hệ thống PCMS.'}
             </p>
 

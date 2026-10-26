@@ -65,6 +65,11 @@ export default function LoginPage() {
           ? location.state.from
           : '/admin/overview';
         navigate(target, { replace: true });
+      } else if (loggedInRole === 'RECEPTIONIST') {
+        const target = location.state?.from?.startsWith('/receptionist')
+          ? location.state.from
+          : '/receptionist/dashboard';
+        navigate(target, { replace: true });
       } else {
         navigate('/', { replace: true });
       }

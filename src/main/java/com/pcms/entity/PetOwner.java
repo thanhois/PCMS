@@ -43,4 +43,8 @@ public class PetOwner {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "userId")
     private UserAccount userAccount;
+
+    @Builder.Default
+    @Column(name = "status", length = 20)
+    private String status = "ACTIVE";
 }

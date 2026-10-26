@@ -11,4 +11,6 @@ import java.util.List;
 public interface AppointmentRepository extends JpaRepository<Appointment, Integer> {
     long countByAppointmentDateBetween(LocalDateTime start, LocalDateTime end);
     List<Appointment> findByAppointmentDateBetween(LocalDateTime start, LocalDateTime end);
+    List<Appointment> findByPet_PetIdOrderByAppointmentDateDesc(Integer petId);
+    List<Appointment> findAllByOrderByAppointmentDateDesc();
 }

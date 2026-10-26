@@ -1240,3 +1240,56 @@
   background: var(--pcms-primary-soft);
   color: var(--pcms-primary);
 }
+
+
+/* ==================== Receptionist module helpers ==================== */
+.pcms-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.pcms-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pcms-form-group .pcms-input,
+.pcms-form-group .pcms-select {
+  width: 100%;
+}
+
+.pcms-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--pcms-radius-sm);
+  border: 1px solid var(--pcms-border-input);
+  background: #ffffff;
+  color: var(--pcms-text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+}
+
+.pcms-textarea:focus {
+  border-color: var(--pcms-primary);
+  box-shadow: 0 0 0 3px rgba(99, 32, 238, 0.12);
+}
+
+.pcms-required {
+  color: #dc2626;
+}
+
+.pcms-btn-sm {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.pcms-empty-cell {
+  text-align: center;
+  padding: 28px 12px !important;
+  color: var(--pcms-text-muted);
+}
