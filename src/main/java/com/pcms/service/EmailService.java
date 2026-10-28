@@ -2,6 +2,6 @@ package com.pcms.service;
 
 public interface EmailService {
 
-    /** Gửi email chứa link đặt lại mật khẩu. */
-    void sendPasswordResetEmail(String to, String fullName, String resetLink, int expiresInMinutes);
+    /** Gửi email chứa mã token và link đặt lại mật khẩu. */
+    void sendPasswordResetEmail(String to, String fullName, String token, String resetLink, int expiresInMinutes);
 }

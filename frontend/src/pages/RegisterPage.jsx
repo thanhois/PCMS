@@ -88,7 +88,7 @@ export default function RegisterPage() {
   return (
     <div className="vtn-auth-screen">
       <div className="vtn-auth-logo-top">
-        <Link to="/" aria-label="Trang chủ Veterian">
+        <Link to="/" aria-label="Trang chủ PCMS">
           <VeterianCloudPaw size={64} />
         </Link>
       </div>
@@ -97,7 +97,7 @@ export default function RegisterPage() {
         <div className="vtn-auth-left">
           <h1>Đăng ký Tài khoản Chủ nuôi</h1>
           <p className="vtn-auth-sub">
-            Tạo tài khoản Chủ thú cưng miễn phí tại Veterian PCMS để đặt lịch khám và theo dõi hồ sơ sức khỏe cho bé.
+            Tạo tài khoản Chủ thú cưng miễn phí tại PCMS để đặt lịch khám và theo dõi hồ sơ sức khỏe cho bé.
           </p>
 
           {serverError ? (

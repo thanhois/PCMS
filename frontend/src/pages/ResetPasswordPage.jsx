@@ -21,7 +21,12 @@ export default function ResetPasswordPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const updated = { ...formData, [name]: value };
+    let nextValue = value;
+    if (name === 'token') {
+      const match = value.match(/[?&]token=([^&#\s]+)/i);
+      nextValue = (match ? decodeURIComponent(match[1]) : value.trim()).toUpperCase();
+    }
+    const updated = { ...formData, [name]: nextValue };
     setFormData(updated);
     setServerError('');
 
@@ -77,7 +82,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="vtn-auth-screen">
       <div className="vtn-auth-logo-top">
-        <Link to="/" aria-label="Trang chủ Veterian">
+        <Link to="/" aria-label="Trang chủ PCMS">
           <VeterianCloudPaw size={68} />
         </Link>
       </div>
@@ -102,7 +107,7 @@ export default function ResetPasswordPage() {
                 id="token"
                 name="token"
                 type="text"
-                placeholder="Dán mã token từ liên kết email"
+                placeholder="Nhập mã 8 ký tự từ email (VD: K7M9P2X4)"
                 value={formData.token}
                 onChange={handleChange}
                 onBlur={handleBlur}

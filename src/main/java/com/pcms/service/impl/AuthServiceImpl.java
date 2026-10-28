@@ -33,7 +33,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Base64;
+
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -207,14 +207,14 @@ public class AuthServiceImpl implements AuthService {
                     .queryParam("token", rawToken)
                     .build()
                     .toUriString();
-            emailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), resetLink, expiresIn);
+            emailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), rawToken, resetLink, expiresIn);
         }, () -> log.info("Forgot-password requested for non-existing email {}", email));
     }
 
     @Override
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        UserAccount user = userAccountRepository.findByResetTokenHash(sha256(request.token()))
+        UserAccount user = userAccountRepository.findByResetTokenHash(sha256(request.token().trim().toUpperCase()))
                 .orElseThrow(() -> new BadRequestException("Reset link is invalid or has already been used"));
 
         if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
@@ -270,9 +270,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private static String generateRawToken() {
-        byte[] bytes = new byte[32];
-        SECURE_RANDOM.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+
+
+        return java.util.stream.IntStream.range(0, 8).mapToObj(i -> String.valueOf("ABCDEFGHJKLMNPQRSTUVWXYZ23456789".charAt(SECURE_RANDOM.nextInt(32)))).collect(java.util.stream.Collectors.joining());
     }
 
     private static String sha256(String value) {

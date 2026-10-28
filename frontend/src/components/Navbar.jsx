@@ -34,7 +34,7 @@ export default function Navbar() {
         <div className="vtn-navbar-left">
           <Link to="/" className="vtn-logo-link">
             <VeterianCloudPaw size={34} />
-            <span className="vtn-logo-text">veterian</span>
+            <span className="vtn-logo-text">PCMS</span>
           </Link>
 
           <nav className={`vtn-nav-menu ${menuOpen ? 'open' : ''}`}>

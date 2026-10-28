@@ -106,7 +106,7 @@ export default function HomePage() {
 
         <div className="vtn-container vtn-hero-center">
           <div className="vtn-hero-eyebrow">
-            <span>✦</span> HỆ THỐNG QUẢN LÝ PHÒNG KHÁM THÚ Y • VETERIAN PCMS
+            <span>✦</span> HỆ THỐNG QUẢN LÝ PHÒNG KHÁM THÚ Y • PCMS
           </div>
 
           <h1 className="vtn-hero-heading">
@@ -461,7 +461,7 @@ export default function HomePage() {
                 Đăng ký một lần, theo dõi toàn bộ hồ sơ thú cưng, lịch hẹn và hóa đơn trực tuyến.
               </p>
               <div className="vtn-phone-mockup">
-                <span>🐾 Sổ sức khỏe Veterian</span>
+                <span>🐾 Sổ sức khỏe PCMS</span>
                 <strong>Milo • Đang hoạt động</strong>
                 <small>Lịch tiêm kế tiếp: 28/10/2026</small>
               </div>
@@ -487,7 +487,7 @@ export default function HomePage() {
       {/* ===== 5. PURPLE BANNER ("Veterian First") ===== */}
       <section className="vtn-mid-purple-banner">
         <div className="vtn-container vtn-mid-banner-inner">
-          <h2>Đồng hành cùng Veterian PCMS</h2>
+          <h2>Đồng hành cùng PCMS</h2>
           <p>
             Sẵn sàng nâng tầm trải nghiệm chăm sóc thú cưng? Khởi tạo tài khoản Chủ thú cưng miễn phí hoặc đăng nhập ngay hôm nay.
           </p>
@@ -525,14 +525,14 @@ export default function HomePage() {
       <section className="vtn-bottom-cta-wrap">
         <div className="vtn-container">
           <div className="vtn-quote-card">
-            <h3>veterian</h3>
+            <h3>PCMS</h3>
             <p>
-              “Veterian PCMS giúp phòng khám rút ngắn 40% thời gian chờ khám và mang lại sự an tâm tuyệt đối cho mọi Chủ nuôi thú cưng.”
+              “PCMS giúp phòng khám rút ngắn 40% thời gian chờ khám và mang lại sự an tâm tuyệt đối cho mọi Chủ nuôi thú cưng.”
             </p>
           </div>
 
           <div className="vtn-final-cta-card">
-            <h2>Trải nghiệm Veterian PCMS ngay hôm nay</h2>
+            <h2>Trải nghiệm PCMS ngay hôm nay</h2>
             <p>Đăng ký tài khoản Chủ thú cưng chỉ trong 30 giây và đặt lịch hẹn khám trực tuyến đầu tiên.</p>
             <Link to="/register" className="vtn-btn-purple">
               Đăng ký miễn phí

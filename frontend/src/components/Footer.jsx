@@ -9,7 +9,7 @@ export default function Footer() {
           <div className="vtn-footer-brand">
             <Link to="/" className="vtn-logo-link">
               <VeterianCloudPaw size={38} />
-              <span className="vtn-logo-text">veterian</span>
+              <span className="vtn-logo-text">PCMS</span>
             </Link>
             <Link to="/register" className="vtn-btn-purple vtn-btn-sm" style={{ marginTop: '1rem' }}>
               Đăng ký miễn phí
@@ -62,14 +62,14 @@ export default function Footer() {
             <ul>
               <li>123 Nguyễn Văn Linh, Quận 7, TP. HCM</li>
               <li>Cấp cứu 24/7: 1900 6868</li>
-              <li>care@veterian-pcms.vn</li>
+              <li>care@pcms.vn</li>
               <li>07:30 – 21:00 (Thứ 2 – Chủ Nhật)</li>
             </ul>
           </div>
         </div>
 
         <div className="vtn-footer-bottom">
-          <span>© {new Date().getFullYear()} Veterian PCMS. Bản quyền thuộc về Hệ thống Phòng khám Thú y.</span>
+          <span>© {new Date().getFullYear()} PCMS. Bản quyền thuộc về Hệ thống Phòng khám Thú y.</span>
           <span>Bảo mật bằng Spring Security &amp; In-Memory JWT</span>
         </div>
       </div>
