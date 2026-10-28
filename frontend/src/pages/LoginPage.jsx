@@ -65,6 +65,11 @@ export default function LoginPage() {
           ? location.state.from
           : '/admin/overview';
         navigate(target, { replace: true });
+      } else if (loggedInRole === 'RECEPTIONIST') {
+        const target = location.state?.from?.startsWith('/receptionist')
+          ? location.state.from
+          : '/receptionist/dashboard';
+        navigate(target, { replace: true });
       } else if (loggedInRole === 'VETERINARIAN') {
         const target = location.state?.from?.startsWith('/vet')
           ? location.state.from
@@ -108,11 +113,39 @@ export default function LoginPage() {
             </div>
           ) : null}
 
-          {serverError ? (
-            <div className="vtn-dark-alert vtn-dark-alert-error" role="alert">
-              {serverError}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11.5, color: '#94a3b8', marginBottom: 6, fontWeight: 600 }}>
+              ⚡ Đăng nhập nhanh kiểm thử phân quyền:
             </div>
-          ) : null}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {[
+                { role: 'Admin', login: 'admin', pass: 'Admin@123', color: '#a78bfa' },
+                { role: 'Bác sĩ', login: 'vet', pass: 'Vet@123', color: '#2dd4bf' },
+                { role: 'Lễ tân', login: 'receptionist', pass: 'Receptionist@123', color: '#fbbf24' },
+                { role: 'Chủ nuôi', login: 'petowner', pass: 'Owner@123', color: '#60a5fa' },
+              ].map((acc) => (
+                <button
+                  key={acc.login}
+                  type="button"
+                  onClick={() => {
+                    setFormData({ login: acc.login, password: acc.pass });
+                    setErrors({});
+                  }}
+                  style={{
+                    background: 'rgba(255,255,255,0.06)',
+                    border: `1px solid ${acc.color}`,
+                    color: '#f8fafc',
+                    borderRadius: 6,
+                    padding: '4px 8px',
+                    fontSize: 11.5,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <span style={{ color: acc.color, fontWeight: 700 }}>● {acc.role}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit} noValidate className="vtn-dark-form">
             <div className="vtn-dark-field">

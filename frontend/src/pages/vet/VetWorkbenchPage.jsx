@@ -182,6 +182,7 @@ export default function VetWorkbenchPage() {
                 { key: 'ALL', label: 'Tất cả' },
                 { key: 'IN_PROGRESS', label: 'Đang khám' },
                 { key: 'CHECKED_IN', label: 'Đã Check-in' },
+                { key: 'CONFIRMED', label: 'Đã xác nhận' },
                 { key: 'WAITING', label: 'Chờ khám' },
                 { key: 'COMPLETED', label: 'Hoàn tất' },
                 { key: 'CANCELLED', label: 'Đã hủy' },
@@ -298,6 +299,11 @@ export default function VetWorkbenchPage() {
                         <div style={{ fontSize: 12, color: '#64748b' }}>{owner.phoneNumber || ''}</div>
                       </td>
                       <td>
+                        {appt.service && (
+                          <div style={{ fontSize: 12, color: '#0d9488', fontWeight: 600, marginBottom: 3 }}>
+                            🏷️ {appt.service.serviceName}
+                          </div>
+                        )}
                         <div style={{ fontSize: 13, color: '#334155', maxWidth: 280, lineHeight: 1.4 }}>
                           {appt.reason || 'Khám lâm sàng theo lịch'}
                         </div>
@@ -313,9 +319,13 @@ export default function VetWorkbenchPage() {
                             <span className="vet-pulse-dot"></span> Đang khám
                           </span>
                         )}
-                        {(appt.status === 'WAITING' || appt.status === 'CHECKED_IN') && (
+                        {(appt.status === 'WAITING' || appt.status === 'CHECKED_IN' || appt.status === 'CONFIRMED' || appt.status === 'APPROVED') && (
                           <span className="vet-badge vet-badge-waiting">
-                            {appt.status === 'CHECKED_IN' ? 'Đã check-in' : 'Chờ khám'}
+                            {appt.status === 'CHECKED_IN'
+                              ? 'Đã check-in'
+                              : appt.status === 'CONFIRMED' || appt.status === 'APPROVED'
+                              ? 'Đã xác nhận'
+                              : 'Chờ khám'}
                           </span>
                         )}
                         {isCompleted && (
@@ -352,7 +362,7 @@ export default function VetWorkbenchPage() {
                             </button>
                           )}
 
-                          {(appt.status === 'WAITING' || appt.status === 'CHECKED_IN') && (
+                          {(appt.status === 'WAITING' || appt.status === 'CHECKED_IN' || appt.status === 'CONFIRMED' || appt.status === 'APPROVED') && (
                             <button
                               type="button"
                               className="vet-btn vet-btn-primary vet-btn-sm"

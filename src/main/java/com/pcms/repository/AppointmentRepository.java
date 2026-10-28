@@ -15,4 +15,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Intege
     List<Appointment> findByPet_PetId(Integer petId);
     List<Appointment> findByPetOwner_OwnerId(Integer ownerId);
     List<Appointment> findByPetOwner_UserAccount_UserId(Integer userId);
+    List<Appointment> findByPet_PetIdOrderByAppointmentDateDesc(Integer petId);
+    List<Appointment> findAllByOrderByAppointmentDateDesc();
 }

@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/receptionist/**").hasAnyRole("RECEPTIONIST", "ADMIN")
                         .requestMatchers("/api/vet/**").hasAnyRole("VETERINARIAN", "ADMIN")
                         .requestMatchers("/api/owner/**").hasAnyRole("PET_OWNER", "ADMIN", "VETERINARIAN")
                         .anyRequest().authenticated())

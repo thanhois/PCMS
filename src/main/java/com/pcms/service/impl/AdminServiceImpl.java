@@ -761,7 +761,7 @@ public class AdminServiceImpl implements AdminService {
 
         return List.of(
                 Map.of("status", "COMPLETED", "label", "Hoàn thành khám", "count", grouped.getOrDefault("COMPLETED", 0L), "color", "#10b981"),
-                Map.of("status", "APPROVED", "label", "Đã duyệt lịch", "count", grouped.getOrDefault("APPROVED", 0L), "color", "#6320ee"),
+                Map.of("status", "APPROVED", "label", "Đã xác nhận / Duyệt", "count", grouped.getOrDefault("APPROVED", 0L) + grouped.getOrDefault("CONFIRMED", 0L), "color", "#6320ee"),
                 Map.of("status", "CHECKED_IN", "label", "Đã Check-in", "count", grouped.getOrDefault("CHECKED_IN", 0L), "color", "#3b82f6"),
                 Map.of("status", "PENDING_APPROVAL", "label", "Chờ lễ tân duyệt", "count", grouped.getOrDefault("PENDING_APPROVAL", 0L), "color", "#f59e0b"),
                 Map.of("status", "CANCELLED", "label", "Khách báo hủy", "count", grouped.getOrDefault("CANCELLED", 0L), "color", "#ef4444"),

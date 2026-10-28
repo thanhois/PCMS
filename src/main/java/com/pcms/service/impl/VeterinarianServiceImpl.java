@@ -186,17 +186,33 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         if (existing.isPresent()) {
             record = existing.get();
         } else {
+            String initialSymptoms = (appt.getReason() != null && !appt.getReason().isBlank())
+                    ? appt.getReason()
+                    : ((appt.getNotes() != null && !appt.getNotes().isBlank()) ? appt.getNotes() : "Khám lâm sàng theo lịch hẹn");
+
             record = MedicalRecord.builder()
                     .pet(appt.getPet())
                     .veterinarian(vet)
                     .appointment(appt)
                     .visitDate(LocalDateTime.now())
-                    .symptoms(appt.getReason() != null ? appt.getReason() : "Khám lâm sàng theo lịch hẹn")
+                    .symptoms(initialSymptoms)
                     .diagnosis("Đang tiến hành khám và chẩn đoán lâm sàng...")
                     .treatmentPlan("")
                     .status("IN_PROGRESS")
                     .build();
             record = medicalRecordRepository.save(record);
+
+            // Tự động gắn dịch vụ đã tiếp nhận từ Lễ tân (nếu có) vào MedicalRecordDetail & đồng bộ hóa đơn
+            if (appt.getService() != null) {
+                MedicalRecordDetail detail = MedicalRecordDetail.builder()
+                        .medicalRecord(record)
+                        .service(appt.getService())
+                        .quantity(1)
+                        .notes("Dịch vụ tiếp nhận ban đầu từ quầy Lễ tân")
+                        .build();
+                medicalRecordDetailRepository.save(detail);
+                syncInvoiceForRecord(record);
+            }
         }
 
         logAudit(actorUsername, "Bác sĩ " + vet.getFullName() + " bắt đầu khám ca bệnh #" + appointmentId + " (Pet: " + appt.getPet().getPetName() + ")");
@@ -985,6 +1001,17 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         m.put("reason", a.getReason() != null ? a.getReason() : "");
         m.put("status", a.getStatus());
         m.put("notes", a.getNotes() != null ? a.getNotes() : "");
+        m.put("shift", a.getShift() != null ? a.getShift() : "");
+
+        if (a.getService() != null) {
+            Map<String, Object> sMap = new LinkedHashMap<>();
+            sMap.put("serviceId", a.getService().getServiceId());
+            sMap.put("serviceName", a.getService().getServiceName());
+            sMap.put("price", a.getService().getPrice());
+            m.put("service", sMap);
+        } else {
+            m.put("service", null);
+        }
 
         m.put("pet", toPetDto(a.getPet()));
         m.put("petOwner", toOwnerDto(a.getPetOwner()));

@@ -115,6 +115,23 @@ public class DataInitializer implements ApplicationRunner {
             vetAccount = userAccountRepository.findByUsername("vet").orElse(null);
         }
 
+        // 4.1 Receptionist Account (Lê Thị Thu Ngân)
+        if (!userAccountRepository.existsByUsername("receptionist")) {
+            Role recRole = roleRepository.findByRoleName(RoleName.RECEPTIONIST).orElseThrow();
+            userAccountRepository.save(UserAccount.builder()
+                    .username("receptionist")
+                    .passwordHash(passwordEncoder.encode("Receptionist@123"))
+                    .fullName("Lê Thị Thu Ngân (Lễ tân)")
+                    .email("receptionist@pcms.com")
+                    .phoneNumber("0933333333")
+                    .status(AccountStatus.ACTIVE)
+                    .role(recRole)
+                    .branch(mainBranch)
+                    .failedLoginAttempts(0)
+                    .build());
+            log.info("Seeded receptionist account 'receptionist'");
+        }
+
         // 5. Pet Owner Account (Lê Hoàng Nam)
         UserAccount ownerAccount;
         if (!userAccountRepository.existsByUsername("petowner")) {
@@ -314,7 +331,10 @@ public class DataInitializer implements ApplicationRunner {
                     .petOwner(petOwner)
                     .pet(petMilo)
                     .veterinarian(vetAccount)
+                    .service(sGeneralExam)
                     .appointmentDate(now.withHour(9).withMinute(0))
+                    .checkInTime(now.withHour(8).withMinute(50))
+                    .shift("MORNING")
                     .reason("Milo bỏ ăn 2 hôm nay, nôn ra dịch bọt vàng, mệt mỏi ít chạy nhảy")
                     .status("IN_PROGRESS")
                     .notes("Đã check-in tiếp nhận lúc 08:50")
@@ -394,29 +414,49 @@ public class DataInitializer implements ApplicationRunner {
                     .status("PENDING")
                     .build());
 
-            // Ca 2: Mèo Bông chờ khám hôm nay
+            // Ca 2: Mèo Bông đã Check-in chờ khám hôm nay
             if (petBong != null) {
                 appointmentRepository.save(Appointment.builder()
                         .petOwner(petOwner)
                         .pet(petBong)
                         .veterinarian(vetAccount)
+                        .service(sVaccine)
                         .appointmentDate(now.withHour(11).withMinute(30))
+                        .checkInTime(now.withHour(11).withMinute(15))
+                        .shift("MORNING")
                         .reason("Tiêm vắc-xin nhắc lại định kỳ hàng năm & cạo vôi răng")
                         .status("CHECKED_IN")
                         .notes("Khách đã đến phòng chờ tầng 1")
                         .build());
             }
 
-            // Ca 3: Lucky ca chiều
+            // Ca 3: Lucky ca chiều đã xác nhận CONFIRMED
             if (petLucky != null) {
                 appointmentRepository.save(Appointment.builder()
                         .petOwner(petOwner)
                         .pet(petLucky)
                         .veterinarian(vetAccount)
+                        .service(sGeneralExam)
                         .appointmentDate(now.withHour(15).withMinute(0))
+                        .shift("AFTERNOON")
                         .reason("Gãi tai liên tục, tai đỏ có nhiều chất nhờn màu nâu đen")
-                        .status("WAITING")
+                        .status("CONFIRMED")
                         .notes("Hẹn trước qua app")
+                        .build());
+            }
+
+            // Ca 4: Mèo Bông lịch hẹn mới chờ Lễ tân duyệt PENDING_APPROVAL
+            if (petBong != null) {
+                appointmentRepository.save(Appointment.builder()
+                        .petOwner(petOwner)
+                        .pet(petBong)
+                        .veterinarian(vetAccount)
+                        .service(sUltrasound)
+                        .appointmentDate(now.plusDays(1).withHour(10).withMinute(0))
+                        .shift("MORNING")
+                        .reason("Khách đặt online: Siêu âm ổ bụng & kiểm tra tổng quát cho bé Bông")
+                        .status("PENDING_APPROVAL")
+                        .notes("Khách đặt qua cổng trực tuyến, mong muốn bác sĩ Minh khám")
                         .build());
             }
 

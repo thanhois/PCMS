@@ -125,6 +125,7 @@ CREATE TABLE PetOwner (
     email NVARCHAR(150) NULL,
     address NVARCHAR(255) NULL,
     userId INT NULL,
+    status NVARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     CONSTRAINT FK_PetOwner_User FOREIGN KEY (userId) REFERENCES UserAccount(userId)
 );
 
@@ -138,6 +139,7 @@ CREATE TABLE Pet (
     gender NVARCHAR(20) NOT NULL,
     dateOfBirth DATE NULL,
     weight DECIMAL(6,2) NULL,
+    status NVARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     CONSTRAINT FK_Pet_Owner FOREIGN KEY (ownerId) REFERENCES PetOwner(ownerId)
 );
 
@@ -180,10 +182,15 @@ CREATE TABLE Appointment (
     reason NVARCHAR(500) NULL,
     status NVARCHAR(30) NOT NULL,
     veterinarianId INT NULL,
+    serviceId INT NULL,
+    shift NVARCHAR(20) NULL,
     notes NVARCHAR(1000) NULL,
+    rejectionReason NVARCHAR(500) NULL,
+    checkInTime DATETIME2 NULL,
     CONSTRAINT FK_Appointment_Owner FOREIGN KEY (ownerId) REFERENCES PetOwner(ownerId),
     CONSTRAINT FK_Appointment_Pet FOREIGN KEY (petId) REFERENCES Pet(petId),
-    CONSTRAINT FK_Appointment_Vet FOREIGN KEY (veterinarianId) REFERENCES UserAccount(userId)
+    CONSTRAINT FK_Appointment_Vet FOREIGN KEY (veterinarianId) REFERENCES UserAccount(userId),
+    CONSTRAINT FK_Appointment_Service FOREIGN KEY (serviceId) REFERENCES Service(serviceId)
 );
 
 -- 10. Bảng MedicalRecord (Hồ sơ bệnh án điện tử)
@@ -299,14 +306,16 @@ INSERT INTO Branch (branchId, branchName, address, phoneNumber) VALUES
 SET IDENTITY_INSERT Branch OFF;
 
 -- 3. Nạp Tài khoản người dùng (Mật khẩu đã được mã hóa bằng chuẩn BCrypt)
--- admin: Admin@123
--- vet:   Vet@123
--- petowner: Owner@123
+-- admin:        Admin@123
+-- vet:          Vet@123
+-- receptionist: Receptionist@123
+-- petowner:     Owner@123
 SET IDENTITY_INSERT UserAccount ON;
 INSERT INTO UserAccount (userId, username, passwordHash, fullName, email, phoneNumber, status, roleId, branchId, failedLoginAttempts, createdAt) VALUES
 (1, N'admin', N'$2a$10$dA3V9T904.Sh9ERX5kzpZeX2ridOiIXRPcWZ02tyF9cXRa.2G4Rl6', N'System Administrator', N'admin@pcms.com', N'0900000000', N'ACTIVE', 1, 1, 0, GETDATE()),
 (2, N'vet', N'$2a$10$zj/VgxTCEfIaDBJRzcUiEuAX1FiNjojdVA6J4rk3DVlu2ghEuO0.6', N'BS. CKI Nguyễn Văn Minh', N'vet.minh@pcms.com', N'0912345678', N'ACTIVE', 2, 1, 0, GETDATE()),
-(3, N'petowner', N'$2a$10$wMhHBv1l1Xv8QTbQPVOX6uk.oUc/s2MPXLQbIyScRCO4xWX6hl47O', N'Lê Hoàng Nam', N'nam.le@gmail.com', N'0987654321', N'ACTIVE', 5, NULL, 0, GETDATE());
+(3, N'petowner', N'$2a$10$wMhHBv1l1Xv8QTbQPVOX6uk.oUc/s2MPXLQbIyScRCO4xWX6hl47O', N'Lê Hoàng Nam', N'nam.le@gmail.com', N'0987654321', N'ACTIVE', 5, NULL, 0, GETDATE()),
+(4, N'receptionist', N'$2a$10$wMhHBv1l1Xv8QTbQPVOX6uk.oUc/s2MPXLQbIyScRCO4xWX6hl47O', N'Lê Thị Thu Ngân (Lễ tân)', N'receptionist@pcms.com', N'0933333333', N'ACTIVE', 3, 1, 0, GETDATE());
 SET IDENTITY_INSERT UserAccount OFF;
 
 -- 4. Nạp Chủ thú cưng
@@ -355,11 +364,12 @@ SET IDENTITY_INSERT InventoryBatch OFF;
 
 -- 9. Nạp Ca Lịch hẹn khám
 SET IDENTITY_INSERT Appointment ON;
-INSERT INTO Appointment (appointmentId, ownerId, petId, appointmentDate, reason, status, veterinarianId, notes) VALUES
-(1, 1, 1, DATEADD(HOUR, 9, CAST(CAST(GETDATE() AS DATE) AS DATETIME2)), N'Milo bỏ ăn 2 hôm nay, nôn ra dịch bọt vàng, mệt mỏi ít chạy nhảy', N'IN_PROGRESS', 2, N'Đã check-in tiếp nhận lúc 08:50'),
-(2, 1, 2, DATEADD(HOUR, 11, CAST(CAST(GETDATE() AS DATE) AS DATETIME2)), N'Tiêm vắc-xin nhắc lại định kỳ hàng năm & cạo vôi răng', N'CHECKED_IN', 2, N'Khách đã đến phòng chờ tầng 1'),
-(3, 1, 3, DATEADD(HOUR, 15, CAST(CAST(GETDATE() AS DATE) AS DATETIME2)), N'Gãi tai liên tục, tai đỏ có nhiều chất nhờn màu nâu đen', N'WAITING', 2, N'Hẹn trước qua app'),
-(4, 1, 1, DATEADD(MONTH, -1, CAST(GETDATE() AS DATETIME2)), N'Khám sức khỏe định kỳ & tiêm phòng dại', N'COMPLETED', 2, N'Đã khám và thanh toán đầy đủ');
+INSERT INTO Appointment (appointmentId, ownerId, petId, appointmentDate, reason, status, veterinarianId, serviceId, shift, checkInTime, notes) VALUES
+(1, 1, 1, DATEADD(HOUR, 9, CAST(CAST(GETDATE() AS DATE) AS DATETIME2)), N'Milo bỏ ăn 2 hôm nay, nôn ra dịch bọt vàng, mệt mỏi ít chạy nhảy', N'IN_PROGRESS', 2, 1, N'MORNING', DATEADD(MINUTE, -10, DATEADD(HOUR, 9, CAST(CAST(GETDATE() AS DATE) AS DATETIME2))), N'Đã check-in tiếp nhận lúc 08:50'),
+(2, 1, 2, DATEADD(HOUR, 11, CAST(CAST(GETDATE() AS DATE) AS DATETIME2)), N'Tiêm vắc-xin nhắc lại định kỳ hàng năm & cạo vôi răng', N'CHECKED_IN', 2, 5, N'MORNING', DATEADD(MINUTE, -15, DATEADD(HOUR, 11, CAST(CAST(GETDATE() AS DATE) AS DATETIME2))), N'Khách đã đến phòng chờ tầng 1'),
+(3, 1, 3, DATEADD(HOUR, 15, CAST(CAST(GETDATE() AS DATE) AS DATETIME2)), N'Gãi tai liên tục, tai đỏ có nhiều chất nhờn màu nâu đen', N'CONFIRMED', 2, 1, N'AFTERNOON', NULL, N'Hẹn trước qua app'),
+(4, 1, 1, DATEADD(MONTH, -1, CAST(GETDATE() AS DATETIME2)), N'Khám sức khỏe định kỳ & tiêm phòng dại', N'COMPLETED', 2, 1, N'MORNING', DATEADD(MONTH, -1, CAST(GETDATE() AS DATETIME2)), N'Đã khám và thanh toán đầy đủ'),
+(5, 1, 2, DATEADD(DAY, 1, DATEADD(HOUR, 10, CAST(CAST(GETDATE() AS DATE) AS DATETIME2))), N'Khách đặt online: Siêu âm ổ bụng & kiểm tra tổng quát cho bé Bông', N'PENDING_APPROVAL', 2, 2, N'MORNING', NULL, N'Khách đặt qua cổng trực tuyến, mong muốn bác sĩ Minh khám');
 SET IDENTITY_INSERT Appointment OFF;
 
 -- 10. Nạp Bệnh án điện tử
@@ -428,8 +438,9 @@ SET IDENTITY_INSERT AuditLog OFF;
 PRINT N'==============================================================================';
 PRINT N'🎉 NẠP TOÀN BỘ CƠ SỞ DỮ LIỆU & SEED DATA CHO DỰ ÁN PCMS THÀNH CÔNG!';
 PRINT N'Tài khoản đăng nhập kiểm thử:';
-PRINT N'1. ADMIN:        username = admin     | password = Admin@123';
-PRINT N'2. VETERINARIAN: username = vet       | password = Vet@123';
-PRINT N'3. PET OWNER:    username = petowner  | password = Owner@123';
+PRINT N'1. ADMIN:        username = admin        | password = Admin@123';
+PRINT N'2. VETERINARIAN: username = vet          | password = Vet@123';
+PRINT N'3. RECEPTIONIST: username = receptionist | password = Receptionist@123';
+PRINT N'4. PET OWNER:    username = petowner     | password = Owner@123';
 PRINT N'==============================================================================';
 GO

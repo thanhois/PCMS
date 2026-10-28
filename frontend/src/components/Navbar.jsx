@@ -65,6 +65,20 @@ export default function Navbar() {
                     Trang Quản trị
                   </Link>
                   <Link
+                    to="/receptionist/dashboard"
+                    style={{
+                      background: '#f59e0b',
+                      color: '#ffffff',
+                      padding: '6px 12px',
+                      borderRadius: 6,
+                      fontSize: 12.5,
+                      textDecoration: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Quầy Lễ tân
+                  </Link>
+                  <Link
                     to="/vet/workbench"
                     style={{
                       background: '#0d9488',
@@ -79,6 +93,15 @@ export default function Navbar() {
                     Bác sĩ thú y
                   </Link>
                 </>
+              )}
+              {user.role === 'RECEPTIONIST' && (
+                <Link
+                  to="/receptionist/dashboard"
+                  className="vtn-btn-yellow"
+                  style={{ padding: '6px 14px', fontSize: 12.5, textDecoration: 'none', fontWeight: 700 }}
+                >
+                  📋 Quầy Lễ tân
+                </Link>
               )}
               {user.role === 'VETERINARIAN' && (
                 <Link

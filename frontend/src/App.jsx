@@ -4,6 +4,8 @@ import AdminLayout from './components/admin/AdminLayout';
 import AdminRouteGuard from './components/admin/AdminRouteGuard';
 import VetLayout from './components/vet/VetLayout';
 import VetRouteGuard from './components/vet/VetRouteGuard';
+import ReceptionistLayout from './components/receptionist/ReceptionistLayout';
+import ReceptionistRouteGuard from './components/receptionist/ReceptionistRouteGuard';
 import { AuthProvider } from './context/AuthContext';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import HomePage from './pages/HomePage';
@@ -19,6 +21,11 @@ import AdminOverviewPage from './pages/admin/AdminOverviewPage';
 import AdminReportsPage from './pages/admin/AdminReportsPage';
 import AdminRolesPage from './pages/admin/AdminRolesPage';
 import AdminServicesPage from './pages/admin/AdminServicesPage';
+import ReceptionistAppointmentsPage from './pages/receptionist/ReceptionistAppointmentsPage';
+import ReceptionistCheckInPage from './pages/receptionist/ReceptionistCheckInPage';
+import ReceptionistCustomersPage from './pages/receptionist/ReceptionistCustomersPage';
+import ReceptionistDashboardPage from './pages/receptionist/ReceptionistDashboardPage';
+import ReceptionistServicesPage from './pages/receptionist/ReceptionistServicesPage';
 
 // Veterinarian Pages (Thành viên 2 - Gói 3)
 import VetWorkbenchPage from './pages/vet/VetWorkbenchPage';
@@ -55,6 +62,18 @@ export default function App() {
             </Route>
           </Route>
 
+          {/* Receptionist Portal Routes (Role RECEPTIONIST & ADMIN) */}
+          <Route path="/receptionist" element={<ReceptionistRouteGuard />}>
+            <Route element={<ReceptionistLayout />}>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<ReceptionistDashboardPage />} />
+              <Route path="appointments" element={<ReceptionistAppointmentsPage />} />
+              <Route path="check-in" element={<ReceptionistCheckInPage />} />
+              <Route path="customers" element={<ReceptionistCustomersPage />} />
+              <Route path="services" element={<ReceptionistServicesPage />} />
+            </Route>
+          </Route>
+
           {/* Veterinarian Clinical Suite Routes (Role VETERINARIAN & ADMIN) */}
           <Route path="/vet" element={<VetRouteGuard />}>
             <Route element={<VetLayout />}>
@@ -68,7 +87,6 @@ export default function App() {
 
           {/* Pet Owner Portal Routes (Role PET_OWNER & ALL) */}
           <Route path="/owner/medical-history" element={<PetOwnerMedicalPage />} />
-
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
