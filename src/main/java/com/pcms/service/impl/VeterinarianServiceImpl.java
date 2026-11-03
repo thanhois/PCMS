@@ -161,7 +161,8 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         }
         appointmentRepository.save(appt);
 
-        logAudit(actorUsername, "Cập nhật trạng thái lịch hẹn #" + appointmentId + " thành " + status);
+        logAudit(actorUsername, "APPOINTMENT_STATUS_UPDATE", "Appointment #" + appointmentId, "SUCCESS",
+                "Cập nhật trạng thái lịch hẹn #" + appointmentId + " thành " + status);
         return toAppointmentDto(appt);
     }
 
@@ -181,7 +182,7 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         appointmentRepository.save(appt);
 
         // Kiểm tra xem đã có bệnh án liên kết với lịch hẹn này chưa
-        Optional<MedicalRecord> existing = medicalRecordRepository.findByAppointment_AppointmentId(appointmentId);
+        Optional<MedicalRecord> existing = medicalRecordRepository.findFirstByAppointment_AppointmentIdOrderByVisitDateDesc(appointmentId);
         MedicalRecord record;
         if (existing.isPresent()) {
             record = existing.get();
@@ -215,7 +216,8 @@ public class VeterinarianServiceImpl implements VeterinarianService {
             }
         }
 
-        logAudit(actorUsername, "Bác sĩ " + vet.getFullName() + " bắt đầu khám ca bệnh #" + appointmentId + " (Pet: " + appt.getPet().getPetName() + ")");
+        logAudit(actorUsername, "APPOINTMENT_START_EXAM", "Appointment #" + appointmentId, "SUCCESS",
+                "Bác sĩ " + vet.getFullName() + " bắt đầu khám ca bệnh #" + appointmentId + " (Pet: " + appt.getPet().getPetName() + ")");
         return getMedicalRecordDetail(record.getRecordId());
     }
 
@@ -520,6 +522,20 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         String treatmentPlan = String.valueOf(payload.getOrDefault("treatmentPlan", ""));
         String status = String.valueOf(payload.getOrDefault("status", "IN_PROGRESS"));
 
+        if (appt != null) {
+            Optional<MedicalRecord> existingRec = medicalRecordRepository.findFirstByAppointment_AppointmentIdOrderByVisitDateDesc(appt.getAppointmentId());
+            if (existingRec.isPresent()) {
+                MedicalRecord record = existingRec.get();
+                record.setSymptoms(symptoms);
+                record.setDiagnosis(diagnosis);
+                record.setTreatmentPlan(treatmentPlan);
+                record.setStatus(status);
+                record = medicalRecordRepository.save(record);
+                logAudit(actorUsername, "Cập nhật bệnh án #" + record.getRecordId() + " cho ca khám #" + appt.getAppointmentId());
+                return getMedicalRecordDetail(record.getRecordId());
+            }
+        }
+
         MedicalRecord record = MedicalRecord.builder()
                 .pet(pet)
                 .veterinarian(vet)
@@ -598,7 +614,9 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         // Tự động tính tổng tiền & tạo/cập nhật hóa đơn ở trạng thái PENDING (chờ thu ngân thu tiền)
         syncInvoiceForRecord(record);
 
-        logAudit(actorUsername, "Hoàn thành khám bệnh & chốt bệnh án #" + recordId + " (Pet: " + record.getPet().getPetName() + ")");
+        logAudit(actorUsername, "APPOINTMENT_COMPLETE_EXAM",
+                "Appointment #" + (record.getAppointment() != null ? record.getAppointment().getAppointmentId() : recordId),
+                "SUCCESS", "Hoàn thành khám bệnh & chốt bệnh án #" + recordId + " (Pet: " + record.getPet().getPetName() + ")");
         return getMedicalRecordDetail(recordId);
     }
 
@@ -619,7 +637,8 @@ public class VeterinarianServiceImpl implements VeterinarianService {
             appointmentRepository.save(appt);
         }
 
-        logAudit(actorUsername, "Hủy bệnh án #" + recordId + ". Lý do: " + reason);
+        logAudit(actorUsername, "MEDICAL_RECORD_CANCEL", "MedicalRecord #" + recordId, "SUCCESS",
+                "Hủy bệnh án #" + recordId + ". Lý do: " + reason);
         return getMedicalRecordDetail(recordId);
     }
 
@@ -1018,7 +1037,7 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         m.put("veterinarian", toVetDto(a.getVeterinarian()));
 
         // Kiểm tra xem đã có bệnh án chưa
-        Optional<MedicalRecord> rec = medicalRecordRepository.findByAppointment_AppointmentId(a.getAppointmentId());
+        Optional<MedicalRecord> rec = medicalRecordRepository.findFirstByAppointment_AppointmentIdOrderByVisitDateDesc(a.getAppointmentId());
         m.put("hasMedicalRecord", rec.isPresent());
         m.put("recordId", rec.map(MedicalRecord::getRecordId).orElse(null));
 
@@ -1081,13 +1100,20 @@ public class VeterinarianServiceImpl implements VeterinarianService {
     }
 
     private void logAudit(String actor, String actionDetails) {
+        logAudit(actor, "VET_OPERATION", "MedicalRecord", "SUCCESS", actionDetails);
+    }
+
+    private void logAudit(String actor, String actionType, String targetEntity, String outcome, String actionDetails) {
         try {
             UserAccount user = userAccountRepository.findByUsername(actor).orElse(null);
             if (user != null) {
                 auditLogRepository.save(AuditLog.builder()
                         .userAccount(user)
                         .actionTime(LocalDateTime.now())
-                        .actionDetails("[BÁC SĨ THÚ Y] " + actionDetails)
+                        .actionType(actionType)
+                        .affectedResource(targetEntity)
+                        .outcome(outcome != null ? outcome : "SUCCESS")
+                        .actionDetails("[" + actionType + "] [" + targetEntity + "] " + actionDetails)
                         .build());
             }
         } catch (Exception e) {

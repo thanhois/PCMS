@@ -156,6 +156,15 @@ public class AdminController {
         return ResponseEntity.ok(adminService.toggleMedicineStatus(medicineId, nextStatus, actor));
     }
 
+    @PostMapping("/medicines/{medicineId}/adjust-inventory")
+    public ResponseEntity<Map<String, Object>> adjustInventory(
+            @PathVariable Integer medicineId,
+            @RequestBody Map<String, Object> payload,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        String actor = principal != null ? principal.getUsername() : "admin";
+        return ResponseEntity.ok(adminService.adjustInventory(medicineId, payload, actor));
+    }
+
     // 6. REPORTS
     @GetMapping("/reports")
     public ResponseEntity<Map<String, Object>> getReports(

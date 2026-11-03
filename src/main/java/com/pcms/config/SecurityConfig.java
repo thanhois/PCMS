@@ -39,6 +39,7 @@ public class SecurityConfig {
     };
 
     private final JwtRequestFilter jwtRequestFilter;
+    private final com.pcms.config.security.CorrelationIdFilter correlationIdFilter;
     private final RestAuthErrorHandler restAuthErrorHandler;
     private final AppProperties appProperties;
 
@@ -61,6 +62,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/vet/**").hasAnyRole("VETERINARIAN", "ADMIN")
                         .requestMatchers("/api/owner/**").hasAnyRole("PET_OWNER", "ADMIN", "VETERINARIAN")
                         .anyRequest().authenticated())
+                .addFilterBefore(correlationIdFilter, org.springframework.security.web.context.SecurityContextHolderFilter.class)
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -76,8 +78,8 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(appProperties.cors().allowedOrigins());
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With"));
-        config.setExposedHeaders(List.of("Authorization"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With", "X-Correlation-ID"));
+        config.setExposedHeaders(List.of("Authorization", "X-Correlation-ID"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 

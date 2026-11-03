@@ -44,4 +44,12 @@ public interface ReceptionistService {
     Map<String, Object> togglePetStatus(Integer petId, String status, String actorUsername);
 
     Map<String, Object> getPetHistory(Integer petId);
+
+    List<Map<String, Object>> getInvoices(String status, String search);
+
+    Map<String, Object> getInvoiceById(Integer invoiceId);
+
+    Map<String, Object> confirmInvoicePayment(Integer invoiceId, Map<String, Object> payload, String actorUsername);
+
+    Map<String, Object> voidInvoice(Integer invoiceId, String reason, String actorUsername);
 }

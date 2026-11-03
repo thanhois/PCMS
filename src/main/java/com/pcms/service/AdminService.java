@@ -33,6 +33,8 @@ public interface AdminService {
 
     Map<String, Object> toggleMedicineStatus(Integer medicineId, String nextStatus, String adminUsername);
 
+    Map<String, Object> adjustInventory(Integer medicineId, Map<String, Object> payload, String adminUsername);
+
     Map<String, Object> getReports(String fromDate, String toDate);
 
     List<Map<String, Object>> getAuditLogs(String fromDate, String toDate, String username, String actionType);

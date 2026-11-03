@@ -28,22 +28,25 @@ public class RestAuthErrorHandler implements AuthenticationEntryPoint, AccessDen
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
-        write(response, request, HttpStatus.UNAUTHORIZED, "Authentication is required");
+        write(response, request, HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "Authentication is required");
     }
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response,
                        AccessDeniedException accessDeniedException) throws IOException {
-        write(response, request, HttpStatus.FORBIDDEN, "You do not have permission to access this resource");
+        write(response, request, HttpStatus.FORBIDDEN, "ACCESS_DENIED", "You do not have permission to access this resource");
     }
 
     private void write(HttpServletResponse response, HttpServletRequest request,
-                       HttpStatus status, String message) throws IOException {
+                       HttpStatus status, String errorCode, String message) throws IOException {
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        ErrorResponse body = ErrorResponse.of(status.value(), status.getReasonPhrase(), message,
-                request.getRequestURI(), null);
+        String correlationId = (String) request.getAttribute(CorrelationIdFilter.CORRELATION_ID_KEY);
+        if (correlationId == null) correlationId = CorrelationIdFilter.getCorrelationId();
+
+        ErrorResponse body = ErrorResponse.of(status.value(), errorCode, status.getReasonPhrase(), message,
+                request.getRequestURI(), correlationId, null);
         objectMapper.writeValue(response.getOutputStream(), body);
     }
 }

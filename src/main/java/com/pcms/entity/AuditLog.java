@@ -29,6 +29,16 @@ public class AuditLog {
     @Column(name = "actionTime", nullable = false)
     private LocalDateTime actionTime;
 
+    @Column(name = "actionType", length = 100)
+    private String actionType;
+
+    @Column(name = "affectedResource", length = 255)
+    private String affectedResource;
+
+    @Column(name = "outcome", length = 50)
+    @Builder.Default
+    private String outcome = "SUCCESS";
+
     @Column(name = "actionDetails", nullable = false, length = 2000)
     private String actionDetails;
 }

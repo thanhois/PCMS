@@ -523,6 +523,60 @@ public class AdminServiceImpl implements AdminService {
         return toMedicineDto(entity, batches);
     }
 
+    @Override
+    @Transactional
+    public Map<String, Object> adjustInventory(Integer medicineId, Map<String, Object> payload, String adminUsername) {
+        Medicine entity = medicineRepository.findById(medicineId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thuốc #" + medicineId));
+
+        int quantityChange = 0;
+        if (payload != null && payload.containsKey("quantityChange")) {
+            quantityChange = Integer.parseInt(String.valueOf(payload.get("quantityChange")));
+        } else if (payload != null && payload.containsKey("quantity")) {
+            quantityChange = Integer.parseInt(String.valueOf(payload.get("quantity")));
+        }
+
+        String reason = payload != null && payload.containsKey("reason")
+                ? String.valueOf(payload.get("reason")) : "Điều chỉnh tồn kho định kỳ";
+        String supplier = payload != null && payload.containsKey("supplier")
+                ? String.valueOf(payload.get("supplier")) : "Kho tổng hợp";
+        String batchNumber = payload != null && payload.containsKey("batchNumber") && !String.valueOf(payload.get("batchNumber")).isBlank()
+                ? String.valueOf(payload.get("batchNumber")).trim()
+                : "BATCH-" + System.currentTimeMillis();
+
+        LocalDate expiry = LocalDate.now().plusMonths(12);
+        if (payload != null && payload.containsKey("expirationDate") && payload.get("expirationDate") != null) {
+            try {
+                expiry = LocalDate.parse(String.valueOf(payload.get("expirationDate")));
+            } catch (Exception ignored) {}
+        }
+
+        List<InventoryBatch> existingBatches = inventoryBatchRepository.findByMedicine_MedicineId(medicineId);
+        if (!existingBatches.isEmpty()) {
+            InventoryBatch batch = existingBatches.get(0);
+            int newQty = Math.max(0, batch.getQuantityInStock() + quantityChange);
+            batch.setQuantityInStock(newQty);
+            inventoryBatchRepository.save(batch);
+        } else {
+            InventoryBatch newBatch = InventoryBatch.builder()
+                    .medicine(entity)
+                    .batchNumber(batchNumber)
+                    .expirationDate(expiry)
+                    .quantityInStock(Math.max(0, quantityChange))
+                    .supplier(supplier)
+                    .build();
+            inventoryBatchRepository.save(newBatch);
+        }
+
+        recordAudit(adminUsername, "INVENTORY_ADJUSTMENT", "Medicine #" + entity.getMedicineId(), "SUCCESS",
+                "Điều chỉnh tồn kho thuốc \"" + entity.getMedicineName() + "\" (Thay đổi: "
+                        + (quantityChange >= 0 ? "+" + quantityChange : quantityChange)
+                        + " " + entity.getUnit() + ") - Lý do: " + reason);
+
+        List<InventoryBatch> batches = inventoryBatchRepository.findByMedicine_MedicineId(entity.getMedicineId());
+        return toMedicineDto(entity, batches);
+    }
+
     // 6. REPORTS
     @Override
     @Transactional(readOnly = true)
@@ -571,6 +625,10 @@ public class AdminServiceImpl implements AdminService {
     }
 
     private void recordAudit(String username, String actionType, String targetEntity, String details) {
+        recordAudit(username, actionType, targetEntity, "SUCCESS", details);
+    }
+
+    private void recordAudit(String username, String actionType, String targetEntity, String outcome, String details) {
         UserAccount actor = (username != null && !username.isBlank())
                 ? userAccountRepository.findByUsername(username).orElse(null)
                 : null;
@@ -583,26 +641,34 @@ public class AdminServiceImpl implements AdminService {
         auditLogRepository.save(AuditLog.builder()
                 .userAccount(actor)
                 .actionTime(LocalDateTime.now().withNano(0))
+                .actionType(actionType)
+                .affectedResource(targetEntity)
+                .outcome(outcome != null ? outcome : "SUCCESS")
                 .actionDetails(formattedDetails)
                 .build());
     }
 
     private Map<String, Object> toAuditLogDto(AuditLog logEntity) {
         String raw = logEntity.getActionDetails() != null ? logEntity.getActionDetails() : "";
-        String actionType = "SYSTEM_ACTION";
-        String targetEntity = "PCMS";
+        String actionType = logEntity.getActionType();
+        String targetEntity = logEntity.getAffectedResource();
+        String outcome = logEntity.getOutcome() != null ? logEntity.getOutcome() : "SUCCESS";
         String cleanDetails = raw;
 
-        // Parse định dạng "[ACTION_TYPE] [TargetEntity] Nội dung..."
+        // Parse định dạng fallback "[ACTION_TYPE] [TargetEntity] Nội dung..."
         if (raw.startsWith("[")) {
             int firstClose = raw.indexOf(']');
             if (firstClose > 1) {
-                actionType = raw.substring(1, firstClose).trim();
+                if (actionType == null || actionType.isBlank()) {
+                    actionType = raw.substring(1, firstClose).trim();
+                }
                 String rest = raw.substring(firstClose + 1).trim();
                 if (rest.startsWith("[")) {
                     int secondClose = rest.indexOf(']');
                     if (secondClose > 1) {
-                        targetEntity = rest.substring(1, secondClose).trim();
+                        if (targetEntity == null || targetEntity.isBlank()) {
+                            targetEntity = rest.substring(1, secondClose).trim();
+                        }
                         cleanDetails = rest.substring(secondClose + 1).trim();
                     }
                 } else {
@@ -610,6 +676,8 @@ public class AdminServiceImpl implements AdminService {
                 }
             }
         }
+        if (actionType == null || actionType.isBlank()) actionType = "SYSTEM_ACTION";
+        if (targetEntity == null || targetEntity.isBlank()) targetEntity = "PCMS";
 
         UserAccount u = logEntity.getUserAccount();
         Map<String, Object> dto = new LinkedHashMap<>();
@@ -620,6 +688,8 @@ public class AdminServiceImpl implements AdminService {
         dto.put("fullName", u != null ? u.getFullName() : "Quản trị viên");
         dto.put("actionType", actionType);
         dto.put("targetEntity", targetEntity);
+        dto.put("affectedResource", targetEntity);
+        dto.put("outcome", outcome);
         dto.put("actionDetails", cleanDetails);
         return dto;
     }

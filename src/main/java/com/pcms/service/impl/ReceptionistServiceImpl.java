@@ -26,6 +26,9 @@ public class ReceptionistServiceImpl implements ReceptionistService {
     private final ServiceRepository serviceRepository;
     private final MedicalRecordRepository medicalRecordRepository;
     private final AuditLogRepository auditLogRepository;
+    private final InvoiceRepository invoiceRepository;
+    private final PaymentRepository paymentRepository;
+    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
@@ -239,9 +242,10 @@ public class ReceptionistServiceImpl implements ReceptionistService {
                 .build();
 
         appointment = appointmentRepository.save(appointment);
-        recordAudit(actorUsername, "CREATE_APPOINTMENT", "Appointment",
+        recordAudit(actorUsername, "APPOINTMENT_CREATE", "Appointment #" + appointment.getAppointmentId(),
                 "Đặt lịch hẹn #" + appointment.getAppointmentId() + " (" + ("AFTERNOON".equalsIgnoreCase(shift) ? "Buổi chiều" : "Buổi sáng")
                         + ") cho thú cưng " + pet.getPetName());
+        publishBookingNotification(appointment, "CREATE_APPOINTMENT");
         return toAppointmentMap(appointment);
     }
 
@@ -276,8 +280,9 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         appointment.setRejectionReason(null);
         appointment = appointmentRepository.save(appointment);
 
-        recordAudit(actorUsername, "APPROVE_APPOINTMENT", "Appointment",
+        recordAudit(actorUsername, "APPOINTMENT_APPROVE", "Appointment #" + appointmentId,
                 "Phê duyệt lịch hẹn #" + appointmentId + " của thú cưng " + appointment.getPet().getPetName());
+        publishBookingNotification(appointment, "APPROVE_APPOINTMENT");
         return toAppointmentMap(appointment);
     }
 
@@ -298,7 +303,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         appointment.setRejectionReason(reason.trim());
         appointment = appointmentRepository.save(appointment);
 
-        recordAudit(actorUsername, "REJECT_APPOINTMENT", "Appointment",
+        recordAudit(actorUsername, "APPOINTMENT_REJECT", "Appointment #" + appointmentId,
                 "Từ chối lịch hẹn #" + appointmentId + " - Lý do: " + reason.trim());
         return toAppointmentMap(appointment);
     }
@@ -344,7 +349,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         }
 
         appointment = appointmentRepository.save(appointment);
-        recordAudit(actorUsername, "RESCHEDULE_APPOINTMENT", "Appointment",
+        recordAudit(actorUsername, "APPOINTMENT_RESCHEDULE", "Appointment #" + appointmentId,
                 "Đổi lịch hẹn #" + appointmentId + " sang ngày " + newDateTime.format(DATE_FMT) + " (" + ("AFTERNOON".equalsIgnoreCase(shift) ? "Buổi chiều" : "Buổi sáng") + ")");
         return toAppointmentMap(appointment);
     }
@@ -366,7 +371,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         appointment.setRejectionReason(reason.trim());
         appointment = appointmentRepository.save(appointment);
 
-        recordAudit(actorUsername, "CANCEL_APPOINTMENT", "Appointment",
+        recordAudit(actorUsername, "APPOINTMENT_CANCEL", "Appointment #" + appointmentId,
                 "Hủy lịch hẹn #" + appointmentId + " - Lý do: " + reason.trim());
         return toAppointmentMap(appointment);
     }
@@ -416,7 +421,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         appointment.setCheckInTime(LocalDateTime.now());
         appointment = appointmentRepository.save(appointment);
 
-        recordAudit(actorUsername, "CHECK_IN_ASSIGN_VET", "Appointment",
+        recordAudit(actorUsername, "APPOINTMENT_CHECK_IN", "Appointment #" + appointmentId,
                 "Check-in lịch hẹn #" + appointmentId + " cho thú cưng " + pet.getPetName()
                         + " và điều phối cho Bác sĩ " + vet.getFullName());
         return toAppointmentMap(appointment);
@@ -436,7 +441,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         appointment.setVeterinarian(vet);
         appointment = appointmentRepository.save(appointment);
 
-        recordAudit(actorUsername, "REASSIGN_VET", "Appointment",
+        recordAudit(actorUsername, "APPOINTMENT_ASSIGN_VET", "Appointment #" + appointmentId,
                 "Điều phối ca khám #" + appointmentId + " (Thú cưng: " + appointment.getPet().getPetName()
                         + ") sang Bác sĩ " + vet.getFullName());
         return toAppointmentMap(appointment);
@@ -554,9 +559,10 @@ public class ReceptionistServiceImpl implements ReceptionistService {
                 .build();
 
         walkInAppointment = appointmentRepository.save(walkInAppointment);
-        recordAudit(actorUsername, "PROCESS_WALK_IN", "Appointment",
+        recordAudit(actorUsername, "APPOINTMENT_WALK_IN", "Appointment #" + walkInAppointment.getAppointmentId(),
                 "Tiếp nhận khám trực tiếp (Walk-in) #" + walkInAppointment.getAppointmentId()
                         + " cho thú cưng " + pet.getPetName() + " -> điều phối cho Bác sĩ " + vet.getFullName());
+        publishBookingNotification(walkInAppointment, "PROCESS_WALK_IN");
 
         return toAppointmentMap(walkInAppointment);
     }
@@ -1138,7 +1144,164 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         return m;
     }
 
+    // =========================================================================
+    // 6. INVOICE VOIDING & PAYMENT CONFIRMATION (Section 4.1.6)
+    // =========================================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getInvoices(String status, String search) {
+        String searchNorm = search != null ? search.trim().toLowerCase() : "";
+        return invoiceRepository.findAll().stream()
+                .filter(inv -> {
+                    boolean matchStatus = status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)
+                            || (inv.getStatus() != null && inv.getStatus().equalsIgnoreCase(status));
+                    if (!matchStatus) return false;
+                    if (searchNorm.isEmpty()) return true;
+
+                    String invIdStr = String.valueOf(inv.getInvoiceId());
+                    MedicalRecord mr = inv.getMedicalRecord();
+                    String petName = (mr != null && mr.getPet() != null) ? mr.getPet().getPetName().toLowerCase() : "";
+                    String ownerName = (mr != null && mr.getPet() != null && mr.getPet().getPetOwner() != null)
+                            ? mr.getPet().getPetOwner().getFullName().toLowerCase() : "";
+                    String ownerPhone = (mr != null && mr.getPet() != null && mr.getPet().getPetOwner() != null)
+                            ? mr.getPet().getPetOwner().getPhoneNumber() : "";
+                    return invIdStr.contains(searchNorm) || petName.contains(searchNorm)
+                            || ownerName.contains(searchNorm) || ownerPhone.contains(searchNorm);
+                })
+                .sorted(Comparator.comparing(Invoice::getInvoiceDate, Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(this::toInvoiceDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> getInvoiceById(Integer invoiceId) {
+        Invoice invoice = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new BadRequestException("Không tìm thấy hóa đơn #" + invoiceId));
+        return toInvoiceDto(invoice);
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> confirmInvoicePayment(Integer invoiceId, Map<String, Object> payload, String actorUsername) {
+        Invoice invoice = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new BadRequestException("Không tìm thấy hóa đơn #" + invoiceId));
+
+        if ("PAID".equalsIgnoreCase(invoice.getStatus())) {
+            throw new BadRequestException("Hóa đơn #" + invoiceId + " đã được thanh toán trước đó.");
+        }
+        if ("VOIDED".equalsIgnoreCase(invoice.getStatus()) || "CANCELLED".equalsIgnoreCase(invoice.getStatus())) {
+            throw new BadRequestException("Không thể thu tiền cho hóa đơn đã bị hủy.");
+        }
+
+        String paymentMethod = "CASH";
+        if (payload != null && payload.get("paymentMethod") != null && !String.valueOf(payload.get("paymentMethod")).isBlank()) {
+            paymentMethod = String.valueOf(payload.get("paymentMethod")).trim().toUpperCase();
+        }
+
+        BigDecimal amountPaid = invoice.getTotalAmount() != null ? invoice.getTotalAmount() : BigDecimal.ZERO;
+        if (payload != null && payload.get("amountPaid") != null && !String.valueOf(payload.get("amountPaid")).isBlank()) {
+            try {
+                amountPaid = new BigDecimal(String.valueOf(payload.get("amountPaid")).trim());
+            } catch (Exception ignored) {}
+        }
+
+        Payment payment = Payment.builder()
+                .invoice(invoice)
+                .paymentDate(LocalDateTime.now())
+                .paymentMethod(paymentMethod)
+                .amountPaid(amountPaid)
+                .build();
+        paymentRepository.save(payment);
+
+        invoice.setStatus("PAID");
+        invoice = invoiceRepository.save(invoice);
+
+        recordAudit(actorUsername, "INVOICE_PAYMENT_PROCESS", "Invoice #" + invoiceId, "SUCCESS",
+                "Xác nhận thanh toán hóa đơn #" + invoiceId + " - Số tiền: " + amountPaid
+                        + " VNĐ - Hình thức: " + paymentMethod);
+
+        return toInvoiceDto(invoice);
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> voidInvoice(Integer invoiceId, String reason, String actorUsername) {
+        Invoice invoice = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new BadRequestException("Không tìm thấy hóa đơn #" + invoiceId));
+
+        if ("VOIDED".equalsIgnoreCase(invoice.getStatus())) {
+            throw new BadRequestException("Hóa đơn #" + invoiceId + " đã bị hủy trước đó.");
+        }
+        if (reason == null || reason.trim().isEmpty()) {
+            throw new BadRequestException("Vui lòng nhập lý do hủy hóa đơn sai sót (Void Invoice).");
+        }
+
+        invoice.setStatus("VOIDED");
+        invoice = invoiceRepository.save(invoice);
+
+        recordAudit(actorUsername, "INVOICE_VOID", "Invoice #" + invoiceId, "SUCCESS",
+                "Hủy hóa đơn sai sót #" + invoiceId + " (Void Invoice) - Lý do: " + reason.trim());
+
+        return toInvoiceDto(invoice);
+    }
+
+    private Map<String, Object> toInvoiceDto(Invoice inv) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("invoiceId", inv.getInvoiceId());
+        m.put("invoiceDate", inv.getInvoiceDate() != null ? inv.getInvoiceDate().format(DT_DISPLAY_FMT) : "");
+        m.put("totalAmount", inv.getTotalAmount());
+        m.put("discountAmount", inv.getDiscountAmount());
+        m.put("status", inv.getStatus());
+
+        MedicalRecord mr = inv.getMedicalRecord();
+        if (mr != null) {
+            m.put("recordId", mr.getRecordId());
+            Pet p = mr.getPet();
+            if (p != null) {
+                m.put("petId", p.getPetId());
+                m.put("petName", p.getPetName());
+                m.put("breed", p.getBreed());
+                PetOwner o = p.getPetOwner();
+                if (o != null) {
+                    m.put("ownerId", o.getOwnerId());
+                    m.put("ownerName", o.getFullName());
+                    m.put("ownerPhone", o.getPhoneNumber());
+                }
+            }
+        }
+        return m;
+    }
+
+    private void publishBookingNotification(Appointment appt, String source) {
+        try {
+            if (appt != null && appt.getPetOwner() != null && appt.getPetOwner().getEmail() != null) {
+                String email = appt.getPetOwner().getEmail().trim();
+                if (!email.isBlank()) {
+                    eventPublisher.publishEvent(new com.pcms.event.AppointmentBookedEvent(
+                            appt.getAppointmentId(),
+                            email,
+                            appt.getPetOwner().getFullName(),
+                            appt.getPet() != null ? appt.getPet().getPetName() : "Thú cưng",
+                            appt.getAppointmentDate(),
+                            appt.getShift(),
+                            appt.getService() != null ? appt.getService().getServiceName() : "Khám dịch vụ chung",
+                            appt.getVeterinarian() != null ? appt.getVeterinarian().getFullName() : "Bác sĩ trực phụ trách",
+                            source
+                    ));
+                }
+            }
+        } catch (Exception ex) {
+            // Section 4.1.6: Notification failure must not roll back a successfully saved appointment
+        }
+    }
+
     private void recordAudit(String actorUsername, String actionType, String targetEntity, String details) {
+        recordAudit(actorUsername, actionType, targetEntity, "SUCCESS", details);
+    }
+
+    private void recordAudit(String actorUsername, String actionType, String targetEntity, String outcome, String details) {
         UserAccount actor = null;
         if (actorUsername != null && !actorUsername.isBlank()) {
             actor = userAccountRepository.findByUsernameOrEmail(actorUsername).orElse(null);
@@ -1149,6 +1312,9 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         if (actor != null) {
             AuditLog log = AuditLog.builder()
                     .userAccount(actor)
+                    .actionType(actionType)
+                    .affectedResource(targetEntity)
+                    .outcome(outcome != null ? outcome : "SUCCESS")
                     .actionDetails("[" + actionType + "] [" + targetEntity + "] " + details)
                     .actionTime(LocalDateTime.now())
                     .build();

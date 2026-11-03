@@ -188,4 +188,35 @@ public class ReceptionistController {
     public ResponseEntity<Map<String, Object>> getPetHistory(@PathVariable Integer petId) {
         return ResponseEntity.ok(receptionistService.getPetHistory(petId));
     }
+
+    // 6. INVOICE MANAGEMENT & AUDIT (Section 4.1.6)
+    @GetMapping("/invoices")
+    public ResponseEntity<List<Map<String, Object>>> getInvoices(
+            @RequestParam(required = false, defaultValue = "ALL") String status,
+            @RequestParam(required = false, defaultValue = "") String search) {
+        return ResponseEntity.ok(receptionistService.getInvoices(status, search));
+    }
+
+    @GetMapping("/invoices/{invoiceId}")
+    public ResponseEntity<Map<String, Object>> getInvoiceById(@PathVariable Integer invoiceId) {
+        return ResponseEntity.ok(receptionistService.getInvoiceById(invoiceId));
+    }
+
+    @PostMapping("/invoices/{invoiceId}/confirm-payment")
+    public ResponseEntity<Map<String, Object>> confirmPayment(
+            @PathVariable Integer invoiceId,
+            @RequestBody(required = false) Map<String, Object> payload,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(receptionistService.confirmInvoicePayment(invoiceId, payload, resolveActor(principal)));
+    }
+
+    @PostMapping("/invoices/{invoiceId}/void")
+    public ResponseEntity<Map<String, Object>> voidInvoice(
+            @PathVariable Integer invoiceId,
+            @RequestBody Map<String, Object> payload,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        String reason = payload != null && payload.get("reason") != null
+                ? String.valueOf(payload.get("reason")) : "";
+        return ResponseEntity.ok(receptionistService.voidInvoice(invoiceId, reason, resolveActor(principal)));
+    }
 }

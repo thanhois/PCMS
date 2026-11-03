@@ -31,13 +31,25 @@ const axiosClient = axios.create({
   },
 });
 
+const generateCorrelationId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'req-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+};
+
 /**
- * Request Interceptor: tự động đính kèm Authorization: Bearer <token> từ biến in-memory.
+ * Request Interceptor (Section 4.1.7):
+ * - Tự động đính kèm Authorization: Bearer <token> từ biến in-memory
+ * - Tự động sinh hoặc chuyển tiếp Correlation Identifier (X-Correlation-ID)
  */
 axiosClient.interceptors.request.use(
   (config) => {
+    config.headers = config.headers || {};
+    if (!config.headers['X-Correlation-ID']) {
+      config.headers['X-Correlation-ID'] = generateCorrelationId();
+    }
     if (inMemoryAccessToken) {
-      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${inMemoryAccessToken}`;
     }
     return config;
@@ -46,13 +58,16 @@ axiosClient.interceptors.request.use(
 );
 
 /**
- * Response Interceptor: xử lý tập trung lỗi trả về từ Backend (GlobalExceptionHandler).
+ * Response Interceptor (Section 4.1.5 & 4.1.7):
+ * - Xử lý tập trung phiên làm việc hết hạn (401 clear token & callback)
+ * - Chuẩn hóa phản hồi lỗi có stable errorCode, correlationId, user message và fieldErrors cho Form
  */
 axiosClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
     const status = error.response?.status;
     const data = error.response?.data;
+    const correlationId = data?.correlationId || error.response?.headers?.['x-correlation-id'] || null;
 
     // Nếu token hết hạn hoặc không hợp lệ trên các API cần xác thực (trừ login)
     const requestUrl = error.config?.url || '';
@@ -65,6 +80,8 @@ axiosClient.interceptors.response.use(
 
     const normalizedError = {
       status: status || 0,
+      errorCode: data?.errorCode || (status === 401 ? 'UNAUTHENTICATED' : status === 403 ? 'ACCESS_DENIED' : status === 404 ? 'RESOURCE_NOT_FOUND' : status === 409 ? 'STATE_CONFLICT' : 'INTERNAL_SERVER_ERROR'),
+      correlationId: correlationId,
       message:
         data?.message ||
         (error.code === 'ERR_NETWORK'

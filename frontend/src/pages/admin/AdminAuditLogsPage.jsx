@@ -49,6 +49,20 @@ const ACTION_BADGE_MAP = {
   ACTIVATE_MEDICINE: { label: 'Mở thuốc', variant: 'success' },
   CONFIRM_PAYMENT: { label: 'Thu ngân', variant: 'solid-green' },
   CREATE_MEDICAL_RECORD: { label: 'Lập bệnh án', variant: 'info' },
+  INVOICE_PAYMENT_PROCESS: { label: 'Thu tiền HĐ', variant: 'success' },
+  INVOICE_VOID: { label: 'Hủy hóa đơn', variant: 'danger' },
+  INVENTORY_ADJUSTMENT: { label: 'Chỉnh tồn kho', variant: 'warning' },
+  APPOINTMENT_CREATE: { label: 'Tạo lịch hẹn', variant: 'primary' },
+  APPOINTMENT_APPROVE: { label: 'Duyệt lịch hẹn', variant: 'success' },
+  APPOINTMENT_REJECT: { label: 'Từ chối lịch', variant: 'danger' },
+  APPOINTMENT_RESCHEDULE: { label: 'Đổi lịch hẹn', variant: 'warning' },
+  APPOINTMENT_CANCEL: { label: 'Hủy lịch hẹn', variant: 'danger' },
+  APPOINTMENT_CHECK_IN: { label: 'Check-in khám', variant: 'info' },
+  APPOINTMENT_ASSIGN_VET: { label: 'Điều phối BS', variant: 'info' },
+  APPOINTMENT_WALK_IN: { label: 'Khách vãng lai', variant: 'primary' },
+  APPOINTMENT_START_EXAM: { label: 'Bắt đầu khám', variant: 'info' },
+  APPOINTMENT_COMPLETE_EXAM: { label: 'Hoàn tất khám', variant: 'success' },
+  MEDICAL_RECORD_CANCEL: { label: 'Hủy bệnh án', variant: 'danger' },
 };
 
 export default function AdminAuditLogsPage() {
@@ -198,7 +212,21 @@ export default function AdminAuditLogsPage() {
       key: 'targetEntity',
       header: 'Đối tượng',
       width: '210px',
-      render: (r) => <code>{r.targetEntity}</code>,
+      render: (r) => <code>{r.targetEntity || r.affectedResource}</code>,
+    },
+    {
+      key: 'outcome',
+      header: 'Kết quả',
+      width: '110px',
+      render: (r) => {
+        const isSuccess = !r.outcome || r.outcome === 'SUCCESS';
+        return (
+          <StatusBadge
+            label={isSuccess ? 'Thành công' : 'Thất bại'}
+            variant={isSuccess ? 'success' : 'danger'}
+          />
+        );
+      },
     },
     {
       key: 'actionDetails',
