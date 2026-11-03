@@ -53,6 +53,9 @@ public class DataInitializer implements ApplicationRunner {
     private final PrescriptionRepository prescriptionRepository;
     private final PrescriptionDetailRepository prescriptionDetailRepository;
     private final FollowUpRepository followUpRepository;
+    private final InventoryBatchRepository inventoryBatchRepository;
+    private final InvoiceRepository invoiceRepository;
+    private final PaymentRepository paymentRepository;
     private final PasswordEncoder passwordEncoder;
     private final AppProperties appProperties;
 
@@ -114,7 +117,6 @@ public class DataInitializer implements ApplicationRunner {
         } else {
             vetAccount = userAccountRepository.findByUsername("vet").orElse(null);
         }
-
         // 4.1 Receptionist Account (Lê Thị Thu Ngân)
         if (!userAccountRepository.existsByUsername("receptionist")) {
             Role recRole = roleRepository.findByRoleName(RoleName.RECEPTIONIST).orElseThrow();
@@ -130,6 +132,25 @@ public class DataInitializer implements ApplicationRunner {
                     .failedLoginAttempts(0)
                     .build());
             log.info("Seeded receptionist account 'receptionist'");
+        }
+
+        // 4.2 Inventory Manager Account (Nhân viên quản lý kho)
+        if (!userAccountRepository.existsByUsername("inventory")) {
+            Role inventoryRole = roleRepository
+                    .findByRoleName(RoleName.INVENTORY_MANAGER)
+                    .orElseThrow();
+            userAccountRepository.save(UserAccount.builder()
+                    .username("inventory")
+                    .passwordHash(passwordEncoder.encode("Inventory@123"))
+                    .fullName("Nguyễn Văn Hùng")
+                    .email("hung.nguyen@pcms.com")
+                    .phoneNumber("0900000001")
+                    .status(AccountStatus.ACTIVE)
+                    .role(inventoryRole)
+                    .branch(mainBranch)
+                    .failedLoginAttempts(0)
+                    .build());
+            log.info("Seeded inventory manager account 'inventory'");
         }
 
         // 5. Pet Owner Account (Lê Hoàng Nam)
@@ -489,6 +510,87 @@ public class DataInitializer implements ApplicationRunner {
                         .quantity(1)
                         .notes("Khám thể trạng tổng quát")
                         .build());
+            }
+
+            
+            // 11. Seed Inventory Batches
+            if (inventoryBatchRepository.count() == 0 && medAmox != null) {
+                inventoryBatchRepository.save(InventoryBatch.builder()
+                        .medicine(medAmox)
+                        .batchNumber("AMOX-2026-001")
+                        .quantityInStock(150)
+                        .expirationDate(LocalDate.now().plusMonths(18))
+                        .supplier("Công ty Dược phẩm Thú y Vemedim")
+                        .build());
+
+                if (medMelo != null) {
+                    inventoryBatchRepository.save(InventoryBatch.builder()
+                            .medicine(medMelo)
+                            .batchNumber("MELO-2026-001")
+                            .quantityInStock(60)
+                            .expirationDate(LocalDate.now().plusMonths(12))
+                            .supplier("Bayer Animal Health")
+                            .build());
+                }
+
+                if (medProKolin != null) {
+                    inventoryBatchRepository.save(InventoryBatch.builder()
+                            .medicine(medProKolin)
+                            .batchNumber("PROK-2026-001")
+                            .quantityInStock(45)
+                            .expirationDate(LocalDate.now().plusMonths(14))
+                            .supplier("Protexin Healthcare UK")
+                            .build());
+                }
+
+                List<Medicine> allMeds = medicineRepository.findAll();
+                for (Medicine m : allMeds) {
+                    if (inventoryBatchRepository.findByMedicine_MedicineId(m.getMedicineId()).isEmpty()) {
+                        inventoryBatchRepository.save(InventoryBatch.builder()
+                                .medicine(m)
+                                .batchNumber("LOT-" + m.getMedicineId() + "-2026")
+                                .quantityInStock(50)
+                                .expirationDate(LocalDate.now().plusMonths(15))
+                                .supplier("Nhà phân phối Thú y TW")
+                                .build());
+                    }
+                }
+                log.info("Seeded initial inventory batches for all medicines");
+            }
+
+            // 12. Seed Invoices (1 PENDING cho Milo hôm nay, 1 PAID cho ca cũ)
+            if (invoiceRepository.count() == 0 && record1 != null) {
+                // Hóa đơn ca đang khám hôm nay (PENDING)
+                BigDecimal examTotal = new BigDecimal("750000.00"); // 150k + 350k + 250k
+                BigDecimal medTotal = new BigDecimal("390000.00");  // 18k*10 + 210k*1
+                BigDecimal total = examTotal.add(medTotal);
+
+                invoiceRepository.save(Invoice.builder()
+                        .medicalRecord(record1)
+                        .invoiceDate(now.withHour(9).withMinute(45))
+                        .totalAmount(total)
+                        .discountAmount(BigDecimal.ZERO)
+                        .status("PENDING")
+                        .build());
+
+                // Hóa đơn ca lịch sử tháng trước (PAID)
+                if (pastRecord != null) {
+                    Invoice pastInvoice = invoiceRepository.save(Invoice.builder()
+                            .medicalRecord(pastRecord)
+                            .invoiceDate(now.minusMonths(1).withHour(10).withMinute(30))
+                            .totalAmount(new BigDecimal("150000.00"))
+                            .discountAmount(BigDecimal.ZERO)
+                            .status("PAID")
+                            .build());
+
+                    paymentRepository.save(Payment.builder()
+                            .invoice(pastInvoice)
+                            .paymentDate(now.minusMonths(1).withHour(10).withMinute(35))
+                            .paymentMethod("CASH")
+                            .amountPaid(new BigDecimal("150000.00"))
+                            .build());
+                }
+                log.info("Seeded pending and paid invoices for testing billing flow");
             }
 
             log.info("Seeded rich appointments, medical records, service orders, prescriptions and follow-ups");

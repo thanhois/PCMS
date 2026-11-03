@@ -60,6 +60,16 @@ const MAIN_NAV_ITEMS = [
       </svg>
     ),
   },
+  {
+    to: '/billing/queue',
+    label: 'Thu ngân & Hóa đơn',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <path d="M7 9h10M7 13h4M7 17h6" />
+      </svg>
+    ),
+  },
 ];
 
 export default function ReceptionistLayout() {

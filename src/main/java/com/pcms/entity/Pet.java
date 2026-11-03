@@ -22,7 +22,6 @@ public class Pet {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "petId")
     private Integer petId;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "ownerId", nullable = false)
     private PetOwner petOwner;

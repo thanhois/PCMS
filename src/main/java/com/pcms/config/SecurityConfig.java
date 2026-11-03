@@ -61,6 +61,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/receptionist/**").hasAnyRole("RECEPTIONIST", "ADMIN")
                         .requestMatchers("/api/vet/**").hasAnyRole("VETERINARIAN", "ADMIN")
                         .requestMatchers("/api/owner/**").hasAnyRole("PET_OWNER", "ADMIN", "VETERINARIAN")
+                        .requestMatchers("/api/v1/billing/**").hasAnyRole("ADMIN", "RECEPTIONIST")
+                        .requestMatchers("/api/v1/inventory/**").hasAnyRole("ADMIN", "INVENTORY_MANAGER")
                         .anyRequest().authenticated())
                 .addFilterBefore(correlationIdFilter, org.springframework.security.web.context.SecurityContextHolderFilter.class)
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);

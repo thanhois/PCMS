@@ -78,6 +78,12 @@ export default function LoginPage() {
       } else if (loggedInRole === 'PET_OWNER') {
         const target = location.state?.from || '/owner/medical-history';
         navigate(target, { replace: true });
+      } else if (loggedInRole === 'INVENTORY_MANAGER') {
+    const target = location.state?.from?.startsWith('/inventory')
+        ? location.state.from
+        : '/inventory/batches';
+
+    navigate(target, { replace: true });  
       } else {
         navigate('/', { replace: true });
       }

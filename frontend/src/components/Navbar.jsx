@@ -22,6 +22,8 @@ export default function Navbar() {
         return 'Bác sĩ thú y';
       case 'RECEPTIONIST':
         return 'Lễ tân';
+      case 'INVENTORY_MANAGER':
+        return 'Thủ kho';
       case 'PET_OWNER':
       default:
         return 'Chủ thú cưng';
@@ -117,6 +119,22 @@ export default function Navbar() {
                   }}
                 >
                   🩺 Ca khám Bác sĩ
+                </Link>
+              )}
+                            {user.role === 'INVENTORY_MANAGER' && (
+                <Link
+                  to="/inventory/batches"
+                  style={{
+                    background: '#6366f1',
+                    color: '#ffffff',
+                    padding: '6px 14px',
+                    borderRadius: 6,
+                    fontSize: 12.5,
+                    textDecoration: 'none',
+                    fontWeight: 700,
+                  }}
+                >
+                  📦 Quản lý Kho
                 </Link>
               )}
               {user.role === 'PET_OWNER' && (
