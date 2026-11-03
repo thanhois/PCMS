@@ -114,8 +114,28 @@ public class DataInitializer implements ApplicationRunner {
         } else {
             vetAccount = userAccountRepository.findByUsername("vet").orElse(null);
         }
+        // 5. Inventory Manager Account (Nhân viên quản lý kho)
+        if (!userAccountRepository.existsByUsername("inventory")) {
+            Role inventoryRole = roleRepository
+                    .findByRoleName(RoleName.INVENTORY_MANAGER)
+                    .orElseThrow();
 
-        // 5. Pet Owner Account (Lê Hoàng Nam)
+            userAccountRepository.save(UserAccount.builder()
+                    .username("inventory")
+                    .passwordHash(passwordEncoder.encode("Inventory@123"))
+                    .fullName("Nguyễn Văn Hùng")
+                    .email("hung.nguyen@pcms.com")
+                    .phoneNumber("0900000001")
+                    .status(AccountStatus.ACTIVE)
+                    .role(inventoryRole)
+                    .branch(mainBranch)
+                    .failedLoginAttempts(0)
+                    .build());
+
+            log.info("Seeded inventory manager account 'inventory'");
+        }
+
+        // 6. Pet Owner Account (Lê Hoàng Nam)
         UserAccount ownerAccount;
         if (!userAccountRepository.existsByUsername("petowner")) {
             Role ownerRole = roleRepository.findByRoleName(RoleName.PET_OWNER).orElseThrow();

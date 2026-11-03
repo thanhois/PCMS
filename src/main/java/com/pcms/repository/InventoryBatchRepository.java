@@ -8,5 +8,11 @@ import java.util.List;
 
 @Repository
 public interface InventoryBatchRepository extends JpaRepository<InventoryBatch, Integer> {
+
     List<InventoryBatch> findByMedicine_MedicineId(Integer medicineId);
+
+    boolean existsByMedicine_MedicineIdAndBatchNumber(
+            Integer medicineId,
+            String batchNumber
+    );
 }

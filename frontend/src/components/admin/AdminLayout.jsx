@@ -68,6 +68,28 @@ const MAIN_NAV_ITEMS = [
       </svg>
     ),
   },
+    {
+    to: '/inventory/batches',
+    label: 'Quản lý lô thuốc',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="2">
+        <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+        <path d="m3.3 7 8.7 5 8.7-5M12 22V12" />
+      </svg>
+    ),
+  },
+  {
+    to: '/billing/queue',
+    label: 'Thanh toán hóa đơn',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <path d="M7 9h10M7 13h4M7 17h6" />
+      </svg>
+    ),
+  },
 ];
 
 const BOTTOM_NAV_ITEMS = [
@@ -133,17 +155,34 @@ export default function AdminLayout() {
   };
 
   const handleGlobalSearchSubmit = (e) => {
-    e.preventDefault();
-    const q = globalSearch.trim().toLowerCase();
-    if (!q) return;
-    if (q.includes('thuốc') || q.includes('med')) navigate('/admin/medicines');
-    else if (q.includes('dịch vụ') || q.includes('service')) navigate('/admin/services');
-    else if (q.includes('quyền') || q.includes('role')) navigate('/admin/roles');
-    else if (q.includes('log') || q.includes('nhật ký')) navigate('/admin/audit-logs');
-    else if (q.includes('báo cáo') || q.includes('report')) navigate('/admin/reports');
-    else navigate('/admin/accounts');
-  };
+  e.preventDefault();
 
+  const q = globalSearch.trim().toLowerCase();
+  if (!q) return;
+
+  // Kiểm tra lô thuốc trước vì "lô thuốc" cũng chứa từ "thuốc"
+  if (q.includes('kho') || q.includes('lô thuốc') || q.includes('batch')) {
+    navigate('/inventory/batches');
+  } else if (
+    q.includes('hóa đơn') ||
+    q.includes('thanh toán') ||
+    q.includes('billing')
+  ) {
+    navigate('/billing/queue');
+  } else if (q.includes('thuốc') || q.includes('med')) {
+    navigate('/admin/medicines');
+  } else if (q.includes('dịch vụ') || q.includes('service')) {
+    navigate('/admin/services');
+  } else if (q.includes('quyền') || q.includes('role')) {
+    navigate('/admin/roles');
+  } else if (q.includes('log') || q.includes('nhật ký')) {
+    navigate('/admin/audit-logs');
+  } else if (q.includes('báo cáo') || q.includes('report')) {
+    navigate('/admin/reports');
+  } else {
+    navigate('/admin/accounts');
+  }
+};
   const displayName = user?.fullName || user?.username || 'Admin';
   const avatarChar = displayName.charAt(0).toUpperCase();
 
