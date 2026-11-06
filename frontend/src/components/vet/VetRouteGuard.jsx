@@ -8,7 +8,7 @@ import '../../styles/vetTheme.css';
  * - Chỉ cho phép role VETERINARIAN hoặc ADMIN truy cập.
  */
 export default function VetRouteGuard() {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, isLoggingOut, user, logout } = useAuth();
   const location = useLocation();
 
   if (!isAuthenticated || !user) {
@@ -16,10 +16,14 @@ export default function VetRouteGuard() {
       <Navigate
         to="/login"
         replace
-        state={{
-          from: location.pathname,
-          infoMessage: 'Vui lòng đăng nhập bằng tài khoản Bác sĩ thú y để truy cập Bàn làm việc chuyên môn.',
-        }}
+        state={
+          isLoggingOut
+            ? null
+            : {
+                from: location.pathname,
+                infoMessage: 'Vui lòng đăng nhập bằng tài khoản Bác sĩ thú y để truy cập Bàn làm việc chuyên môn.',
+              }
+        }
       />
     );
   }

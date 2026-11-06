@@ -2,7 +2,7 @@ import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function InventoryRouteGuard() {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, isLoggingOut, user, logout } = useAuth();
   const location = useLocation();
 
   if (!isAuthenticated || !user) {
@@ -10,10 +10,14 @@ export default function InventoryRouteGuard() {
       <Navigate
         to="/login"
         replace
-        state={{
-          from: location.pathname,
-          infoMessage: 'Vui lòng đăng nhập để truy cập khu vực quản lý kho.',
-        }}
+        state={
+          isLoggingOut
+            ? null
+            : {
+                from: location.pathname,
+                infoMessage: 'Vui lòng đăng nhập để truy cập khu vực quản lý kho.',
+              }
+        }
       />
     );
   }

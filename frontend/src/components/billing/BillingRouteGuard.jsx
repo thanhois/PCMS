@@ -10,7 +10,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 
 export default function BillingRouteGuard() {
-    const { isAuthenticated, user, logout } = useAuth();
+    const { isAuthenticated, isLoggingOut, user, logout } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -19,10 +19,14 @@ export default function BillingRouteGuard() {
             <Navigate
                 to="/login"
                 replace
-                state={{
-                    from: location.pathname,
-                    infoMessage: 'Vui lòng đăng nhập để truy cập phân hệ thanh toán.',
-                }}
+                state={
+                    isLoggingOut
+                        ? null
+                        : {
+                              from: location.pathname,
+                              infoMessage: 'Vui lòng đăng nhập để truy cập phân hệ thanh toán.',
+                          }
+                }
             />
         );
     }

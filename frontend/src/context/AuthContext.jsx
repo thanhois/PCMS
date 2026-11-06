@@ -13,11 +13,17 @@ export function AuthProvider({ children }) {
   // Toàn bộ token và thông tin user chỉ lưu trong bộ nhớ (React state + biến module in-memory)
   const [user, setUser] = useState(null);
   const [token, setTokenState] = useState(() => getAccessToken());
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const logout = useCallback(() => {
     clearAccessToken();
+    setIsLoggingOut(true);
     setTokenState(null);
     setUser(null);
+  }, []);
+
+  const clearLoggingOut = useCallback(() => {
+    setIsLoggingOut(false);
   }, []);
 
   useEffect(() => {
@@ -32,6 +38,7 @@ export function AuthProvider({ children }) {
     const { accessToken, user: userData } = response.data;
 
     // Lưu token vào biến toàn cục in-memory của Axios + state
+    setIsLoggingOut(false);
     setAccessToken(accessToken);
     setTokenState(accessToken);
     setUser(userData);
@@ -56,12 +63,14 @@ export function AuthProvider({ children }) {
       user,
       accessToken: token,
       isAuthenticated: Boolean(token && user),
+      isLoggingOut,
       login,
       register,
       logout,
+      clearLoggingOut,
       refreshProfile,
     }),
-    [user, token, login, register, logout, refreshProfile]
+    [user, token, isLoggingOut, login, register, logout, clearLoggingOut, refreshProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

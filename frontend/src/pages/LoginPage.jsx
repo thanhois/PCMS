@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { VeterianCloudPaw } from '../components/VeterianLogo';
 import { useAuth } from '../context/AuthContext';
 import { validateLoginForm } from '../utils/validators';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, clearLoggingOut } = useAuth();
+
+  useEffect(() => () => clearLoggingOut(), [clearLoggingOut]);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -60,30 +62,32 @@ export default function LoginPage() {
         password: formData.password,
       });
       const loggedInRole = response?.data?.user?.role;
+      const from = location.state?.from;
       if (loggedInRole === 'ADMIN') {
-        const target = location.state?.from?.startsWith('/admin')
-          ? location.state.from
-          : '/admin/overview';
+        const target = from?.startsWith('/admin') ? from : '/admin/overview';
         navigate(target, { replace: true });
       } else if (loggedInRole === 'RECEPTIONIST') {
-        const target = location.state?.from?.startsWith('/receptionist')
-          ? location.state.from
-          : '/receptionist/dashboard';
+        const target =
+          from?.startsWith('/receptionist') || from?.startsWith('/billing')
+            ? from
+            : '/receptionist/dashboard';
         navigate(target, { replace: true });
       } else if (loggedInRole === 'VETERINARIAN') {
-        const target = location.state?.from?.startsWith('/vet')
-          ? location.state.from
-          : '/vet/workbench';
+        const target = from?.startsWith('/vet') ? from : '/vet/workbench';
         navigate(target, { replace: true });
       } else if (loggedInRole === 'PET_OWNER') {
-        const target = location.state?.from || '/owner/medical-history';
-        navigate(target, { replace: true });
+        const isOwnerSafeRoute =
+          from === '/' || from?.startsWith('/booking') || from?.startsWith('/owner');
+        const target = isOwnerSafeRoute ? from : '/owner/medical-history';
+        navigate(target, {
+          replace: true,
+          state: location.state?.serviceName
+            ? { serviceName: location.state.serviceName }
+            : undefined,
+        });
       } else if (loggedInRole === 'INVENTORY_MANAGER') {
-    const target = location.state?.from?.startsWith('/inventory')
-        ? location.state.from
-        : '/inventory/batches';
-
-    navigate(target, { replace: true });  
+        const target = from?.startsWith('/inventory') ? from : '/inventory/batches';
+        navigate(target, { replace: true });
       } else {
         navigate('/', { replace: true });
       }
