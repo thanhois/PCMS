@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { VeterianCloudPaw } from './VeterianLogo';
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -30,14 +31,23 @@ export default function Navbar() {
   };
 
   const portalBtnStyle = {
-    background: '#6320ee',
+    background: '#0d9488',
     color: '#ffffff',
     padding: '6px 14px',
-    borderRadius: 8,
+    borderRadius: 6,
     fontSize: 12.5,
     textDecoration: 'none',
     fontWeight: 700,
-    border: '1px solid rgba(255,255,255,0.2)',
+  };
+
+  const billingBtnStyle = {
+    background: '#059669',
+    color: '#ffffff',
+    padding: '6px 14px',
+    borderRadius: 6,
+    fontSize: 12.5,
+    textDecoration: 'none',
+    fontWeight: 700,
   };
 
   return (
@@ -45,7 +55,8 @@ export default function Navbar() {
       <div className="vtn-container vtn-navbar-inner">
         <div className="vtn-navbar-left">
           <Link to="/" className="vtn-logo-link">
-            <span className="vtn-logo-text">PCMS</span>
+            <VeterianCloudPaw size={34} />
+            <span className="vtn-logo-text">veterian</span>
           </Link>
 
           <nav className={`vtn-nav-menu ${menuOpen ? 'open' : ''}`}>
@@ -84,12 +95,20 @@ export default function Navbar() {
                   <Link to="/vet/workbench" style={portalBtnStyle}>
                     Bác sĩ thú y
                   </Link>
+                  <Link to="/billing/queue" style={billingBtnStyle}>
+                    💳 Thu ngân & Hóa đơn
+                  </Link>
                 </>
               )}
               {user.role === 'RECEPTIONIST' && (
-                <Link to="/receptionist/dashboard" style={portalBtnStyle}>
-                  Quầy Lễ tân
-                </Link>
+                <>
+                  <Link to="/receptionist/dashboard" style={portalBtnStyle}>
+                    Quầy Lễ tân
+                  </Link>
+                  <Link to="/billing/queue" style={billingBtnStyle}>
+                    💳 Thu ngân & Hóa đơn
+                  </Link>
+                </>
               )}
               {user.role === 'VETERINARIAN' && (
                 <Link to="/vet/workbench" style={portalBtnStyle}>
