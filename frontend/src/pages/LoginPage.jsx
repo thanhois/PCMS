@@ -100,7 +100,7 @@ export default function LoginPage() {
   return (
     <div className="vtn-auth-screen">
       <div className="vtn-auth-logo-top">
-        <Link to="/" aria-label="Trang chủ Veterian">
+        <Link to="/" aria-label="Trang chủ PCMS">
           <VeterianCloudPaw size={68} />
         </Link>
       </div>
@@ -108,7 +108,7 @@ export default function LoginPage() {
       <div className="vtn-auth-split-card">
         {/* Cột trái: Form đăng nhập nền tối */}
         <div className="vtn-auth-left">
-          <h1>Đăng nhập Veterian</h1>
+          <h1>Đăng nhập PCMS</h1>
           <p className="vtn-auth-sub">
             Nhập địa chỉ email hoặc tên đăng nhập và mật khẩu để truy cập tài khoản của bạn.
           </p>
@@ -116,6 +116,12 @@ export default function LoginPage() {
           {initialNotice && !serverError ? (
             <div className="vtn-dark-alert vtn-dark-alert-success" role="status">
               {initialNotice}
+            </div>
+          ) : null}
+
+          {serverError ? (
+            <div className="vtn-dark-alert vtn-dark-alert-error" role="alert">
+              {serverError}
             </div>
           ) : null}
 

@@ -77,7 +77,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="vtn-auth-screen">
       <div className="vtn-auth-logo-top">
-        <Link to="/" aria-label="Trang chủ Veterian">
+        <Link to="/" aria-label="Trang chủ PCMS">
           <VeterianCloudPaw size={68} />
         </Link>
       </div>
@@ -97,18 +97,26 @@ export default function ResetPasswordPage() {
 
           <form onSubmit={handleSubmit} noValidate className="vtn-dark-form">
             <div className="vtn-dark-field">
-              <label htmlFor="token">Mã Token khôi phục</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                <label htmlFor="token" style={{ margin: 0 }}>Mã xác nhận khôi phục (6 chữ số)</label>
+                <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Sao chép từ email</span>
+              </div>
               <input
                 id="token"
                 name="token"
                 type="text"
-                placeholder="Dán mã token từ liên kết email"
+                maxLength={32}
+                placeholder="Ví dụ: 849201"
                 value={formData.token}
                 onChange={handleChange}
                 onBlur={handleBlur}
+                style={{ letterSpacing: '2px', fontWeight: 600, fontSize: '1.05rem', fontFamily: 'monospace' }}
                 className={`vtn-dark-input ${errors.token ? 'has-error' : ''}`}
               />
               {errors.token ? <span className="vtn-error-text">{errors.token}</span> : null}
+              <p style={{ margin: '0.35rem 0 0', fontSize: '0.78rem', color: '#94a3b8' }}>
+                💡 Quý khách có thể copy mã 6 chữ số từ email và dán vào đây, hoặc click trực tiếp vào link trong email.
+              </p>
             </div>
 
             <div className="vtn-dark-field">

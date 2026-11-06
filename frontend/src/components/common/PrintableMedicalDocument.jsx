@@ -56,7 +56,7 @@ export default function PrintableMedicalDocument({ record, onClose }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #0d9488', paddingBottom: 16, marginBottom: 20 }}>
             <div>
               <div style={{ fontSize: 20, fontWeight: 800, color: '#0d9488', letterSpacing: 0.5 }}>
-                BỆNH VIỆN THÚ Y VETERIAN CLINIC
+                BỆNH VIỆN THÚ Y PCMS CLINIC
               </div>
               <div style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>
                 Địa chỉ: 123 Nguyễn Văn Linh, P. Tân Phong, Quận 7, TP. Hồ Chí Minh

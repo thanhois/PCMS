@@ -207,7 +207,7 @@ public class AuthServiceImpl implements AuthService {
                     .queryParam("token", rawToken)
                     .build()
                     .toUriString();
-            emailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), resetLink, expiresIn);
+            emailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), rawToken, resetLink, expiresIn);
         }, () -> log.info("Forgot-password requested for non-existing email {}", email));
     }
 
@@ -270,9 +270,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private static String generateRawToken() {
-        byte[] bytes = new byte[32];
-        SECURE_RANDOM.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        int code = 100_000 + SECURE_RANDOM.nextInt(900_000);
+        return String.valueOf(code);
     }
 
     private static String sha256(String value) {

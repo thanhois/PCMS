@@ -50,6 +50,7 @@ import VetRecordsPage from './pages/vet/VetRecordsPage';
 import VetPetsPage from './pages/vet/VetPetsPage';
 
 // Pet Owner Pages
+import BookingPage from './pages/owner/BookingPage';
 import PetOwnerMedicalPage from './pages/owner/PetOwnerMedicalPage';
 
 // Inventory Pages
@@ -139,7 +140,9 @@ export default function App() {
             </Route>
           </Route>
 
-          {/* ================= PET OWNER ROUTES ================= */}
+          {/* ================= PET OWNER & BOOKING ROUTES ================= */}
+          <Route path="/booking" element={<BookingPage />} />
+          <Route path="/owner/booking" element={<BookingPage />} />
           <Route
             path="/owner/medical-history"
             element={<PetOwnerMedicalPage />}

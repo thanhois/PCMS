@@ -97,7 +97,7 @@ export default function PetOwnerMedicalPage() {
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: 17, fontWeight: 800, letterSpacing: 0.5 }}>
-              Veterian • Sổ Khám Bệnh Điện Tử
+              PCMS • Sổ Khám Bệnh Điện Tử
             </h1>
             <p style={{ margin: 0, fontSize: 11, opacity: 0.85 }}>
               HỒ SƠ Y TẾ & ĐƠN THUỐC DÀNH CHO CHỦ NUÔI (PET OWNER)
@@ -115,6 +115,23 @@ export default function PetOwnerMedicalPage() {
               <div style={{ fontSize: 11, opacity: 0.8 }}>Khách hàng thân thiết</div>
             </div>
           </div>
+          <Link
+            to="/booking"
+            style={{
+              background: '#7c3aed',
+              color: '#ffffff',
+              padding: '7px 14px',
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            📅 Đặt lịch khám mới
+          </Link>
 
           <Link
             to="/"
@@ -290,7 +307,7 @@ export default function PetOwnerMedicalPage() {
                     Chưa có lịch sử khám bệnh nào
                   </h4>
                   <p style={{ fontSize: 13, margin: 0 }}>
-                    Bé {selectedPet.petName} chưa từng có ca khám nào tại Veterian Clinic.
+                    Bé {selectedPet.petName} chưa từng có ca khám nào tại PCMS Clinic.
                   </p>
                 </div>
               ) : (

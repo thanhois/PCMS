@@ -72,7 +72,7 @@ export default function VetLayout() {
             <Stethoscope size={22} color="#ffffff" />
           </div>
           <div className="vet-brand-text">
-            <h1>Veterian Clinic</h1>
+            <h1>PCMS Clinic</h1>
             <p>BÁC SĨ THÚ Y • CLINICAL SUITE</p>
           </div>
         </div>

@@ -36,10 +36,11 @@ export default function Navbar() {
         <div className="vtn-navbar-left">
           <Link to="/" className="vtn-logo-link">
             <VeterianCloudPaw size={34} />
-            <span className="vtn-logo-text">veterian</span>
+            <span className="vtn-logo-text">PCMS</span>
           </Link>
 
           <nav className={`vtn-nav-menu ${menuOpen ? 'open' : ''}`}>
+            <Link to="/booking" onClick={() => setMenuOpen(false)} style={{ color: '#a78bfa', fontWeight: 700 }}>📅 Đặt lịch khám</Link>
             <a href="#features" onClick={() => setMenuOpen(false)}>Tính năng</a>
             <a href="#services" onClick={() => setMenuOpen(false)}>Dịch vụ</a>
             <a href="#workflow" onClick={() => setMenuOpen(false)}>Quy trình</a>

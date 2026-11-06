@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="vtn-auth-screen">
       <div className="vtn-auth-logo-top">
-        <Link to="/" aria-label="Trang chủ Veterian">
+        <Link to="/" aria-label="Trang chủ PCMS">
           <VeterianCloudPaw size={68} />
         </Link>
       </div>
@@ -65,7 +65,7 @@ export default function ForgotPasswordPage() {
         <div className="vtn-auth-left">
           <h1>Quên mật khẩu?</h1>
           <p className="vtn-auth-sub">
-            Nhập địa chỉ email đã đăng ký tài khoản Veterian PCMS để nhận liên kết đặt lại mật khẩu.
+            Nhập địa chỉ email đã đăng ký tài khoản PCMS để nhận liên kết đặt lại mật khẩu.
           </p>
 
           {successMessage ? (

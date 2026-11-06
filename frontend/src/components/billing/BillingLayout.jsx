@@ -30,7 +30,7 @@ export default function BillingLayout() {
                     </div>
 
                     <div className="billing-brand-text">
-                        <h1>Veterian Clinic</h1>
+                        <h1>PCMS Clinic</h1>
                         <p>BILLING MANAGEMENT</p>
                     </div>
                 </div>

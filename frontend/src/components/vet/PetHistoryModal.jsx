@@ -67,7 +67,7 @@ export default function PetHistoryModal({ petId, petName, onClose }) {
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
               <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
               <p style={{ fontWeight: 600 }}>Chưa có lịch sử khám bệnh trước đây</p>
-              <p style={{ fontSize: 12 }}>Đây là lần đầu tiên bé đến khám tại Veterian Clinic.</p>
+              <p style={{ fontSize: 12 }}>Đây là lần đầu tiên bé đến khám tại PCMS Clinic.</p>
             </div>
           ) : (
             <div>
