@@ -1,23 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Activity,
-  AlertCircle,
-  Calendar,
-  CheckCircle2,
-  Clock,
-  Dog,
-  Eye,
-  FileText,
-  Filter,
-  Play,
-  RefreshCw,
-  Search,
-  Stethoscope,
-  User,
-  XCircle,
-} from 'lucide-react';
 import vetApi from '../../api/vetApi';
+import KpiCard from '../../components/admin/ui/KpiCard';
+import PageHeader from '../../components/admin/ui/PageHeader';
 import PetHistoryModal from '../../components/vet/PetHistoryModal';
 import '../../styles/vetTheme.css';
 
@@ -37,10 +22,7 @@ export default function VetWorkbenchPage() {
     cancelledCount: 0,
   });
 
-  // Modal xem bệnh sử
   const [historyPet, setHistoryPet] = useState(null);
-
-  // Modal hủy ca
   const [cancelTarget, setCancelTarget] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
@@ -107,59 +89,44 @@ export default function VetWorkbenchPage() {
   };
 
   return (
-    <div>
-      {/* KPI Stats Overview */}
-      <div className="vet-stat-grid">
-        <div className="vet-stat-card">
-          <div className="vet-stat-icon" style={{ background: '#e0f2fe', color: '#0284c7' }}>
-            <Calendar size={24} />
-          </div>
-          <div>
-            <div className="vet-stat-val">{summary.totalToday}</div>
-            <div className="vet-stat-lbl">Tổng ca trong ngày</div>
-          </div>
-        </div>
+    <div className="pcms-page">
+      <PageHeader
+        title="Ca khám hôm nay"
+        subtitle="Danh sách lịch hẹn được phân công, tiếp nhận lâm sàng và xử lý bệnh án điện tử"
+        actions={
+          <button type="button" className="pcms-btn pcms-btn-outline" onClick={loadData}>
+            Làm mới dữ liệu
+          </button>
+        }
+      />
 
-        <div className="vet-stat-card">
-          <div className="vet-stat-icon" style={{ background: '#fef3c7', color: '#b45309' }}>
-            <Clock size={24} />
-          </div>
-          <div>
-            <div className="vet-stat-val">{summary.waitingCount}</div>
-            <div className="vet-stat-lbl">Chờ tiếp nhận / Khám</div>
-          </div>
-        </div>
-
-        <div className="vet-stat-card">
-          <div className="vet-stat-icon" style={{ background: '#ccfbf1', color: '#0d9488' }}>
-            <Activity size={24} />
-          </div>
-          <div>
-            <div className="vet-stat-val">{summary.inProgressCount}</div>
-            <div className="vet-stat-lbl">Đang trong phòng khám</div>
-          </div>
-        </div>
-
-        <div className="vet-stat-card">
-          <div className="vet-stat-icon" style={{ background: '#dcfce7', color: '#16a34a' }}>
-            <CheckCircle2 size={24} />
-          </div>
-          <div>
-            <div className="vet-stat-val">{summary.completedCount}</div>
-            <div className="vet-stat-lbl">Đã hoàn tất khám</div>
-          </div>
-        </div>
+      <div className="pcms-kpi-grid">
+        <KpiCard label="Tổng ca trong ngày" value={summary.totalToday} />
+        <KpiCard
+          label="Chờ tiếp nhận / Khám"
+          value={summary.waitingCount}
+          trendDirection={summary.waitingCount > 0 ? 'warning' : 'neutral'}
+          trendText={summary.waitingCount > 0 ? 'Đang chờ bác sĩ gọi khám' : 'Không có ca chờ'}
+        />
+        <KpiCard
+          label="Đang trong phòng khám"
+          value={summary.inProgressCount}
+          trendDirection="neutral"
+          trendText="Ca đang xử lý lâm sàng"
+        />
+        <KpiCard
+          label="Đã hoàn tất khám"
+          value={summary.completedCount}
+          trendDirection="up"
+          trendText="Đã chốt bệnh án & chuyển thu ngân"
+        />
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="vet-card" style={{ marginBottom: 20 }}>
+      <div className="vet-card">
         <div className="vet-card-body" style={{ padding: '16px 20px' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', justifyContent: 'space-between' }}>
-            {/* Date selector */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Calendar size={16} color="#0d9488" /> Ngày khám:
-              </label>
+              <label style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>Ngày khám:</label>
               <input
                 type="date"
                 className="vet-input"
@@ -176,7 +143,6 @@ export default function VetWorkbenchPage() {
               </button>
             </div>
 
-            {/* Status Tabs */}
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {[
                 { key: 'ALL', label: 'Tất cả' },
@@ -198,53 +164,36 @@ export default function VetWorkbenchPage() {
               ))}
             </div>
 
-            {/* Search input */}
             <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: 8, minWidth: 260 }}>
-              <div style={{ position: 'relative', flex: 1 }}>
-                <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
-                <input
-                  type="text"
-                  className="vet-input"
-                  style={{ paddingLeft: 34 }}
-                  placeholder="Tìm tên Pet, Chủ nuôi, SĐT..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-              <button type="submit" className="vet-btn vet-btn-outline vet-btn-sm" title="Tìm kiếm">
-                <RefreshCw size={14} />
+              <input
+                type="text"
+                className="vet-input"
+                placeholder="Tìm tên Pet, Chủ nuôi, SĐT..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <button type="submit" className="vet-btn vet-btn-outline vet-btn-sm">
+                Tìm
               </button>
             </form>
           </div>
         </div>
       </div>
 
-      {/* Appointments List */}
       <div className="vet-card">
         <div className="vet-card-header">
-          <h3 className="vet-card-title">
-            <Stethoscope size={18} color="#0d9488" />
-            Danh Sách Ca Bệnh Được Phân Công ({appointments.length} ca)
-          </h3>
-          <button type="button" className="vet-btn vet-btn-outline vet-btn-sm" onClick={loadData}>
-            <RefreshCw size={14} /> Làm mới
-          </button>
+          <h3 className="vet-card-title">Danh Sách Ca Bệnh Được Phân Công ({appointments.length} ca)</h3>
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#0d9488' }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🩺</div>
-            <p style={{ fontWeight: 600 }}>Đang tải danh sách ca bệnh...</p>
+          <div className="pcms-state-box">
+            <h4>Đang tải danh sách ca bệnh...</h4>
+            <p>Vui lòng chờ trong giây lát.</p>
           </div>
         ) : appointments.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>🐾</div>
-            <h4 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 6px', color: '#0f172a' }}>
-              Không có ca khám nào phù hợp
-            </h4>
-            <p style={{ fontSize: 13, margin: 0 }}>
-              Không tìm thấy lịch hẹn nào theo điều kiện lọc ngày {date}.
-            </p>
+          <div className="pcms-state-box">
+            <h4>Không có ca khám nào phù hợp</h4>
+            <p>Không tìm thấy lịch hẹn nào theo điều kiện lọc ngày {date}.</p>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -257,7 +206,7 @@ export default function VetWorkbenchPage() {
                   <th>Chủ nuôi</th>
                   <th>Lý do đến khám</th>
                   <th style={{ width: 140 }}>Trạng thái</th>
-                  <th style={{ width: 220, textAlign: 'center' }}>Thao tác chuyên môn</th>
+                  <th style={{ width: 240, textAlign: 'center' }}>Thao tác chuyên môn</th>
                 </tr>
               </thead>
               <tbody>
@@ -269,25 +218,22 @@ export default function VetWorkbenchPage() {
                   const isCancelled = appt.status === 'CANCELLED';
 
                   return (
-                    <tr key={appt.appointmentId} style={{ backgroundColor: isInProgress ? '#f0fdfa' : 'inherit' }}>
+                    <tr key={appt.appointmentId} style={{ backgroundColor: isInProgress ? '#f5f3ff' : 'inherit' }}>
                       <td>
-                        <strong style={{ color: '#0d9488' }}>#{appt.appointmentId}</strong>
+                        <strong style={{ color: '#6320ee' }}>#{appt.appointmentId}</strong>
                       </td>
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 600 }}>
-                          <Clock size={14} color="#0d9488" />
-                          <span>{appt.appointmentDate ? appt.appointmentDate.split(' ')[1] : 'N/A'}</span>
-                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 600 }}>
+                          {appt.appointmentDate ? appt.appointmentDate.split(' ')[1] : 'N/A'}
+                        </span>
                       </td>
                       <td>
                         <div className="vet-pet-badge">
                           <div className="vet-pet-avatar">
-                            {pet.species === 'Mèo' ? '🐱' : '🐶'}
+                            {(pet.petName || 'P').charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>
-                              {pet.petName}
-                            </div>
+                            <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>{pet.petName}</div>
                             <div style={{ fontSize: 12, color: '#64748b' }}>
                               {pet.species} • {pet.breed} • {pet.gender} • <strong>{pet.weight} kg</strong>
                             </div>
@@ -300,26 +246,29 @@ export default function VetWorkbenchPage() {
                       </td>
                       <td>
                         {appt.service && (
-                          <div style={{ fontSize: 12, color: '#0d9488', fontWeight: 600, marginBottom: 3 }}>
-                            🏷️ {appt.service.serviceName}
+                          <div style={{ fontSize: 12, color: '#6320ee', fontWeight: 600, marginBottom: 3 }}>
+                            {appt.service.serviceName}
                           </div>
                         )}
                         <div style={{ fontSize: 13, color: '#334155', maxWidth: 280, lineHeight: 1.4 }}>
                           {appt.reason || 'Khám lâm sàng theo lịch'}
                         </div>
                         {appt.notes && (
-                          <div style={{ fontSize: 11.5, color: '#0f766e', marginTop: 3 }}>
-                            💬 Lễ tân: {appt.notes}
+                          <div style={{ fontSize: 11.5, color: '#5218cc', marginTop: 3 }}>
+                            Lễ tân: {appt.notes}
                           </div>
                         )}
                       </td>
                       <td>
                         {isInProgress && (
                           <span className="vet-badge vet-badge-in-progress">
-                            <span className="vet-pulse-dot"></span> Đang khám
+                            <span className="vet-pulse-dot" /> Đang khám
                           </span>
                         )}
-                        {(appt.status === 'WAITING' || appt.status === 'CHECKED_IN' || appt.status === 'CONFIRMED' || appt.status === 'APPROVED') && (
+                        {(appt.status === 'WAITING' ||
+                          appt.status === 'CHECKED_IN' ||
+                          appt.status === 'CONFIRMED' ||
+                          appt.status === 'APPROVED') && (
                           <span className="vet-badge vet-badge-waiting">
                             {appt.status === 'CHECKED_IN'
                               ? 'Đã check-in'
@@ -328,48 +277,40 @@ export default function VetWorkbenchPage() {
                               : 'Chờ khám'}
                           </span>
                         )}
-                        {isCompleted && (
-                          <span className="vet-badge vet-badge-completed">
-                            <CheckCircle2 size={13} /> Hoàn tất
-                          </span>
-                        )}
-                        {isCancelled && (
-                          <span className="vet-badge vet-badge-cancelled">
-                            <XCircle size={13} /> Đã hủy
-                          </span>
-                        )}
+                        {isCompleted && <span className="vet-badge vet-badge-completed">Hoàn tất</span>}
+                        {isCancelled && <span className="vet-badge vet-badge-cancelled">Đã hủy</span>}
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                          {/* Nút xem bệnh sử cũ */}
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
                           <button
                             type="button"
                             className="vet-btn vet-btn-outline vet-btn-sm"
-                            title="Xem lịch sử bệnh án cũ của bé"
                             onClick={() => setHistoryPet({ petId: pet.petId, petName: pet.petName })}
                           >
-                            <Dog size={14} /> Bệnh sử
+                            Bệnh sử
                           </button>
 
-                          {/* Action chính */}
                           {isInProgress && (
                             <button
                               type="button"
                               className="vet-btn vet-btn-primary vet-btn-sm"
                               onClick={() => navigate(`/vet/examination/${appt.recordId}`)}
                             >
-                              <Play size={13} fill="currentColor" /> Tiếp tục khám
+                              Tiếp tục khám
                             </button>
                           )}
 
-                          {(appt.status === 'WAITING' || appt.status === 'CHECKED_IN' || appt.status === 'CONFIRMED' || appt.status === 'APPROVED') && (
+                          {(appt.status === 'WAITING' ||
+                            appt.status === 'CHECKED_IN' ||
+                            appt.status === 'CONFIRMED' ||
+                            appt.status === 'APPROVED') && (
                             <button
                               type="button"
                               className="vet-btn vet-btn-primary vet-btn-sm"
                               disabled={actionLoading}
                               onClick={() => handleStartExam(appt)}
                             >
-                              <Stethoscope size={14} /> Khám ngay
+                              Khám ngay
                             </button>
                           )}
 
@@ -379,7 +320,7 @@ export default function VetWorkbenchPage() {
                               className="vet-btn vet-btn-outline vet-btn-sm"
                               onClick={() => navigate(`/vet/examination/${appt.recordId}`)}
                             >
-                              <Eye size={14} /> Bệnh án
+                              Bệnh án
                             </button>
                           )}
 
@@ -387,11 +328,10 @@ export default function VetWorkbenchPage() {
                             <button
                               type="button"
                               className="vet-btn vet-btn-outline vet-btn-sm"
-                              style={{ color: '#ef4444' }}
-                              title="Hủy ca khám"
+                              style={{ color: '#b91c1c' }}
                               onClick={() => setCancelTarget(appt)}
                             >
-                              <XCircle size={14} />
+                              Hủy
                             </button>
                           )}
                         </div>
@@ -405,7 +345,6 @@ export default function VetWorkbenchPage() {
         )}
       </div>
 
-      {/* Modal Bệnh Sử Pet */}
       {historyPet && (
         <PetHistoryModal
           petId={historyPet.petId}
@@ -414,7 +353,6 @@ export default function VetWorkbenchPage() {
         />
       )}
 
-      {/* Modal Hủy Ca Khám */}
       {cancelTarget && (
         <div className="vet-modal-backdrop">
           <div className="vet-modal" style={{ maxWidth: 440 }}>
@@ -425,7 +363,8 @@ export default function VetWorkbenchPage() {
             </div>
             <div className="vet-modal-body">
               <p style={{ fontSize: 13.5, color: '#475569', marginBottom: 12 }}>
-                Bạn có chắc chắn muốn hủy ca khám của bé <strong>{cancelTarget.pet?.petName}</strong> (Chủ nuôi: {cancelTarget.petOwner?.fullName})?
+                Bạn có chắc chắn muốn hủy ca khám của bé <strong>{cancelTarget.pet?.petName}</strong> (Chủ nuôi:{' '}
+                {cancelTarget.petOwner?.fullName})?
               </p>
               <div className="vet-form-group">
                 <label className="vet-form-label">Lý do hủy ca khám:</label>

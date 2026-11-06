@@ -1,30 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
-import {
-  Activity,
-  AlertCircle,
-  ArrowLeft,
-  Calendar,
-  Check,
-  CheckCircle2,
-  Clock,
-  Dog,
-  Edit2,
-  Eye,
-  FileCheck,
-  FileText,
-  Pill,
-  Plus,
-  Printer,
-  Save,
-  Scale,
-  Sparkles,
-  Stethoscope,
-  Trash2,
-  User,
-  X,
-  XCircle,
-} from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import vetApi from '../../api/vetApi';
 import PetHistoryModal from '../../components/vet/PetHistoryModal';
 import PrintableMedicalDocument from '../../components/common/PrintableMedicalDocument';
@@ -340,7 +315,7 @@ export default function VetExaminationPage() {
         treatmentPlan,
       });
       setRecord(updated);
-      showToast('🎉 Đã hoàn tất ca khám & chốt bệnh án thành công!');
+      showToast('Đã hoàn tất ca khám & chốt bệnh án thành công!');
     } catch (err) {
       alert(err?.response?.data?.message || 'Lỗi khi hoàn tất ca khám');
     } finally {
@@ -374,9 +349,8 @@ export default function VetExaminationPage() {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '80px 0', color: '#0d9488' }}>
-        <div style={{ fontSize: 36, marginBottom: 12 }}>🩺</div>
-        <h3 style={{ fontSize: 18, fontWeight: 700 }}>Đang mở Phòng khám lâm sàng...</h3>
+      <div style={{ textAlign: 'center', padding: '80px 0', color: '#6320ee' }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700 }}>Đang mở Phòng khám lâm sàng...</h3>
         <p style={{ color: '#64748b' }}>Đang nạp thông tin thú cưng & hồ sơ bệnh án #{recordId}</p>
       </div>
     );
@@ -385,10 +359,9 @@ export default function VetExaminationPage() {
   if (error || !record) {
     return (
       <div className="vet-card" style={{ padding: 40, textAlign: 'center' }}>
-        <AlertCircle size={40} color="#ef4444" style={{ marginBottom: 12 }} />
         <h3 style={{ color: '#0f172a', fontWeight: 700 }}>{error || 'Không tìm thấy bệnh án'}</h3>
         <Link to="/vet/workbench" className="vet-btn vet-btn-primary" style={{ marginTop: 16 }}>
-          <ArrowLeft size={16} /> Quay về Ca khám hôm nay
+          Quay về Ca khám hôm nay
         </Link>
       </div>
     );
@@ -396,7 +369,6 @@ export default function VetExaminationPage() {
 
   const pet = record.pet || {};
   const owner = record.owner || {};
-  const vet = record.veterinarian || {};
   const isCompleted = record.status === 'COMPLETED';
   const isCancelled = record.status === 'CANCELLED';
   const services = record.services || [];
@@ -413,7 +385,7 @@ export default function VetExaminationPage() {
             top: 24,
             right: 24,
             zIndex: 9999,
-            background: 'linear-gradient(135deg, #0d9488 0%, #047857 100%)',
+            background: 'linear-gradient(90deg, #611eee 0%, #4a15bc 100%)',
             color: '#ffffff',
             padding: '12px 20px',
             borderRadius: 10,
@@ -426,7 +398,6 @@ export default function VetExaminationPage() {
             animation: 'vetModalIn 0.25s ease-out',
           }}
         >
-          <CheckCircle2 size={20} color="#a7f3d0" />
           <span>{successToast}</span>
         </div>
       )}
@@ -439,18 +410,18 @@ export default function VetExaminationPage() {
             className="vet-btn vet-btn-outline vet-btn-sm"
             onClick={() => navigate('/vet/workbench')}
           >
-            <ArrowLeft size={16} /> Danh sách ca khám
+            Danh sách ca khám
           </button>
           <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
             Phòng Khám Lâm Sàng • Ca Bệnh #MR-{record.recordId}
           </h2>
           {isCompleted ? (
             <span className="vet-badge vet-badge-completed">
-              <CheckCircle2 size={13} /> Đã hoàn tất & Đóng bệnh án
+              Đã hoàn tất & Đóng bệnh án
             </span>
           ) : isCancelled ? (
             <span className="vet-badge vet-badge-cancelled">
-              <XCircle size={13} /> Ca đã hủy
+              Ca đã hủy
             </span>
           ) : (
             <span className="vet-badge vet-badge-in-progress">
@@ -465,7 +436,7 @@ export default function VetExaminationPage() {
             className="vet-btn vet-btn-outline vet-btn-sm"
             onClick={() => setShowPrintModal(true)}
           >
-            <Printer size={15} /> In Phiếu Khám & Đơn Thuốc
+            In Phiếu Khám & Đơn Thuốc
           </button>
           {!isCompleted && !isCancelled && (
             <button
@@ -474,7 +445,7 @@ export default function VetExaminationPage() {
               style={{ color: '#ef4444' }}
               onClick={() => setShowCancelModal(true)}
             >
-              <XCircle size={15} /> Hủy ca
+              Hủy ca
             </button>
           )}
         </div>
@@ -490,7 +461,7 @@ export default function VetExaminationPage() {
           <div className="vet-card">
             <div className="vet-card-header">
               <h4 className="vet-card-title">
-                <Dog size={16} color="#0d9488" /> Thông Tin Thú Cưng
+                Thông Tin Thú Cưng
               </h4>
             </div>
             <div className="vet-card-body">
@@ -500,14 +471,14 @@ export default function VetExaminationPage() {
                     width: 56,
                     height: 56,
                     borderRadius: 14,
-                    background: 'linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%)',
+                    background: '#ede9fe', color: '#6320ee', fontWeight: 800,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 28,
+                    fontSize: 20,
                   }}
                 >
-                  {pet.species === 'Mèo' ? '🐱' : '🐶'}
+                  {(pet.petName || 'P').charAt(0).toUpperCase()}
                 </div>
                 <div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>
@@ -516,7 +487,7 @@ export default function VetExaminationPage() {
                   <div style={{ fontSize: 12.5, color: '#64748b' }}>
                     {pet.species} • {pet.breed}
                   </div>
-                  <div style={{ fontSize: 12, color: '#0f766e', fontWeight: 600 }}>
+                  <div style={{ fontSize: 12, color: '#5218cc', fontWeight: 600 }}>
                     {pet.gender} • Ngày sinh: {pet.dateOfBirth || 'Không rõ'}
                   </div>
                 </div>
@@ -525,7 +496,7 @@ export default function VetExaminationPage() {
               {/* Cập nhật cân nặng tức thì */}
               <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 16 }}>
                 <label style={{ fontSize: 12, fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                  <Scale size={14} color="#0d9488" /> Cân nặng hiện tại (kg):
+                  Cân nặng hiện tại (kg):
                 </label>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input
@@ -555,7 +526,7 @@ export default function VetExaminationPage() {
                 style={{ width: '100%', justifyContent: 'center' }}
                 onClick={() => setShowHistoryModal(true)}
               >
-                <Clock size={16} color="#0d9488" /> Xem Bệnh Sử & Đơn Thuốc Cũ
+                Xem Bệnh Sử & Đơn Thuốc Cũ
               </button>
             </div>
           </div>
@@ -564,13 +535,13 @@ export default function VetExaminationPage() {
           <div className="vet-card">
             <div className="vet-card-header">
               <h4 className="vet-card-title">
-                <User size={16} color="#0d9488" /> Thông Tin Chủ Nuôi
+                Thông Tin Chủ Nuôi
               </h4>
             </div>
             <div className="vet-card-body" style={{ fontSize: 13, lineHeight: 1.6 }}>
               <div>Họ tên: <strong>{owner.fullName || 'Chưa có thông tin'}</strong></div>
               <div style={{ marginTop: 4 }}>
-                SĐT: <strong style={{ color: '#0d9488' }}>{owner.phoneNumber || 'N/A'}</strong>
+                SĐT: <strong style={{ color: '#6320ee' }}>{owner.phoneNumber || 'N/A'}</strong>
               </div>
               {owner.email && (
                 <div style={{ marginTop: 4 }}>
@@ -586,12 +557,12 @@ export default function VetExaminationPage() {
           </div>
 
           {/* Viện phí tạm tính Card */}
-          <div className="vet-card" style={{ background: 'linear-gradient(135deg, #f0fdfa 0%, #e6fffa 100%)', border: '1px solid #99f6e4' }}>
+          <div className="vet-card" style={{ background: '#f5f3ff', border: '1px solid #c4b5fd' }}>
             <div className="vet-card-body">
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#0f766e', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
-                💳 TỔNG VIỆN PHÍ TẠM TÍNH
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#5218cc', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                TỔNG VIỆN PHÍ TẠM TÍNH
               </div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#0d9488', marginBottom: 10 }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#6320ee', marginBottom: 10 }}>
                 {formatCurrency(record.grandTotal)}
               </div>
               <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.5 }}>
@@ -613,7 +584,6 @@ export default function VetExaminationPage() {
           <div className="vet-card">
             <div className="vet-card-header">
               <h4 className="vet-card-title">
-                <Stethoscope size={18} color="#0d9488" />
                 1. Khám Lâm Sàng, Chẩn Đoán & Phác Đồ Điều Trị
               </h4>
               <button
@@ -622,7 +592,7 @@ export default function VetExaminationPage() {
                 disabled={saving}
                 onClick={handleSaveRecord}
               >
-                <Save size={14} /> {saving ? 'Đang lưu...' : 'Lưu Lâm Sàng'}
+                {saving ? 'Đang lưu...' : 'Lưu Lâm Sàng'}
               </button>
             </div>
             <div className="vet-card-body">
@@ -646,7 +616,7 @@ export default function VetExaminationPage() {
                 <input
                   type="text"
                   className="vet-input"
-                  style={{ fontWeight: 700, color: '#0f766e', fontSize: 14 }}
+                  style={{ fontWeight: 700, color: '#5218cc', fontSize: 14 }}
                   placeholder="Ví dụ: Viêm dạ dày ruột cấp tính / Dị vật đường ruột..."
                   value={diagnosis}
                   onChange={(e) => setDiagnosis(e.target.value)}
@@ -673,10 +643,9 @@ export default function VetExaminationPage() {
             <div className="vet-card-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <h4 className="vet-card-title">
-                  <Activity size={18} color="#0d9488" />
                   2. Y Lệnh Dịch Vụ & Xét Nghiệm Cận Lâm Sàng ({services.length})
                 </h4>
-                <span style={{ fontSize: 12, color: '#0f766e', background: '#ccfbf1', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>
+                <span style={{ fontSize: 12, color: '#5218cc', background: '#ede9fe', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>
                   {formatCurrency(record.totalServicesAmount)}
                 </span>
               </div>
@@ -685,7 +654,7 @@ export default function VetExaminationPage() {
                 className="vet-btn vet-btn-primary vet-btn-sm"
                 onClick={() => setShowAddServiceModal(true)}
               >
-                <Plus size={15} /> Chỉ định Dịch vụ mới
+                Chỉ định Dịch vụ mới
               </button>
             </div>
 
@@ -698,7 +667,7 @@ export default function VetExaminationPage() {
                   style={{ marginTop: 10 }}
                   onClick={() => setShowAddServiceModal(true)}
                 >
-                  <Plus size={14} /> Thêm Siêu âm / Xét nghiệm / X-Quang...
+                  Thêm Siêu âm / Xét nghiệm / X-Quang...
                 </button>
               </div>
             ) : (
@@ -720,7 +689,7 @@ export default function VetExaminationPage() {
                         <td style={{ fontWeight: 600 }}>{s.serviceName}</td>
                         <td style={{ color: '#475569' }}>{formatCurrency(s.unitPrice)}</td>
                         <td style={{ textAlign: 'center', fontWeight: 700 }}>{s.quantity}</td>
-                        <td style={{ fontWeight: 700, color: '#0d9488' }}>{formatCurrency(s.subTotal)}</td>
+                        <td style={{ fontWeight: 700, color: '#6320ee' }}>{formatCurrency(s.subTotal)}</td>
                         <td>
                           <div style={{ fontSize: 12.5, color: '#334155' }}>
                             {s.notes || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Chưa có ghi chú</span>}
@@ -734,7 +703,7 @@ export default function VetExaminationPage() {
                               title="Cập nhật kết quả/ghi chú"
                               onClick={() => setEditingService(s)}
                             >
-                              <Edit2 size={13} />
+                              Sửa
                             </button>
                             <button
                               type="button"
@@ -743,7 +712,7 @@ export default function VetExaminationPage() {
                               title="Hủy y lệnh dịch vụ này"
                               onClick={() => handleDeleteService(s.recordDetailId)}
                             >
-                              <Trash2 size={13} />
+                              Xóa
                             </button>
                           </div>
                         </td>
@@ -760,10 +729,9 @@ export default function VetExaminationPage() {
             <div className="vet-card-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <h4 className="vet-card-title">
-                  <Pill size={18} color="#0d9488" />
                   3. Đơn Thuốc Điều Trị Điện Tử ({medicines.length} loại)
                 </h4>
-                <span style={{ fontSize: 12, color: '#0f766e', background: '#ccfbf1', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>
+                <span style={{ fontSize: 12, color: '#5218cc', background: '#ede9fe', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>
                   {formatCurrency(record.totalMedicineAmount)}
                 </span>
               </div>
@@ -772,7 +740,7 @@ export default function VetExaminationPage() {
                 className="vet-btn vet-btn-primary vet-btn-sm"
                 onClick={() => setShowAddMedicineModal(true)}
               >
-                <Plus size={15} /> Kê thêm thuốc vào đơn
+                Kê thêm thuốc vào đơn
               </button>
             </div>
 
@@ -785,7 +753,7 @@ export default function VetExaminationPage() {
                   style={{ marginTop: 10 }}
                   onClick={() => setShowAddMedicineModal(true)}
                 >
-                  <Plus size={14} /> Chọn thuốc từ kho
+                  Chọn thuốc từ kho
                 </button>
               </div>
             ) : (
@@ -810,10 +778,10 @@ export default function VetExaminationPage() {
                         </td>
                         <td>{formatCurrency(m.unitPrice)}</td>
                         <td style={{ textAlign: 'center', fontWeight: 700 }}>{m.quantity}</td>
-                        <td style={{ fontWeight: 700, color: '#0d9488' }}>{formatCurrency(m.subTotal)}</td>
+                        <td style={{ fontWeight: 700, color: '#6320ee' }}>{formatCurrency(m.subTotal)}</td>
                         <td>
-                          <div style={{ fontSize: 12.5, fontWeight: 600, color: '#0f766e' }}>
-                            👉 {m.dosage}
+                          <div style={{ fontSize: 12.5, fontWeight: 600, color: '#5218cc' }}>
+                            {m.dosage}
                           </div>
                           {m.notes && <div style={{ fontSize: 11.5, color: '#64748b' }}>{m.notes}</div>}
                         </td>
@@ -825,7 +793,7 @@ export default function VetExaminationPage() {
                             title="Xóa thuốc khỏi đơn"
                             onClick={() => handleDeleteMedicine(m.prescriptionDetailId)}
                           >
-                            <Trash2 size={13} />
+                            Xóa
                           </button>
                         </td>
                       </tr>
@@ -846,7 +814,7 @@ export default function VetExaminationPage() {
                   className="vet-btn vet-btn-outline vet-btn-sm"
                   onClick={handleSavePrescriptionInstructions}
                 >
-                  <Save size={13} /> Lưu lời dặn
+                  Lưu lời dặn
                 </button>
               </div>
               <textarea
@@ -863,7 +831,6 @@ export default function VetExaminationPage() {
           <div className="vet-card">
             <div className="vet-card-header">
               <h4 className="vet-card-title">
-                <Calendar size={18} color="#0d9488" />
                 4. Kế Hoạch & Lịch Hẹn Tái Khám ({followUps.length})
               </h4>
               <button
@@ -871,7 +838,7 @@ export default function VetExaminationPage() {
                 className="vet-btn vet-btn-primary vet-btn-sm"
                 onClick={() => setShowFollowUpModal(true)}
               >
-                <Plus size={15} /> Đặt lịch tái khám
+                Đặt lịch tái khám
               </button>
             </div>
             <div className="vet-card-body">
@@ -889,15 +856,12 @@ export default function VetExaminationPage() {
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         padding: '12px 16px',
-                        background: '#f0fdfa',
-                        border: '1px solid #ccfbf1',
+                        background: '#f5f3ff',
+                        border: '1px solid #ede9fe',
                         borderRadius: 8,
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 8, background: '#99f6e4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Calendar size={18} color="#0f766e" />
-                        </div>
                         <div>
                           <div style={{ fontWeight: 700, fontSize: 13.5, color: '#0f172a' }}>
                             Hẹn tái khám: <strong>{f.followUpDate}</strong> • {f.followUpType}
@@ -912,7 +876,7 @@ export default function VetExaminationPage() {
                         title="Hủy lịch hẹn tái khám"
                         onClick={() => handleDeleteFollowUp(f.followUpId)}
                       >
-                        <Trash2 size={13} />
+                        Xóa
                       </button>
                     </div>
                   ))}
@@ -927,8 +891,8 @@ export default function VetExaminationPage() {
             style={{
               padding: '18px 24px',
               background: '#ffffff',
-              border: '2px solid #0d9488',
-              boxShadow: '0 10px 25px rgba(13, 148, 136, 0.15)',
+              border: '2px solid #6320ee',
+              boxShadow: '0 10px 25px rgba(99, 32, 238, 0.12)',
               display: 'flex',
               flexWrap: 'wrap',
               alignItems: 'center',
@@ -937,10 +901,10 @@ export default function VetExaminationPage() {
             }}
           >
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#0f766e', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#5218cc', textTransform: 'uppercase' }}>
                 Tổng Chi Phí Đợt Khám (Viện phí + Dược phẩm):
               </div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#0d9488' }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#6320ee' }}>
                 {formatCurrency(record.grandTotal)}
               </div>
             </div>
@@ -952,7 +916,7 @@ export default function VetExaminationPage() {
                 disabled={saving}
                 onClick={handleSaveRecord}
               >
-                <Save size={16} /> Lưu cập nhật
+                Lưu cập nhật
               </button>
 
               <button
@@ -960,7 +924,7 @@ export default function VetExaminationPage() {
                 className="vet-btn vet-btn-outline"
                 onClick={() => setShowPrintModal(true)}
               >
-                <Printer size={16} /> In Phiếu & Đơn
+                In Phiếu & Đơn
               </button>
 
               {!isCompleted && !isCancelled && (
@@ -971,7 +935,7 @@ export default function VetExaminationPage() {
                   disabled={saving}
                   onClick={handleCompleteRecord}
                 >
-                  <FileCheck size={18} /> Hoàn tất Khám & Chốt Bệnh Án
+                  Hoàn tất Khám & Chốt Bệnh Án
                 </button>
               )}
             </div>
@@ -1006,10 +970,10 @@ export default function VetExaminationPage() {
           <div className="vet-modal" style={{ maxWidth: 500 }}>
             <div className="vet-modal-header">
               <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Activity size={18} color="#0d9488" /> Chỉ Định Y Lệnh Dịch Vụ Mới
+                Chỉ Định Y Lệnh Dịch Vụ Mới
               </h3>
               <button type="button" className="vet-btn vet-btn-outline vet-btn-sm" onClick={() => setShowAddServiceModal(false)}>
-                <X size={15} />
+                Đóng
               </button>
             </div>
             <form onSubmit={handleAddService}>
@@ -1075,7 +1039,7 @@ export default function VetExaminationPage() {
                 Cập Nhật Kết Quả: {editingService.serviceName}
               </h3>
               <button type="button" className="vet-btn vet-btn-outline vet-btn-sm" onClick={() => setEditingService(null)}>
-                <X size={15} />
+                Đóng
               </button>
             </div>
             <form onSubmit={handleUpdateServiceNote}>
@@ -1121,10 +1085,10 @@ export default function VetExaminationPage() {
           <div className="vet-modal" style={{ maxWidth: 520 }}>
             <div className="vet-modal-header">
               <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Pill size={18} color="#0d9488" /> Kê Thuốc Vào Đơn Điện Tử
+                Kê Thuốc Vào Đơn Điện Tử
               </h3>
               <button type="button" className="vet-btn vet-btn-outline vet-btn-sm" onClick={() => setShowAddMedicineModal(false)}>
-                <X size={15} />
+                Đóng
               </button>
             </div>
             <form onSubmit={handleAddMedicine}>
@@ -1199,10 +1163,10 @@ export default function VetExaminationPage() {
           <div className="vet-modal" style={{ maxWidth: 460 }}>
             <div className="vet-modal-header">
               <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Calendar size={18} color="#0d9488" /> Đặt Lịch Tái Khám Cho Bé
+                Đặt Lịch Tái Khám Cho Bé
               </h3>
               <button type="button" className="vet-btn vet-btn-outline vet-btn-sm" onClick={() => setShowFollowUpModal(false)}>
-                <X size={15} />
+                Đóng
               </button>
             </div>
             <form onSubmit={handleAddFollowUp}>

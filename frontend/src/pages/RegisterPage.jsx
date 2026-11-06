@@ -88,7 +88,7 @@ export default function RegisterPage() {
   return (
     <div className="vtn-auth-screen">
       <div className="vtn-auth-logo-top">
-        <Link to="/" aria-label="Trang chủ Veterian">
+        <Link to="/" aria-label="Trang chủ PCMS">
           <VeterianCloudPaw size={64} />
         </Link>
       </div>
@@ -97,7 +97,7 @@ export default function RegisterPage() {
         <div className="vtn-auth-left">
           <h1>Đăng ký Tài khoản Chủ nuôi</h1>
           <p className="vtn-auth-sub">
-            Tạo tài khoản Chủ thú cưng miễn phí tại Veterian PCMS để đặt lịch khám và theo dõi hồ sơ sức khỏe cho bé.
+            Tạo tài khoản Chủ thú cưng miễn phí tại PCMS để đặt lịch khám và theo dõi hồ sơ sức khỏe cho bé.
           </p>
 
           {serverError ? (
@@ -190,7 +190,7 @@ export default function RegisterPage() {
                     className="vtn-eye-btn"
                     onClick={() => setShowPassword((prev) => !prev)}
                   >
-                    {showPassword ? '🙈' : '👁'}
+                    {showPassword ? 'Ẩn' : 'Hiện'}
                   </button>
                 </div>
                 {errors.password ? (
@@ -217,10 +217,10 @@ export default function RegisterPage() {
             </div>
 
             <div className="vtn-dark-rules">
-              <span className={checklist.minLength ? 'ok' : ''}>✓ Tối thiểu 8 ký tự</span>
-              <span className={checklist.hasUppercase ? 'ok' : ''}>✓ Chữ in hoa</span>
-              <span className={checklist.hasLowercase ? 'ok' : ''}>✓ Chữ thường</span>
-              <span className={checklist.hasDigit ? 'ok' : ''}>✓ Chữ số</span>
+              <span className={checklist.minLength ? 'ok' : ''}>• Tối thiểu 8 ký tự</span>
+              <span className={checklist.hasUppercase ? 'ok' : ''}>• Chữ in hoa</span>
+              <span className={checklist.hasLowercase ? 'ok' : ''}>• Chữ thường</span>
+              <span className={checklist.hasDigit ? 'ok' : ''}>• Chữ số</span>
             </div>
 
             <button type="submit" className="vtn-btn-signin" disabled={submitting}>
@@ -251,7 +251,7 @@ export default function RegisterPage() {
       </div>
 
       <Link to="/" className="vtn-goto-home">
-        Go to Home ↗
+        Go to Home
       </Link>
     </div>
   );

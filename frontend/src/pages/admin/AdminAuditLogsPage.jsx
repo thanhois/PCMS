@@ -247,7 +247,7 @@ export default function AdminAuditLogsPage() {
             onClick={fetchLogs}
             disabled={loading}
           >
-            ↻ Làm mới
+            Làm mới
           </button>
         }
       />

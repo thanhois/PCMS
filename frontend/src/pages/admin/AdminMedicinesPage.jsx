@@ -269,7 +269,7 @@ export default function AdminMedicinesPage() {
           {r.lowStock ? (
             <div>
               <small style={{ color: 'var(--pcms-warning-text)', fontWeight: 600 }}>
-                ⚠️ Dưới ngưỡng tồn
+                Dưới ngưỡng tồn
               </small>
             </div>
           ) : null}
@@ -357,7 +357,7 @@ export default function AdminMedicinesPage() {
               <option value="ALL">Tất cả thuốc</option>
               <option value="ACTIVE">Đang lưu hành (ACTIVE)</option>
               <option value="INACTIVE">Ngừng lưu hành (INACTIVE)</option>
-              <option value="LOW_STOCK">⚠️ Đang dưới ngưỡng tồn kho</option>
+              <option value="LOW_STOCK">Đang dưới ngưỡng tồn kho</option>
             </select>
 
             <button

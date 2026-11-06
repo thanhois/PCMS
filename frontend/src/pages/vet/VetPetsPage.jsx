@@ -1,18 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Calendar,
-  Clock,
-  Dog,
-  Eye,
-  Phone,
-  Plus,
-  RefreshCw,
-  Search,
-  Stethoscope,
-  User,
-} from 'lucide-react';
 import vetApi from '../../api/vetApi';
+import PageHeader from '../../components/admin/ui/PageHeader';
 import PetHistoryModal from '../../components/vet/PetHistoryModal';
 import '../../styles/vetTheme.css';
 
@@ -61,34 +50,25 @@ export default function VetPetsPage() {
   };
 
   return (
-    <div>
-      {/* Page Title */}
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 4px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Dog size={22} color="#0d9488" /> Tra Cứu Thú Cưng & Bệnh Sử Trọn Đời
-        </h2>
-        <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
-          Tra cứu nhanh hồ sơ thú cưng, xem tiền sử bệnh án, lịch tiêm phòng & cân nặng theo dõi
-        </p>
-      </div>
+    <div className="pcms-page">
+      <PageHeader
+        title="Tra cứu Thú cưng & Bệnh sử trọn đời"
+        subtitle="Tra cứu hồ sơ thú cưng, tiền sử bệnh án, lịch tiêm phòng và cân nặng theo dõi"
+      />
 
-      {/* Search Input */}
-      <div className="vet-card" style={{ marginBottom: 24 }}>
+      <div className="vet-card">
         <div className="vet-card-body" style={{ padding: '16px 20px' }}>
-          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-              <input
-                type="text"
-                className="vet-input"
-                style={{ paddingLeft: 38, fontSize: 14 }}
-                placeholder="Nhập tên thú cưng (Milo, Bông...), giống loài, tên chủ nuôi hoặc số điện thoại..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
+          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              className="vet-input"
+              style={{ flex: 1, minWidth: 240 }}
+              placeholder="Nhập tên thú cưng (Milo, Bông...), giống loài, tên chủ nuôi hoặc số điện thoại..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
             <button type="submit" className="vet-btn vet-btn-primary">
-              <Search size={16} /> Tìm kiếm
+              Tìm kiếm
             </button>
             <button
               type="button"
@@ -98,53 +78,36 @@ export default function VetPetsPage() {
                 vetApi.searchPets('').then((data) => setPets(data || []));
               }}
             >
-              <RefreshCw size={14} /> Tất cả
+              Tất cả
             </button>
           </form>
         </div>
       </div>
 
-      {/* Pet Cards Grid */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: '#0d9488' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🐾</div>
-          <p style={{ fontWeight: 600 }}>Đang tìm kiếm hồ sơ thú cưng...</p>
+        <div className="pcms-card pcms-state-box">
+          <h4>Đang tìm kiếm hồ sơ thú cưng...</h4>
+          <p>Vui lòng chờ trong giây lát.</p>
         </div>
       ) : pets.length === 0 ? (
-        <div className="vet-card" style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🐶🐱</div>
-          <h4 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 6px', color: '#0f172a' }}>
-            Không tìm thấy thú cưng nào phù hợp
-          </h4>
-          <p style={{ fontSize: 13, margin: 0 }}>
-            Hãy thử tìm bằng từ khóa khác hoặc số điện thoại chủ nuôi.
-          </p>
+        <div className="pcms-card pcms-state-box">
+          <h4>Không tìm thấy thú cưng nào phù hợp</h4>
+          <p>Hãy thử tìm bằng từ khóa khác hoặc số điện thoại chủ nuôi.</p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
           {pets.map((p) => (
             <div key={p.petId} className="vet-card" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column' }}>
               <div className="vet-card-body" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
-                  <div
-                    style={{
-                      width: 52,
-                      height: 52,
-                      borderRadius: 14,
-                      background: 'linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 26,
-                    }}
-                  >
-                    {p.species === 'Mèo' ? '🐱' : '🐶'}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+                  <div className="vet-pet-avatar" style={{ width: 46, height: 46, fontSize: 16 }}>
+                    {(p.petName || 'P').charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0f172a' }}>
                       {p.petName}
                     </h3>
-                    <div style={{ fontSize: 12.5, color: '#0d9488', fontWeight: 600 }}>
+                    <div style={{ fontSize: 12.5, color: '#6320ee', fontWeight: 600 }}>
                       {p.species} • {p.breed}
                     </div>
                     <div style={{ fontSize: 11.5, color: '#64748b' }}>
@@ -153,10 +116,10 @@ export default function VetPetsPage() {
                   </div>
                 </div>
 
-                <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, marginBottom: 16 }}>
+                <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 13, marginBottom: 16 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span style={{ color: '#64748b' }}>Cân nặng hiện tại:</span>
-                    <strong style={{ color: '#0f766e' }}>{p.weight ? `${p.weight} kg` : 'Chưa cân'}</strong>
+                    <strong style={{ color: '#5218cc' }}>{p.weight ? `${p.weight} kg` : 'Chưa cân'}</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span style={{ color: '#64748b' }}>Chủ nuôi:</span>
@@ -164,7 +127,7 @@ export default function VetPetsPage() {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: '#64748b' }}>Số điện thoại:</span>
-                    <span style={{ color: '#0284c7', fontWeight: 600 }}>{p.ownerPhone}</span>
+                    <span style={{ color: '#6320ee', fontWeight: 600 }}>{p.ownerPhone}</span>
                   </div>
                 </div>
 
@@ -175,7 +138,7 @@ export default function VetPetsPage() {
                     style={{ flex: 1 }}
                     onClick={() => setSelectedPetHistory(p)}
                   >
-                    <Clock size={14} color="#0d9488" /> Bệnh Sử Bé
+                    Bệnh sử
                   </button>
                   <button
                     type="button"
@@ -183,7 +146,7 @@ export default function VetPetsPage() {
                     style={{ flex: 1 }}
                     onClick={() => handleStartExamForPet(p)}
                   >
-                    <Stethoscope size={14} /> Khám Ca Này
+                    Khám ca này
                   </button>
                 </div>
               </div>
@@ -192,7 +155,6 @@ export default function VetPetsPage() {
         </div>
       )}
 
-      {/* Modal Xem Bệnh Sử */}
       {selectedPetHistory && (
         <PetHistoryModal
           petId={selectedPetHistory.petId}

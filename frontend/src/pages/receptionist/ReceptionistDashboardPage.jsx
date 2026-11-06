@@ -309,7 +309,7 @@ export default function ReceptionistDashboardPage() {
                   <tr key={item.appointmentId}>
                     <td>
                       <span className="pcms-badge pcms-badge-purple" style={{ fontSize: 11 }}>
-                        {item.shift === 'AFTERNOON' ? '🌤️ Chiều' : '☀️ Sáng'}
+                        {item.shift === 'AFTERNOON' ? 'Chiều' : 'Sáng'}
                       </span>
                     </td>
                     <td>

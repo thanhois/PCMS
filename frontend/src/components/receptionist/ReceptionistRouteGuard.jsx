@@ -8,7 +8,7 @@ import '../../styles/adminTheme.css';
  * - Cho phép RECEPTIONIST và ADMIN truy cập.
  */
 export default function ReceptionistRouteGuard() {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, isLoggingOut, user, logout } = useAuth();
   const location = useLocation();
 
   if (!isAuthenticated || !user) {
@@ -16,10 +16,14 @@ export default function ReceptionistRouteGuard() {
       <Navigate
         to="/login"
         replace
-        state={{
-          from: location.pathname,
-          infoMessage: 'Vui lòng đăng nhập bằng tài khoản Lễ tân (RECEPTIONIST) để truy cập bàn tiếp đón.',
-        }}
+        state={
+          isLoggingOut
+            ? null
+            : {
+                from: location.pathname,
+                infoMessage: 'Vui lòng đăng nhập bằng tài khoản Lễ tân (RECEPTIONIST) để truy cập bàn tiếp đón.',
+              }
+        }
       />
     );
   }

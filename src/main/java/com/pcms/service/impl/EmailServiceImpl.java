@@ -22,31 +22,47 @@ public class EmailServiceImpl implements EmailService {
     private final AppProperties appProperties;
 
     @Override
-    public void sendPasswordResetEmail(String to, String fullName, String resetLink, int expiresInMinutes) {
-        String subject = "[PCMS] Reset your password";
+    public void sendPasswordResetEmail(String to, String fullName, String rawToken, String resetLink, int expiresInMinutes) {
+        String subject = "[PCMS] Mã khôi phục mật khẩu tài khoản";
+        String baseUrl = resetLink.contains("?") ? resetLink.substring(0, resetLink.indexOf("?")) : resetLink;
         String body = """
-                Hello %s,
+                Xin chào %s,
 
-                We received a request to reset the password for your Pet Clinic account.
-                Click the link below to set a new password (valid for %d minutes):
+                Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản PCMS của bạn.
 
+                ============================================================
+                MÃ XÁC NHẬN KHÔI PHỤC (Hiệu lực %d phút):
+                %s
+                ============================================================
+
+                Bạn có thể sao chép mã số trên và dán trực tiếp vào trang Đặt lại mật khẩu:
                 %s
 
-                If you did not request this, please ignore this email.
+                Hoặc nhấn vào liên kết bên dưới để đổi mật khẩu ngay:
+                %s
 
-                Pet Clinic Management System
-                """.formatted(fullName, expiresInMinutes, resetLink);
+                Nếu bạn không gửi yêu cầu này, vui lòng bỏ qua email. Mật khẩu hiện tại của bạn vẫn an toàn.
+
+                Trân trọng,
+                Hệ thống Quản lý Phòng khám Thú y PCMS
+                """.formatted(
+                fullName != null && !fullName.isBlank() ? fullName : "Quý khách",
+                expiresInMinutes,
+                rawToken,
+                baseUrl,
+                resetLink
+        );
 
         sendMail(to, subject, body, "Password reset");
     }
 
     @Override
     public void sendBookingConfirmationEmail(String to, String ownerName, String petName, String appointmentTimeDisplay, String serviceName, String vetName) {
-        String subject = "[Veterian PCMS] Xác nhận đặt lịch khám thành công";
+        String subject = "[PCMS] Xác nhận đặt lịch khám thành công";
         String body = """
                 Kính gửi %s,
 
-                Phòng khám Thú y Veterian trân trọng thông báo lịch hẹn khám cho bé %s đã được xác nhận thành công:
+                Phòng khám Thú y PCMS trân trọng thông báo lịch hẹn khám cho bé %s đã được xác nhận thành công:
                 - Thời gian hẹn: %s
                 - Dịch vụ dự kiến: %s
                 - Bác sĩ phụ trách: %s
@@ -55,7 +71,7 @@ public class EmailServiceImpl implements EmailService {
                 Hotline hỗ trợ: 028 1234 5678.
 
                 Trân trọng,
-                Hệ thống Quản lý Phòng khám Thú y Veterian PCMS.
+                Hệ thống Quản lý Phòng khám Thú y PCMS.
                 """.formatted(
                 ownerName != null ? ownerName : "Quý khách",
                 petName != null ? petName : "thú cưng",

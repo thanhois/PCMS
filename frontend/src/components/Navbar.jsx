@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { VeterianCloudPaw } from './VeterianLogo';
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -30,16 +29,29 @@ export default function Navbar() {
     }
   };
 
+  const portalBtnStyle = {
+    background: '#6320ee',
+    color: '#ffffff',
+    padding: '6px 14px',
+    borderRadius: 8,
+    fontSize: 12.5,
+    textDecoration: 'none',
+    fontWeight: 700,
+    border: '1px solid rgba(255,255,255,0.2)',
+  };
+
   return (
     <header className="vtn-navbar">
       <div className="vtn-container vtn-navbar-inner">
         <div className="vtn-navbar-left">
           <Link to="/" className="vtn-logo-link">
-            <VeterianCloudPaw size={34} />
-            <span className="vtn-logo-text">veterian</span>
+            <span className="vtn-logo-text">PCMS</span>
           </Link>
 
           <nav className={`vtn-nav-menu ${menuOpen ? 'open' : ''}`}>
+            <Link to="/booking" onClick={() => setMenuOpen(false)} style={{ color: '#c4b5fd', fontWeight: 700 }}>
+              Đặt lịch khám
+            </Link>
             <a href="#features" onClick={() => setMenuOpen(false)}>Tính năng</a>
             <a href="#services" onClick={() => setMenuOpen(false)}>Dịch vụ</a>
             <a href="#workflow" onClick={() => setMenuOpen(false)}>Quy trình</a>
@@ -66,91 +78,32 @@ export default function Navbar() {
                   >
                     Trang Quản trị
                   </Link>
-                  <Link
-                    to="/receptionist/dashboard"
-                    style={{
-                      background: '#f59e0b',
-                      color: '#ffffff',
-                      padding: '6px 12px',
-                      borderRadius: 6,
-                      fontSize: 12.5,
-                      textDecoration: 'none',
-                      fontWeight: 600,
-                    }}
-                  >
+                  <Link to="/receptionist/dashboard" style={portalBtnStyle}>
                     Quầy Lễ tân
                   </Link>
-                  <Link
-                    to="/vet/workbench"
-                    style={{
-                      background: '#0d9488',
-                      color: '#ffffff',
-                      padding: '6px 12px',
-                      borderRadius: 6,
-                      fontSize: 12.5,
-                      textDecoration: 'none',
-                      fontWeight: 600,
-                    }}
-                  >
+                  <Link to="/vet/workbench" style={portalBtnStyle}>
                     Bác sĩ thú y
                   </Link>
                 </>
               )}
               {user.role === 'RECEPTIONIST' && (
-                <Link
-                  to="/receptionist/dashboard"
-                  className="vtn-btn-yellow"
-                  style={{ padding: '6px 14px', fontSize: 12.5, textDecoration: 'none', fontWeight: 700 }}
-                >
-                  📋 Quầy Lễ tân
+                <Link to="/receptionist/dashboard" style={portalBtnStyle}>
+                  Quầy Lễ tân
                 </Link>
               )}
               {user.role === 'VETERINARIAN' && (
-                <Link
-                  to="/vet/workbench"
-                  style={{
-                    background: '#0d9488',
-                    color: '#ffffff',
-                    padding: '6px 14px',
-                    borderRadius: 6,
-                    fontSize: 12.5,
-                    textDecoration: 'none',
-                    fontWeight: 700,
-                  }}
-                >
-                  🩺 Ca khám Bác sĩ
+                <Link to="/vet/workbench" style={portalBtnStyle}>
+                  Ca khám Bác sĩ
                 </Link>
               )}
-                            {user.role === 'INVENTORY_MANAGER' && (
-                <Link
-                  to="/inventory/batches"
-                  style={{
-                    background: '#6366f1',
-                    color: '#ffffff',
-                    padding: '6px 14px',
-                    borderRadius: 6,
-                    fontSize: 12.5,
-                    textDecoration: 'none',
-                    fontWeight: 700,
-                  }}
-                >
-                  📦 Quản lý Kho
+              {user.role === 'INVENTORY_MANAGER' && (
+                <Link to="/inventory/batches" style={portalBtnStyle}>
+                  Quản lý Kho
                 </Link>
               )}
               {user.role === 'PET_OWNER' && (
-                <Link
-                  to="/owner/medical-history"
-                  style={{
-                    background: '#0d9488',
-                    color: '#ffffff',
-                    padding: '6px 14px',
-                    borderRadius: 6,
-                    fontSize: 12.5,
-                    textDecoration: 'none',
-                    fontWeight: 700,
-                  }}
-                >
-                  🐾 Sổ khám Thú cưng
+                <Link to="/owner/medical-history" style={portalBtnStyle}>
+                  Sổ khám Thú cưng
                 </Link>
               )}
               <button type="button" className="vtn-btn-logout" onClick={handleLogout}>

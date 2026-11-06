@@ -12,9 +12,9 @@ export default function ToastMessage({ type = 'info', message, onClose }) {
         padding: '12px 16px',
         marginBottom: 16,
         borderRadius: 10,
-        background: isError ? '#fef2f2' : '#ecfdf5',
-        border: `1px solid ${isError ? '#fecaca' : '#a7f3d0'}`,
-        color: isError ? '#b91c1c' : '#047857',
+        background: isError ? '#fef2f2' : '#f5f3ff',
+        border: `1px solid ${isError ? '#fecaca' : '#c4b5fd'}`,
+        color: isError ? '#b91c1c' : '#5218cc',
         fontSize: 14,
         fontWeight: 500,
       }}
@@ -28,12 +28,15 @@ export default function ToastMessage({ type = 'info', message, onClose }) {
             background: 'transparent',
             border: 'none',
             cursor: 'pointer',
+            fontWeight: 600,
             color: 'inherit',
-            fontWeight: 700,
-            marginLeft: 12,
+            fontSize: 12.5,
+            lineHeight: 1,
+            padding: '2px 6px',
           }}
+          aria-label="Đóng thông báo"
         >
-          ✕
+          Đóng
         </button>
       ) : null}
     </div>

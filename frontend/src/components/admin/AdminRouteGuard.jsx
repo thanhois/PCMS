@@ -8,7 +8,7 @@ import '../../styles/adminTheme.css';
  * - Đã đăng nhập nhưng không phải role ADMIN -> hiển thị cảnh báo 403.
  */
 export default function AdminRouteGuard() {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, isLoggingOut, user, logout } = useAuth();
   const location = useLocation();
 
   if (!isAuthenticated || !user) {
@@ -16,10 +16,14 @@ export default function AdminRouteGuard() {
       <Navigate
         to="/login"
         replace
-        state={{
-          from: location.pathname,
-          infoMessage: 'Vui lòng đăng nhập bằng tài khoản Quản trị viên (ADMIN) để truy cập trang quản trị.',
-        }}
+        state={
+          isLoggingOut
+            ? null
+            : {
+                from: location.pathname,
+                infoMessage: 'Vui lòng đăng nhập bằng tài khoản Quản trị viên (ADMIN) để truy cập trang quản trị.',
+              }
+        }
       />
     );
   }

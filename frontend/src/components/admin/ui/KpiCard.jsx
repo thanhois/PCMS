@@ -1,14 +1,11 @@
 /**
- * KpiCard: Thẻ chỉ số thống kê nhanh (Overview / Reports).
+ * KpiCard: Thẻ chỉ số thống kê nhanh (Overview / Reports) không sử dụng icon.
  */
 export default function KpiCard({
   label,
   value,
   trendText,
-  trendDirection = 'neutral', // 'up' | 'down' | 'warning' | 'neutral'
-  icon,
-  iconBg = 'var(--pcms-purple-bg)',
-  iconColor = 'var(--pcms-primary)',
+  trendDirection = 'neutral',
 }) {
   const trendColorMap = {
     up: 'var(--pcms-success-text)',
@@ -28,11 +25,6 @@ export default function KpiCard({
           </div>
         ) : null}
       </div>
-      {icon ? (
-        <div className="pcms-kpi-icon" style={{ background: iconBg, color: iconColor }}>
-          {icon}
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { VeterianCloudPaw } from '../components/VeterianLogo';
 import { useAuth } from '../context/AuthContext';
 import { validateLoginForm } from '../utils/validators';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, clearLoggingOut } = useAuth();
+
+  useEffect(() => () => clearLoggingOut(), [clearLoggingOut]);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -60,30 +62,32 @@ export default function LoginPage() {
         password: formData.password,
       });
       const loggedInRole = response?.data?.user?.role;
+      const from = location.state?.from;
       if (loggedInRole === 'ADMIN') {
-        const target = location.state?.from?.startsWith('/admin')
-          ? location.state.from
-          : '/admin/overview';
+        const target = from?.startsWith('/admin') ? from : '/admin/overview';
         navigate(target, { replace: true });
       } else if (loggedInRole === 'RECEPTIONIST') {
-        const target = location.state?.from?.startsWith('/receptionist')
-          ? location.state.from
-          : '/receptionist/dashboard';
+        const target =
+          from?.startsWith('/receptionist') || from?.startsWith('/billing')
+            ? from
+            : '/receptionist/dashboard';
         navigate(target, { replace: true });
       } else if (loggedInRole === 'VETERINARIAN') {
-        const target = location.state?.from?.startsWith('/vet')
-          ? location.state.from
-          : '/vet/workbench';
+        const target = from?.startsWith('/vet') ? from : '/vet/workbench';
         navigate(target, { replace: true });
       } else if (loggedInRole === 'PET_OWNER') {
-        const target = location.state?.from || '/owner/medical-history';
-        navigate(target, { replace: true });
+        const isOwnerSafeRoute =
+          from === '/' || from?.startsWith('/booking') || from?.startsWith('/owner');
+        const target = isOwnerSafeRoute ? from : '/owner/medical-history';
+        navigate(target, {
+          replace: true,
+          state: location.state?.serviceName
+            ? { serviceName: location.state.serviceName }
+            : undefined,
+        });
       } else if (loggedInRole === 'INVENTORY_MANAGER') {
-    const target = location.state?.from?.startsWith('/inventory')
-        ? location.state.from
-        : '/inventory/batches';
-
-    navigate(target, { replace: true });  
+        const target = from?.startsWith('/inventory') ? from : '/inventory/batches';
+        navigate(target, { replace: true });
       } else {
         navigate('/', { replace: true });
       }
@@ -100,7 +104,7 @@ export default function LoginPage() {
   return (
     <div className="vtn-auth-screen">
       <div className="vtn-auth-logo-top">
-        <Link to="/" aria-label="Trang chủ Veterian">
+        <Link to="/" aria-label="Trang chủ PCMS">
           <VeterianCloudPaw size={68} />
         </Link>
       </div>
@@ -108,7 +112,7 @@ export default function LoginPage() {
       <div className="vtn-auth-split-card">
         {/* Cột trái: Form đăng nhập nền tối */}
         <div className="vtn-auth-left">
-          <h1>Đăng nhập Veterian</h1>
+          <h1>Đăng nhập PCMS</h1>
           <p className="vtn-auth-sub">
             Nhập địa chỉ email hoặc tên đăng nhập và mật khẩu để truy cập tài khoản của bạn.
           </p>
@@ -119,14 +123,20 @@ export default function LoginPage() {
             </div>
           ) : null}
 
+          {serverError ? (
+            <div className="vtn-dark-alert vtn-dark-alert-error" role="alert">
+              {serverError}
+            </div>
+          ) : null}
+
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 11.5, color: '#94a3b8', marginBottom: 6, fontWeight: 600 }}>
-              ⚡ Đăng nhập nhanh kiểm thử phân quyền:
+              Đăng nhập nhanh kiểm thử phân quyền:
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {[
                 { role: 'Admin', login: 'admin', pass: 'Admin@123', color: '#a78bfa' },
-                { role: 'Bác sĩ', login: 'vet', pass: 'Vet@123', color: '#2dd4bf' },
+                { role: 'Bác sĩ', login: 'vet', pass: 'Vet@123', color: '#a78bfa' },
                 { role: 'Lễ tân', login: 'receptionist', pass: 'Receptionist@123', color: '#fbbf24' },
                 { role: 'Chủ nuôi', login: 'petowner', pass: 'Owner@123', color: '#60a5fa' },
               ].map((acc) => (
@@ -147,7 +157,7 @@ export default function LoginPage() {
                     cursor: 'pointer',
                   }}
                 >
-                  <span style={{ color: acc.color, fontWeight: 700 }}>● {acc.role}</span>
+                  <span style={{ color: acc.color, fontWeight: 700 }}>{acc.role}</span>
                 </button>
               ))}
             </div>
@@ -190,7 +200,7 @@ export default function LoginPage() {
                   onClick={() => setShowPassword((prev) => !prev)}
                   aria-label="Hiện/Ẩn mật khẩu"
                 >
-                  {showPassword ? '🙈' : '👁'}
+                  {showPassword ? 'Ẩn' : 'Hiện'}
                 </button>
               </div>
               {errors.password ? <span className="vtn-error-text">{errors.password}</span> : null}
@@ -239,7 +249,7 @@ export default function LoginPage() {
       </div>
 
       <Link to="/" className="vtn-goto-home">
-        Go to Home ↗
+        Go to Home
       </Link>
     </div>
   );

@@ -22,7 +22,7 @@ export default function ModalDialog({ open, title, children, footer, onClose }) 
               onClick={onClose}
               aria-label="Đóng"
             >
-              ✕
+              Đóng
             </button>
           ) : null}
         </div>

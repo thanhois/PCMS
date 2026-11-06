@@ -312,7 +312,7 @@ export default function ReceptionistCheckInPage() {
       {/* Tình trạng trực ca & Sẵn sàng của Bác sĩ hôm nay */}
       <div className="pcms-card" style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <strong style={{ fontSize: 14 }}>🩺 Danh sách Bác sĩ trực ca & Trạng thái tải khám hôm nay:</strong>
+          <strong style={{ fontSize: 14 }}>Danh sách Bác sĩ trực ca & Trạng thái tải khám hôm nay:</strong>
           <span style={{ fontSize: 12, color: 'var(--pcms-text-muted)' }}>
             Hệ thống tự động sắp xếp Bác sĩ đang rảnh nhất lên trước
           </span>
@@ -433,7 +433,7 @@ export default function ReceptionistCheckInPage() {
                             className="pcms-badge pcms-badge-purple"
                             style={{ fontWeight: 600 }}
                           >
-                            {apt.shift === 'AFTERNOON' ? '🌤️ Chiều (13:30 - 17:30)' : '☀️ Sáng (08:00 - 12:00)'}
+                            {apt.shift === 'AFTERNOON' ? 'Chiều (13:30 - 17:30)' : 'Sáng (08:00 - 12:00)'}
                           </span>
                         </td>
                         <td>

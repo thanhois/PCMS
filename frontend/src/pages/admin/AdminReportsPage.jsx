@@ -326,7 +326,7 @@ export default function AdminReportsPage() {
               className={`pcms-tab-btn ${activeTab === 'REVENUE' ? 'active' : ''}`}
               onClick={() => setActiveTab('REVENUE')}
             >
-              💰 Báo cáo Doanh thu
+              Báo cáo Doanh thu
             </button>
             <button
               type="button"
@@ -335,7 +335,7 @@ export default function AdminReportsPage() {
               className={`pcms-tab-btn ${activeTab === 'INVENTORY' ? 'active' : ''}`}
               onClick={() => setActiveTab('INVENTORY')}
             >
-              💊 Tổng hợp Tồn kho
+              Tổng hợp Tồn kho
             </button>
             <button
               type="button"
@@ -344,7 +344,7 @@ export default function AdminReportsPage() {
               className={`pcms-tab-btn ${activeTab === 'APPOINTMENTS' ? 'active' : ''}`}
               onClick={() => setActiveTab('APPOINTMENTS')}
             >
-              📅 Thống kê Lịch hẹn
+              Thống kê Lịch hẹn
             </button>
           </div>
         }
@@ -394,14 +394,12 @@ export default function AdminReportsPage() {
               label="Tổng doanh thu gộp"
               value={loading ? '...' : formatVnd(totalGross)}
               trendText={`Trong kỳ ${fromDate} → ${toDate}`}
-              icon="💵"
             />
             <KpiCard
               label="Tổng chiết khấu / giảm giá"
               value={loading ? '...' : formatVnd(totalDiscount)}
               trendText="Khuyến mãi & ưu đãi khách hàng"
               trendDirection="warning"
-              icon="🏷️"
               iconBg="var(--pcms-warning-bg)"
               iconColor="var(--pcms-warning-text)"
             />
@@ -410,7 +408,6 @@ export default function AdminReportsPage() {
               value={loading ? '...' : formatVnd(totalNet)}
               trendText="Đã trừ chiết khấu hóa đơn"
               trendDirection="up"
-              icon="📈"
               iconBg="var(--pcms-success-bg)"
               iconColor="var(--pcms-success-text)"
             />
@@ -418,7 +415,6 @@ export default function AdminReportsPage() {
               label="Tổng số hóa đơn thanh toán"
               value={loading ? '...' : `${totalInvoices} HĐ`}
               trendText="Hóa đơn trạng thái PAID"
-              icon="🧾"
               iconBg="var(--pcms-info-bg)"
               iconColor="var(--pcms-info-text)"
             />
@@ -496,14 +492,12 @@ export default function AdminReportsPage() {
               label="Tổng danh mục thuốc"
               value={loading ? '...' : `${inventoryRows.length} loại thuốc`}
               trendText="Trong danh mục Medicine"
-              icon="💊"
             />
             <KpiCard
               label="Thuốc dưới ngưỡng tồn"
               value={loading ? '...' : `${lowStockMedsCount} mặt hàng`}
               trendText="Cần thông báo Quản lý kho nhập hàng"
               trendDirection={lowStockMedsCount > 0 ? 'warning' : 'up'}
-              icon="⚠️"
               iconBg="var(--pcms-warning-bg)"
               iconColor="var(--pcms-warning-text)"
             />
@@ -511,7 +505,6 @@ export default function AdminReportsPage() {
               label="Tổng số lô thuốc (Batch)"
               value={loading ? '...' : `${totalBatchesCount} lô`}
               trendText="Quản lý theo hạn dùng (InventoryBatch)"
-              icon="📦"
               iconBg="var(--pcms-info-bg)"
               iconColor="var(--pcms-info-text)"
             />
@@ -520,7 +513,6 @@ export default function AdminReportsPage() {
               value={loading ? '...' : formatVnd(totalStockValue)}
               trendText="Tính theo đơn giá niêm yết"
               trendDirection="up"
-              icon="🏦"
               iconBg="var(--pcms-success-bg)"
               iconColor="var(--pcms-success-text)"
             />
@@ -600,14 +592,12 @@ export default function AdminReportsPage() {
               label="Tổng số lịch hẹn trong kỳ"
               value={loading ? '...' : `${totalAppts} ca`}
               trendText={`Từ ${fromDate} đến ${toDate}`}
-              icon="📅"
             />
             <KpiCard
               label="Số ca khám hoàn thành"
               value={loading ? '...' : `${completedAppts} ca`}
               trendText={`Đạt tỷ lệ ${completionRate}%`}
               trendDirection="up"
-              icon="✅"
               iconBg="var(--pcms-success-bg)"
               iconColor="var(--pcms-success-text)"
             />
@@ -615,7 +605,6 @@ export default function AdminReportsPage() {
               label="Đang xử lý / Chờ khám"
               value={loading ? '...' : `${totalAppts - completedAppts - cancelledOrRejected} ca`}
               trendText="Gồm Đã duyệt, Check-in & Chờ duyệt"
-              icon="⏳"
               iconBg="var(--pcms-info-bg)"
               iconColor="var(--pcms-info-text)"
             />
@@ -624,7 +613,6 @@ export default function AdminReportsPage() {
               value={loading ? '...' : `${cancelledOrRejected} ca`}
               trendText="Khách báo hủy hoặc không đủ điều kiện"
               trendDirection="down"
-              icon="✕"
               iconBg="var(--pcms-danger-bg)"
               iconColor="var(--pcms-danger-text)"
             />
