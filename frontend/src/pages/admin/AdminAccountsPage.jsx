@@ -267,7 +267,7 @@ export default function AdminAccountsPage() {
         const res = await adminApi.resetAccountPassword(account.userId);
         setBanner({
           type: 'info',
-          text: `🔑 Mật khẩu tạm thời mới của "${account.fullName}" (${account.username}): ${res.temporaryPassword} — Vui lòng sao chép gửi cho nhân viên.`,
+          text: `Mật khẩu tạm thời mới của "${account.fullName}" (${account.username}): ${res.temporaryPassword} — Vui lòng sao chép gửi cho nhân viên.`,
         });
       }
       setConfirmState({ open: false, type: null, account: null, nextStatus: null, loading: false });

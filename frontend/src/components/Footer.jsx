@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { VeterianCloudPaw } from './VeterianLogo';
 
 export default function Footer() {
   return (
@@ -8,7 +7,6 @@ export default function Footer() {
         <div className="vtn-footer-grid">
           <div className="vtn-footer-brand">
             <Link to="/" className="vtn-logo-link">
-              <VeterianCloudPaw size={38} />
               <span className="vtn-logo-text">PCMS</span>
             </Link>
             <Link to="/register" className="vtn-btn-purple vtn-btn-sm" style={{ marginTop: '1rem' }}>
@@ -17,12 +15,6 @@ export default function Footer() {
             <p className="vtn-footer-copy">
               Hệ thống Quản lý Phòng khám Thú y (PCMS) hiện đại dành cho phòng khám và chủ nuôi thú cưng.
             </p>
-            <div className="vtn-footer-socials">
-              <span>in</span>
-              <span>f</span>
-              <span>ig</span>
-              <span>yt</span>
-            </div>
           </div>
 
           <div className="vtn-footer-col">

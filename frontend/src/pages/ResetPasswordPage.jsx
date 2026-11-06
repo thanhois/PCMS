@@ -115,7 +115,7 @@ export default function ResetPasswordPage() {
               />
               {errors.token ? <span className="vtn-error-text">{errors.token}</span> : null}
               <p style={{ margin: '0.35rem 0 0', fontSize: '0.78rem', color: '#94a3b8' }}>
-                💡 Quý khách có thể copy mã 6 chữ số từ email và dán vào đây, hoặc click trực tiếp vào link trong email.
+                Quý khách có thể copy mã 6 chữ số từ email và dán vào đây, hoặc click trực tiếp vào link trong email.
               </p>
             </div>
 
@@ -152,10 +152,10 @@ export default function ResetPasswordPage() {
             </div>
 
             <div className="vtn-dark-rules">
-              <span className={checklist.minLength ? 'ok' : ''}>✓ Tối thiểu 8 ký tự</span>
-              <span className={checklist.hasUppercase ? 'ok' : ''}>✓ Chữ in hoa</span>
-              <span className={checklist.hasLowercase ? 'ok' : ''}>✓ Chữ thường</span>
-              <span className={checklist.hasDigit ? 'ok' : ''}>✓ Chữ số</span>
+              <span className={checklist.minLength ? 'ok' : ''}>• Tối thiểu 8 ký tự</span>
+              <span className={checklist.hasUppercase ? 'ok' : ''}>• Chữ in hoa</span>
+              <span className={checklist.hasLowercase ? 'ok' : ''}>• Chữ thường</span>
+              <span className={checklist.hasDigit ? 'ok' : ''}>• Chữ số</span>
             </div>
 
             <button type="submit" className="vtn-btn-signin" disabled={submitting}>
@@ -179,7 +179,7 @@ export default function ResetPasswordPage() {
       </div>
 
       <Link to="/" className="vtn-goto-home">
-        Go to Home ↗
+        Go to Home
       </Link>
     </div>
   );

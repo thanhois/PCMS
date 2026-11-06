@@ -132,7 +132,7 @@ export default function ForgotPasswordPage() {
       </div>
 
       <Link to="/" className="vtn-goto-home">
-        Go to Home ↗
+        Go to Home
       </Link>
     </div>
   );

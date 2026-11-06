@@ -190,7 +190,7 @@ export default function RegisterPage() {
                     className="vtn-eye-btn"
                     onClick={() => setShowPassword((prev) => !prev)}
                   >
-                    {showPassword ? '🙈' : '👁'}
+                    {showPassword ? 'Ẩn' : 'Hiện'}
                   </button>
                 </div>
                 {errors.password ? (
@@ -217,10 +217,10 @@ export default function RegisterPage() {
             </div>
 
             <div className="vtn-dark-rules">
-              <span className={checklist.minLength ? 'ok' : ''}>✓ Tối thiểu 8 ký tự</span>
-              <span className={checklist.hasUppercase ? 'ok' : ''}>✓ Chữ in hoa</span>
-              <span className={checklist.hasLowercase ? 'ok' : ''}>✓ Chữ thường</span>
-              <span className={checklist.hasDigit ? 'ok' : ''}>✓ Chữ số</span>
+              <span className={checklist.minLength ? 'ok' : ''}>• Tối thiểu 8 ký tự</span>
+              <span className={checklist.hasUppercase ? 'ok' : ''}>• Chữ in hoa</span>
+              <span className={checklist.hasLowercase ? 'ok' : ''}>• Chữ thường</span>
+              <span className={checklist.hasDigit ? 'ok' : ''}>• Chữ số</span>
             </div>
 
             <button type="submit" className="vtn-btn-signin" disabled={submitting}>
@@ -251,7 +251,7 @@ export default function RegisterPage() {
       </div>
 
       <Link to="/" className="vtn-goto-home">
-        Go to Home ↗
+        Go to Home
       </Link>
     </div>
   );

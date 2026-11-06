@@ -79,7 +79,7 @@ const FEATURE_PILLS = [
 ];
 
 export default function HomePage() {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(HERO_TABS[0]);
   const [toastMessage, setToastMessage] = useState('');
@@ -106,7 +106,7 @@ export default function HomePage() {
 
         <div className="vtn-container vtn-hero-center">
           <div className="vtn-hero-eyebrow">
-            <span>✦</span> HỆ THỐNG QUẢN LÝ PHÒNG KHÁM THÚ Y • PCMS
+            HỆ THỐNG QUẢN LÝ PHÒNG KHÁM THÚ Y • PCMS
           </div>
 
           <h1 className="vtn-hero-heading">
@@ -145,7 +145,7 @@ export default function HomePage() {
               </Link>
             )}
             <a href="#services" className="vtn-btn-glass">
-              <span>▶</span> Xem các dịch vụ
+              Xem các dịch vụ
             </a>
           </div>
 
@@ -171,23 +171,23 @@ export default function HomePage() {
                 <span />
               </div>
               <div className="vtn-window-search">
-                🔍 Tìm kiếm thú cưng, SĐT chủ nuôi, mã bệnh án hoặc hóa đơn...
+                Tìm kiếm thú cưng, SĐT chủ nuôi, mã bệnh án hoặc hóa đơn...
               </div>
               <div className="vtn-window-actions">
                 <span className="vtn-tag-purple">+ Tạo lịch hẹn</span>
-                <span className="vtn-tag-green">● Trực tuyến</span>
+                <span className="vtn-tag-green">Trực tuyến</span>
               </div>
             </div>
 
             <div className="vtn-dashboard-body">
               <aside className="vtn-dash-sidebar">
-                <div className="vtn-dash-nav-item active">📅 Lịch hẹn khám</div>
-                <div className="vtn-dash-nav-item">🐾 Hồ sơ thú cưng</div>
-                <div className="vtn-dash-nav-item">🩺 Bệnh án điện tử</div>
-                <div className="vtn-dash-nav-item">💉 Lịch tiêm chủng</div>
-                <div className="vtn-dash-nav-item">✨ Spa &amp; Grooming</div>
-                <div className="vtn-dash-nav-item">💊 Kho thuốc &amp; Lô nhập</div>
-                <div className="vtn-dash-nav-item">🧾 Hóa đơn &amp; Thu ngân</div>
+                <div className="vtn-dash-nav-item active">Lịch hẹn khám</div>
+                <div className="vtn-dash-nav-item">Hồ sơ thú cưng</div>
+                <div className="vtn-dash-nav-item">Bệnh án điện tử</div>
+                <div className="vtn-dash-nav-item">Lịch tiêm chủng</div>
+                <div className="vtn-dash-nav-item">Spa &amp; Grooming</div>
+                <div className="vtn-dash-nav-item">Kho thuốc &amp; Lô nhập</div>
+                <div className="vtn-dash-nav-item">Hóa đơn &amp; Thu ngân</div>
               </aside>
 
               <div className="vtn-dash-main">
@@ -211,7 +211,7 @@ export default function HomePage() {
                   <div className="vtn-dash-notes">
                     {activeTab.notes.map((n) => (
                       <div key={n} className="vtn-dash-note-item">
-                        <span>✓</span> {n}
+                        • {n}
                       </div>
                     ))}
                   </div>
@@ -243,9 +243,9 @@ export default function HomePage() {
               Được tin tưởng bởi hơn 15.000+ Chủ nuôi thú cưng &amp; Hệ thống phòng khám thú y
             </span>
             <div className="vtn-ratings-logos">
-              <div className="vtn-rating-badge">★ 4.9 Đánh giá Google</div>
-              <div className="vtn-rating-badge">★ 4.9 Tiêu chuẩn Y khoa</div>
-              <div className="vtn-rating-badge">★ 4.8 Hài lòng Dịch vụ</div>
+              <div className="vtn-rating-badge">4.9 Đánh giá Google</div>
+              <div className="vtn-rating-badge">4.9 Tiêu chuẩn Y khoa</div>
+              <div className="vtn-rating-badge">4.8 Hài lòng Dịch vụ</div>
             </div>
           </div>
 
@@ -296,27 +296,22 @@ export default function HomePage() {
             <h3>Giải pháp Chăm sóc Toàn diện cho Bé cưng</h3>
             <div className="vtn-services-icon-grid">
               <div className="vtn-service-icon-item" onClick={() => handleBookService('Khám & Điều trị nội ngoại khoa')}>
-                <div className="vtn-service-icon-box">🩺</div>
                 <strong>Khám bệnh chuyên khoa</strong>
                 <span>Chẩn đoán nội – ngoại khoa &amp; xét nghiệm máu</span>
               </div>
               <div className="vtn-service-icon-item" onClick={() => handleBookService('Tiêm phòng Vaccine định kỳ')}>
-                <div className="vtn-service-icon-box">💉</div>
                 <strong>Tiêm phòng Vaccine</strong>
                 <span>Vaccine 5, 7 bệnh, Dại &amp; tẩy ký sinh trùng</span>
               </div>
               <div className="vtn-service-icon-item" onClick={() => handleBookService('Spa & Grooming thẩm mỹ')}>
-                <div className="vtn-service-icon-box">✨</div>
                 <strong>Spa &amp; Grooming</strong>
                 <span>Tắm thảo dược, massage &amp; cắt tỉa tạo kiểu</span>
               </div>
               <div className="vtn-service-icon-item" onClick={() => handleBookService('Siêu âm & Chẩn đoán hình ảnh')}>
-                <div className="vtn-service-icon-box">🔬</div>
                 <strong>Siêu âm &amp; X-Quang</strong>
                 <span>Tầm soát sớm tim mạch, gan thận &amp; thai kỳ</span>
               </div>
               <div className="vtn-service-icon-item" onClick={() => handleBookService('Nha khoa & Phẫu thuật vô trùng')}>
-                <div className="vtn-service-icon-box">🦷</div>
                 <strong>Nha khoa &amp; Phẫu thuật</strong>
                 <span>Lấy cao răng siêu âm &amp; ngoại khoa vô trùng</span>
               </div>
@@ -353,7 +348,7 @@ export default function HomePage() {
                 alt="Bác sĩ thú y đang khám cho chú chó Golden Retriever"
               />
               <div className="vtn-floating-card vtn-float-right">
-                <span className="vtn-float-badge">✓ Đã lưu Bệnh án điện tử</span>
+                <span className="vtn-float-badge">Đã lưu Bệnh án điện tử</span>
                 <strong>Milo • Golden Retriever</strong>
                 <small>Thân nhiệt: 38.4°C • Đã tiêm đủ mũi</small>
               </div>
@@ -385,7 +380,7 @@ export default function HomePage() {
                 alt="Thú cưng khỏe mạnh vui đùa"
               />
               <div className="vtn-floating-card vtn-float-left">
-                <span className="vtn-float-badge">📅 Đã xác nhận lịch hẹn</span>
+                <span className="vtn-float-badge">Đã xác nhận lịch hẹn</span>
                 <strong>Spa &amp; Grooming + Tiêm phòng Dại</strong>
                 <small>Thứ Bảy, 10:00 SA • Chi nhánh chính PCMS</small>
               </div>
@@ -417,7 +412,7 @@ export default function HomePage() {
                 alt="Chăm sóc cún con tại phòng khám"
               />
               <div className="vtn-floating-card vtn-float-right">
-                <span className="vtn-float-badge">💊 Lô thuốc #B2026</span>
+                <span className="vtn-float-badge">Lô thuốc #B2026</span>
                 <strong>Vaccine Nobivac DHPPi</strong>
                 <small>Còn 120 liều • Bảo quản lạnh đạt chuẩn</small>
               </div>
@@ -451,7 +446,6 @@ export default function HomePage() {
                   Tự động nhắc lịch tái khám, lịch tiêm phòng mũi nhắc lại và lịch tắm Spa định kỳ qua Email &amp; tin nhắn cho Chủ thú cưng.
                 </p>
               </div>
-              <div className="vtn-whatsapp-circle">💬</div>
             </div>
 
             <div className="vtn-bento-purple">
@@ -460,7 +454,7 @@ export default function HomePage() {
                 Đăng ký một lần, theo dõi toàn bộ hồ sơ thú cưng, lịch hẹn và hóa đơn trực tuyến.
               </p>
               <div className="vtn-phone-mockup">
-                <span>🐾 Sổ sức khỏe PCMS</span>
+                <span>Sổ sức khỏe PCMS</span>
                 <strong>Milo • Đang hoạt động</strong>
                 <small>Lịch tiêm kế tiếp: 28/10/2026</small>
               </div>

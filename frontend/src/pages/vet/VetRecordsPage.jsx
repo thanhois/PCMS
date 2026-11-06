@@ -1,21 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Calendar,
-  CheckCircle2,
-  Clock,
-  Dog,
-  Eye,
-  FileText,
-  Filter,
-  Plus,
-  Printer,
-  RefreshCw,
-  Search,
-  Stethoscope,
-  XCircle,
-} from 'lucide-react';
 import vetApi from '../../api/vetApi';
+import PageHeader from '../../components/admin/ui/PageHeader';
 import PrintableMedicalDocument from '../../components/common/PrintableMedicalDocument';
 import '../../styles/vetTheme.css';
 
@@ -32,10 +18,8 @@ export default function VetRecordsPage() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Print modal
   const [printRecord, setPrintRecord] = useState(null);
 
-  // Modal tạo mới bệnh án trực tiếp
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [pets, setPets] = useState([]);
   const [selectedPetId, setSelectedPetId] = useState('');
@@ -81,7 +65,7 @@ export default function VetRecordsPage() {
       setPets(petList || []);
       if (petList?.length > 0) setSelectedPetId(petList[0].petId);
       setShowCreateModal(true);
-    } catch (err) {
+    } catch {
       alert('Không thể tải danh sách thú cưng');
     }
   };
@@ -114,48 +98,34 @@ export default function VetRecordsPage() {
     try {
       const fullRecord = await vetApi.getMedicalRecordDetail(rId);
       setPrintRecord(fullRecord);
-    } catch (err) {
+    } catch {
       alert('Không thể tải chi tiết bệnh án để in');
     }
   };
 
   return (
-    <div>
-      {/* Action Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <div>
-          <h2 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 4px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <FileText size={22} color="#0d9488" /> Quản Lý Hồ Sơ Bệnh Án Điện Tử
-          </h2>
-          <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
-            Lưu trữ, tra cứu & theo dõi kết quả khám chữa bệnh của toàn bộ thú cưng
-          </p>
-        </div>
+    <div className="pcms-page">
+      <PageHeader
+        title="Quản lý Hồ sơ Bệnh án Điện tử"
+        subtitle="Lưu trữ, tra cứu và theo dõi kết quả khám chữa bệnh của toàn bộ thú cưng"
+        actions={
+          <button type="button" className="pcms-btn pcms-btn-primary" onClick={openCreateModal}>
+            Lập bệnh án mới
+          </button>
+        }
+      />
 
-        <button
-          type="button"
-          className="vet-btn vet-btn-primary"
-          onClick={openCreateModal}
-        >
-          <Plus size={16} /> Lập Bệnh Án Mới
-        </button>
-      </div>
-
-      {/* Filter and Search Box */}
-      <div className="vet-card" style={{ marginBottom: 20 }}>
+      <div className="vet-card">
         <div className="vet-card-body" style={{ padding: '16px 20px' }}>
-          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center' }}>
-            <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
-              <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
-              <input
-                type="text"
-                className="vet-input"
-                style={{ paddingLeft: 34 }}
-                placeholder="Tìm tên thú cưng, chủ nuôi, chẩn đoán, mã #MR..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
+          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+            <input
+              type="text"
+              className="vet-input"
+              style={{ flex: 1, minWidth: 220 }}
+              placeholder="Tìm tên thú cưng, chủ nuôi, chẩn đoán, mã #MR..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: 12.5, fontWeight: 600, color: '#64748b' }}>Từ ngày:</span>
@@ -181,7 +151,7 @@ export default function VetRecordsPage() {
 
             <select
               className="vet-select"
-              style={{ width: 150 }}
+              style={{ width: 160 }}
               value={status}
               onChange={(e) => {
                 setStatus(e.target.value);
@@ -195,7 +165,7 @@ export default function VetRecordsPage() {
             </select>
 
             <button type="submit" className="vet-btn vet-btn-primary vet-btn-sm">
-              <Filter size={14} /> Lọc kết quả
+              Lọc kết quả
             </button>
             <button
               type="button"
@@ -215,31 +185,23 @@ export default function VetRecordsPage() {
         </div>
       </div>
 
-      {/* Medical Records Table */}
       <div className="vet-card">
         <div className="vet-card-header">
-          <h3 className="vet-card-title">
-            Danh Sách Bệnh Án ({total} hồ sơ)
-          </h3>
+          <h3 className="vet-card-title">Danh Sách Bệnh Án ({total} hồ sơ)</h3>
           <button type="button" className="vet-btn vet-btn-outline vet-btn-sm" onClick={loadRecords}>
-            <RefreshCw size={14} /> Làm mới
+            Làm mới
           </button>
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#0d9488' }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>📋</div>
-            <p style={{ fontWeight: 600 }}>Đang tải danh sách hồ sơ bệnh án...</p>
+          <div className="pcms-state-box">
+            <h4>Đang tải danh sách hồ sơ bệnh án...</h4>
+            <p>Vui lòng chờ trong giây lát.</p>
           </div>
         ) : records.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>📁</div>
-            <h4 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 6px', color: '#0f172a' }}>
-              Không tìm thấy hồ sơ bệnh án nào
-            </h4>
-            <p style={{ fontSize: 13, margin: 0 }}>
-              Hãy thử thay đổi điều kiện tìm kiếm hoặc bấm <strong>Lập Bệnh Án Mới</strong>.
-            </p>
+          <div className="pcms-state-box">
+            <h4>Không tìm thấy hồ sơ bệnh án nào</h4>
+            <p>Hãy thử thay đổi điều kiện tìm kiếm hoặc bấm Lập bệnh án mới.</p>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -260,7 +222,7 @@ export default function VetRecordsPage() {
                 {records.map((r) => (
                   <tr key={r.recordId}>
                     <td>
-                      <strong style={{ color: '#0d9488' }}>#MR-{r.recordId}</strong>
+                      <strong style={{ color: '#6320ee' }}>#MR-{r.recordId}</strong>
                     </td>
                     <td>
                       <div style={{ fontSize: 13, fontWeight: 600 }}>{r.visitDate}</div>
@@ -274,7 +236,7 @@ export default function VetRecordsPage() {
                       <div style={{ fontSize: 12, color: '#64748b' }}>{r.ownerPhone}</div>
                     </td>
                     <td>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#0f766e', maxWidth: 260 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#5218cc', maxWidth: 260 }}>
                         {r.diagnosis}
                       </div>
                       <div style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 260 }}>
@@ -286,16 +248,12 @@ export default function VetRecordsPage() {
                     </td>
                     <td>
                       {r.status === 'COMPLETED' ? (
-                        <span className="vet-badge vet-badge-completed">
-                          <CheckCircle2 size={13} /> Hoàn tất
-                        </span>
+                        <span className="vet-badge vet-badge-completed">Hoàn tất</span>
                       ) : r.status === 'CANCELLED' ? (
-                        <span className="vet-badge vet-badge-cancelled">
-                          <XCircle size={13} /> Đã hủy
-                        </span>
+                        <span className="vet-badge vet-badge-cancelled">Đã hủy</span>
                       ) : (
                         <span className="vet-badge vet-badge-in-progress">
-                          <span className="vet-pulse-dot"></span> Đang khám
+                          <span className="vet-pulse-dot" /> Đang khám
                         </span>
                       )}
                     </td>
@@ -304,18 +262,16 @@ export default function VetRecordsPage() {
                         <button
                           type="button"
                           className="vet-btn vet-btn-primary vet-btn-sm"
-                          title="Vào phòng khám & xử lý bệnh án"
                           onClick={() => navigate(`/vet/examination/${r.recordId}`)}
                         >
-                          <Eye size={13} /> Mở ca
+                          Mở ca
                         </button>
                         <button
                           type="button"
                           className="vet-btn vet-btn-outline vet-btn-sm"
-                          title="In phiếu khám & đơn thuốc"
                           onClick={() => handleQuickPrint(r.recordId)}
                         >
-                          <Printer size={13} />
+                          In phiếu
                         </button>
                       </div>
                     </td>
@@ -326,9 +282,8 @@ export default function VetRecordsPage() {
           </div>
         )}
 
-        {/* Pagination */}
         {totalPages > 1 && (
-          <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0' }}>
+          <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e5e7eb' }}>
             <div style={{ fontSize: 13, color: '#64748b' }}>
               Trang <strong>{page}</strong> / {totalPages} (Tổng {total} ca bệnh)
             </div>
@@ -354,14 +309,16 @@ export default function VetRecordsPage() {
         )}
       </div>
 
-      {/* Modal Lập Bệnh Án Mới */}
       {showCreateModal && (
         <div className="vet-modal-backdrop">
           <div className="vet-modal" style={{ maxWidth: 540 }}>
             <div className="vet-modal-header">
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Stethoscope size={18} color="#0d9488" /> Tạo Bệnh Án Điện Tử Mới
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#0f172a' }}>
+                Tạo Bệnh Án Điện Tử Mới
               </h3>
+              <button type="button" className="vet-btn vet-btn-outline vet-btn-sm" onClick={() => setShowCreateModal(false)}>
+                Đóng
+              </button>
             </div>
             <form onSubmit={handleCreateRecord}>
               <div className="vet-modal-body">
@@ -430,7 +387,6 @@ export default function VetRecordsPage() {
         </div>
       )}
 
-      {/* Modal In Bệnh Án */}
       {printRecord && (
         <PrintableMedicalDocument
           record={printRecord}

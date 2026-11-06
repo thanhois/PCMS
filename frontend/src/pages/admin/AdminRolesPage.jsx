@@ -220,7 +220,7 @@ export default function AdminRolesPage() {
             onClick={fetchData}
             disabled={loading}
           >
-            ↻ Làm mới
+            Làm mới
           </button>
         }
       />

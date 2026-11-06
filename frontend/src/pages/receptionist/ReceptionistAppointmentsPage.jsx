@@ -348,8 +348,8 @@ export default function ReceptionistAppointmentsPage() {
               onChange={(e) => setShiftFilter(e.target.value)}
             >
               <option value="ALL">Tất cả các buổi</option>
-              <option value="MORNING">☀️ Buổi sáng</option>
-              <option value="AFTERNOON">🌤️ Buổi chiều</option>
+              <option value="MORNING">Buổi sáng</option>
+              <option value="AFTERNOON">Buổi chiều</option>
             </select>
           </div>
 
@@ -496,7 +496,7 @@ export default function ReceptionistAppointmentsPage() {
                             className="pcms-badge pcms-badge-purple"
                             style={{ fontSize: 11, marginTop: 3 }}
                           >
-                            {apt.shift === 'AFTERNOON' ? '🌤️ Chiều (13:30 - 17:30)' : '☀️ Sáng (08:00 - 12:00)'}
+                            {apt.shift === 'AFTERNOON' ? 'Chiều (13:30 - 17:30)' : 'Sáng (08:00 - 12:00)'}
                           </span>
                         </div>
                         {apt.checkInTimeDisplay ? (
@@ -665,7 +665,7 @@ export default function ReceptionistAppointmentsPage() {
                   checked={createForm.shift === 'MORNING'}
                   onChange={() => setCreateForm((prev) => ({ ...prev, shift: 'MORNING' }))}
                 />
-                ☀️ Buổi sáng (08:00 - 12:00)
+                Buổi sáng (08:00 - 12:00)
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 500 }}>
                 <input
@@ -675,7 +675,7 @@ export default function ReceptionistAppointmentsPage() {
                   checked={createForm.shift === 'AFTERNOON'}
                   onChange={() => setCreateForm((prev) => ({ ...prev, shift: 'AFTERNOON' }))}
                 />
-                🌤️ Buổi chiều (13:30 - 17:30)
+                Buổi chiều (13:30 - 17:30)
               </label>
             </div>
           </div>
@@ -695,7 +695,7 @@ export default function ReceptionistAppointmentsPage() {
               ))}
             </select>
             <small style={{ color: 'var(--pcms-text-muted)', fontSize: 11, marginTop: 4, display: 'block' }}>
-              💡 Khách hàng chỉ cần đặt theo Buổi. Bác sĩ phụ trách sẽ do Lễ tân chỉ định dựa trên trạng thái rảnh/bận thực tế khi thú cưng đến Check-in.
+              Khách hàng chỉ cần đặt theo Buổi. Bác sĩ phụ trách sẽ do Lễ tân chỉ định dựa trên trạng thái rảnh/bận thực tế khi thú cưng đến Check-in.
             </small>
           </div>
 
@@ -843,7 +843,7 @@ export default function ReceptionistAppointmentsPage() {
                   checked={rescheduleForm.shift === 'MORNING'}
                   onChange={() => setRescheduleForm((prev) => ({ ...prev, shift: 'MORNING' }))}
                 />
-                ☀️ Sáng (08:00 - 12:00)
+                Sáng (08:00 - 12:00)
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 500 }}>
                 <input
@@ -853,7 +853,7 @@ export default function ReceptionistAppointmentsPage() {
                   checked={rescheduleForm.shift === 'AFTERNOON'}
                   onChange={() => setRescheduleForm((prev) => ({ ...prev, shift: 'AFTERNOON' }))}
                 />
-                🌤️ Chiều (13:30 - 17:30)
+                Chiều (13:30 - 17:30)
               </label>
             </div>
           </div>

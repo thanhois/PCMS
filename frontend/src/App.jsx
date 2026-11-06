@@ -17,6 +17,8 @@ import InventoryRouteGuard from './components/inventory/InventoryRouteGuard';
 import BillingLayout from './components/billing/BillingLayout';
 import BillingRouteGuard from './components/billing/BillingRouteGuard';
 
+import OwnerLayout from './components/owner/OwnerLayout';
+
 // Authentication
 import { AuthProvider } from './context/AuthContext';
 
@@ -65,7 +67,6 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-
           {/* ================= PUBLIC & AUTH ROUTES ================= */}
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -77,7 +78,6 @@ export default function App() {
           <Route path="/admin" element={<AdminRouteGuard />}>
             <Route element={<AdminLayout />}>
               <Route index element={<Navigate to="overview" replace />} />
-
               <Route path="overview" element={<AdminOverviewPage />} />
               <Route path="accounts" element={<AdminAccountsPage />} />
               <Route path="roles" element={<AdminRolesPage />} />
@@ -104,12 +104,8 @@ export default function App() {
           <Route path="/vet" element={<VetRouteGuard />}>
             <Route element={<VetLayout />}>
               <Route index element={<Navigate to="workbench" replace />} />
-
               <Route path="workbench" element={<VetWorkbenchPage />} />
-              <Route
-                path="examination/:recordId"
-                element={<VetExaminationPage />}
-              />
+              <Route path="examination/:recordId" element={<VetExaminationPage />} />
               <Route path="records" element={<VetRecordsPage />} />
               <Route path="pets" element={<VetPetsPage />} />
             </Route>
@@ -119,11 +115,7 @@ export default function App() {
           <Route path="/inventory" element={<InventoryRouteGuard />}>
             <Route element={<InventoryLayout />}>
               <Route index element={<Navigate to="batches" replace />} />
-
-              <Route
-                path="batches"
-                element={<InventoryBatchesPage />}
-              />
+              <Route path="batches" element={<InventoryBatchesPage />} />
             </Route>
           </Route>
 
@@ -131,26 +123,20 @@ export default function App() {
           <Route path="/billing" element={<BillingRouteGuard />}>
             <Route element={<BillingLayout />}>
               <Route index element={<Navigate to="queue" replace />} />
-
               <Route path="queue" element={<BillingQueuePage />} />
-              <Route
-                path="invoices/:invoiceId"
-                element={<InvoiceDetailPage />}
-              />
+              <Route path="invoices/:invoiceId" element={<InvoiceDetailPage />} />
             </Route>
           </Route>
 
           {/* ================= PET OWNER & BOOKING ROUTES ================= */}
-          <Route path="/booking" element={<BookingPage />} />
-          <Route path="/owner/booking" element={<BookingPage />} />
-          <Route
-            path="/owner/medical-history"
-            element={<PetOwnerMedicalPage />}
-          />
+          <Route element={<OwnerLayout />}>
+            <Route path="/booking" element={<BookingPage />} />
+            <Route path="/owner/booking" element={<BookingPage />} />
+            <Route path="/owner/medical-history" element={<PetOwnerMedicalPage />} />
+          </Route>
 
           {/* ================= NOT FOUND ================= */}
           <Route path="*" element={<Navigate to="/" replace />} />
-
         </Routes>
       </BrowserRouter>
     </AuthProvider>

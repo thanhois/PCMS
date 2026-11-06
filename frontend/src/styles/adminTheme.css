@@ -124,12 +124,14 @@
 }
 
 .pcms-sidebar-toggle {
-  width: 34px;
   height: 34px;
+  padding: 0 10px;
   border-radius: var(--pcms-radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -206,7 +208,7 @@
 .pcms-search-input {
   width: 100%;
   height: 36px;
-  padding: 0 46px 0 36px;
+  padding: 0 54px 0 12px;
   border-radius: var(--pcms-radius-sm);
   border: 1px solid rgba(255, 255, 255, 0.25);
   background: rgba(255, 255, 255, 0.13);
@@ -409,7 +411,9 @@
 }
 
 .pcms-sidebar.collapsed {
-  width: var(--pcms-sidebar-collapsed-width);
+  width: 0;
+  border-right: none;
+  overflow: hidden;
 }
 
 .pcms-sidebar-nav {
@@ -461,6 +465,17 @@
   background: var(--pcms-primary-soft);
   color: var(--pcms-primary);
   font-weight: 600;
+}
+
+.pcms-nav-count-badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: var(--pcms-radius-pill);
+  background: var(--pcms-primary);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 .pcms-nav-icon {

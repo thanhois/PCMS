@@ -1,77 +1,170 @@
-
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import '../../styles/adminTheme.css';
 
-function InventoryLayout() {
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
+const MAIN_NAV_ITEMS = [
+  { to: '/inventory/batches', label: 'Quản lý lô thuốc' },
+];
 
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
+export default function InventoryLayout() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const [collapsed, setCollapsed] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const searchInputRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
     };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
-    const navLinkClass = ({ isActive }) =>
-        `inventory-nav-link${isActive ? ' active' : ''}`;
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-    return (
-        <div className="inventory-layout">
-            <aside className="inventory-sidebar">
-                <div className="inventory-brand">
-                    <h4>PCMS</h4>
-                    <span>Inventory Management</span>
-                </div>
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
-                <nav className="inventory-navigation">
-                    <NavLink
-                        to="/inventory/batches"
-                        className={navLinkClass}
-                    >
-                        <span>Quản lý lô thuốc</span>
-                    </NavLink>
-                </nav>
+  const handleGlobalSearchSubmit = (e) => {
+    e.preventDefault();
+    navigate('/inventory/batches');
+  };
 
-                <div className="inventory-sidebar-footer">
-                    <button
-                        type="button"
-                        className="inventory-back-button"
-                        onClick={() => navigate('/')}
-                    >
-                        Về trang chủ
-                    </button>
-                </div>
-            </aside>
+  const displayName = user?.fullName || user?.username || 'Thủ kho';
+  const avatarChar = displayName.charAt(0).toUpperCase();
 
-            <div className="inventory-main">
-                <header className="inventory-topbar">
-                    <div>
-                        <h5>Inventory Management</h5>
-                        <span>Quản lý kho thuốc</span>
-                    </div>
+  return (
+    <div className="pcms-admin-shell">
+      <header className="pcms-topbar">
+        <div className="pcms-topbar-left">
+          <button
+            type="button"
+            className="pcms-sidebar-toggle"
+            onClick={() => setCollapsed((prev) => !prev)}
+            title={collapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
+          >
+            Menu
+          </button>
 
-                    <div className="inventory-user">
-                        <div className="inventory-user-info">
-                            <strong>
-                                {user?.fullName || user?.username || 'Inventory Manager'}
-                            </strong>
-                            <small>Inventory Manager</small>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={handleLogout}
-                        >
-                            Đăng xuất
-                        </button>
-                    </div>
-                </header>
-
-                <main className="inventory-content">
-                    <Outlet />
-                </main>
+          <Link to="/inventory/batches" className="pcms-brand-link">
+            <div>
+              <span className="pcms-brand-title">PCMS</span>
+              <span className="pcms-brand-subtitle">Quản lý Kho Dược phẩm</span>
             </div>
+          </Link>
         </div>
-    );
-}
 
-export default InventoryLayout;
+        <form className="pcms-topbar-center" onSubmit={handleGlobalSearchSubmit}>
+          <div className="pcms-search-box">
+            <input
+              ref={searchInputRef}
+              type="search"
+              className="pcms-search-input"
+              placeholder="Tra cứu nhanh lô thuốc, nhà cung cấp, hạn sử dụng..."
+              value={globalSearch}
+              onChange={(e) => setGlobalSearch(e.target.value)}
+            />
+            <kbd className="pcms-search-kbd">Ctrl+K</kbd>
+          </div>
+        </form>
+
+        <div className="pcms-topbar-right" ref={dropdownRef}>
+          <div className="pcms-user-menu-wrap">
+            <button
+              type="button"
+              className="pcms-user-trigger"
+              onClick={() => setUserMenuOpen((prev) => !prev)}
+            >
+              <span className="pcms-user-avatar">{avatarChar}</span>
+              <span>{displayName}</span>
+            </button>
+
+            {userMenuOpen ? (
+              <div className="pcms-dropdown-menu">
+                <div className="pcms-dropdown-header">
+                  <strong>{displayName}</strong>
+                  <span>{user?.email || 'inventory@pcms.vn'} • {user?.role}</span>
+                </div>
+                <Link to="/" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
+                  <span>Về Trang chủ phòng khám</span>
+                </Link>
+                {user?.role === 'ADMIN' ? (
+                  <Link to="/admin/overview" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
+                    <span>Chuyển sang Cổng Quản trị (Admin)</span>
+                  </Link>
+                ) : null}
+                <button type="button" className="pcms-dropdown-item danger" onClick={handleLogout}>
+                  <span>Đăng xuất</span>
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </header>
+
+      <div className="pcms-admin-body">
+        <aside className={`pcms-sidebar ${collapsed ? 'collapsed' : ''}`}>
+          <nav className="pcms-sidebar-nav" aria-label="Menu quản lý kho">
+            <div className="pcms-sidebar-section-label">Nghiệp vụ Kho thuốc</div>
+            {MAIN_NAV_ITEMS.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) => `pcms-nav-item ${isActive ? 'active' : ''}`}
+              >
+                <span className="pcms-nav-label">{item.label}</span>
+              </NavLink>
+            ))}
+            {user?.role === 'ADMIN' ? (
+              <NavLink
+                to="/admin/medicines"
+                className={({ isActive }) => `pcms-nav-item ${isActive ? 'active' : ''}`}
+              >
+                <span className="pcms-nav-label">Danh mục thuốc</span>
+              </NavLink>
+            ) : null}
+          </nav>
+
+          <div className="pcms-sidebar-bottom">
+            {user?.role === 'ADMIN' ? (
+              <Link to="/admin/overview" className="pcms-nav-item">
+                <span className="pcms-nav-label">Cổng Quản trị Admin</span>
+              </Link>
+            ) : null}
+            <Link to="/" className="pcms-nav-item">
+              <span className="pcms-nav-label">Trang chủ phòng khám</span>
+            </Link>
+
+            <div className="pcms-sidebar-meta">
+              <span>PCMS Inventory</span>
+              <span>v1.0</span>
+            </div>
+          </div>
+        </aside>
+
+        <main className="pcms-main-content">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+}

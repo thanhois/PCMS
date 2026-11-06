@@ -670,8 +670,8 @@
 }
 
 .tag-teal {
-  background: #ccfbf1;
-  color: #0f766e;
+  background: #ede9fe;
+  color: #6320ee;
 }
 .tag-purple {
   background: #ede9fe;
@@ -1397,7 +1397,7 @@
   border: none;
   color: #71717a;
   cursor: pointer;
-  font-size: 0.86rem;
+  font-size: 12px; font-weight: 600; color: #c4b5fd;
 }
 
 .vtn-remember-row {

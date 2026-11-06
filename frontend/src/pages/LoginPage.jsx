@@ -131,12 +131,12 @@ export default function LoginPage() {
 
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 11.5, color: '#94a3b8', marginBottom: 6, fontWeight: 600 }}>
-              ⚡ Đăng nhập nhanh kiểm thử phân quyền:
+              Đăng nhập nhanh kiểm thử phân quyền:
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {[
                 { role: 'Admin', login: 'admin', pass: 'Admin@123', color: '#a78bfa' },
-                { role: 'Bác sĩ', login: 'vet', pass: 'Vet@123', color: '#2dd4bf' },
+                { role: 'Bác sĩ', login: 'vet', pass: 'Vet@123', color: '#a78bfa' },
                 { role: 'Lễ tân', login: 'receptionist', pass: 'Receptionist@123', color: '#fbbf24' },
                 { role: 'Chủ nuôi', login: 'petowner', pass: 'Owner@123', color: '#60a5fa' },
               ].map((acc) => (
@@ -157,7 +157,7 @@ export default function LoginPage() {
                     cursor: 'pointer',
                   }}
                 >
-                  <span style={{ color: acc.color, fontWeight: 700 }}>● {acc.role}</span>
+                  <span style={{ color: acc.color, fontWeight: 700 }}>{acc.role}</span>
                 </button>
               ))}
             </div>
@@ -200,7 +200,7 @@ export default function LoginPage() {
                   onClick={() => setShowPassword((prev) => !prev)}
                   aria-label="Hiện/Ẩn mật khẩu"
                 >
-                  {showPassword ? '🙈' : '👁'}
+                  {showPassword ? 'Ẩn' : 'Hiện'}
                 </button>
               </div>
               {errors.password ? <span className="vtn-error-text">{errors.password}</span> : null}
@@ -249,7 +249,7 @@ export default function LoginPage() {
       </div>
 
       <Link to="/" className="vtn-goto-home">
-        Go to Home ↗
+        Go to Home
       </Link>
     </div>
   );
