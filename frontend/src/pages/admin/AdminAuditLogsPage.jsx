@@ -121,7 +121,7 @@ export default function AdminAuditLogsPage() {
   }, [fromDate, toDate, usernameFilter, actionFilter, keyword]);
 
   useEffect(() => {
-    fetchLogs();
+    void Promise.resolve().then(fetchLogs);
   }, [fetchLogs]);
 
   const handleFromDateChange = (e) => {

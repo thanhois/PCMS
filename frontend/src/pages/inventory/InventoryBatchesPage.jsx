@@ -97,7 +97,7 @@ export default function InventoryBatchesPage() {
   };
 
   useEffect(() => {
-    loadData();
+    void Promise.resolve().then(loadData);
   }, []);
 
   const activeMedicines = useMemo(

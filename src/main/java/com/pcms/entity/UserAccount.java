@@ -41,6 +41,16 @@ public class UserAccount {
     @Column(name = "phoneNumber", nullable = false, unique = true, length = 20)
     private String phoneNumber;
 
+    @Column(name = "gender", length = 20)
+    private String gender;
+
+    @Column(name = "address", length = 255)
+    private String address;
+
+    @Builder.Default
+    @Column(name = "mustChangePassword")
+    private Boolean mustChangePassword = false;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private AccountStatus status;
@@ -54,12 +64,12 @@ public class UserAccount {
     @JoinColumn(name = "branchId", nullable = true)
     private Branch branch;
 
-    /** Số lần đăng nhập sai liên tiếp (tạm khóa 15 phút sau 5 lần). */
+    /** Số lần đăng nhập sai liên tiếp (khóa sau 5 lần). */
     @Builder.Default
     @Column(name = "failedLoginAttempts", nullable = false)
     private Integer failedLoginAttempts = 0;
 
-    /** Thời điểm kết thúc tạm khóa đăng nhập (tự động mở lại khi qua mốc này). */
+    /** Thời điểm kết thúc tạm khóa đăng nhập (nếu có). */
     @Column(name = "lockUntil")
     private LocalDateTime lockUntil;
 
@@ -85,6 +95,9 @@ public class UserAccount {
         }
         if (this.failedLoginAttempts == null) {
             this.failedLoginAttempts = 0;
+        }
+        if (this.mustChangePassword == null) {
+            this.mustChangePassword = false;
         }
     }
 

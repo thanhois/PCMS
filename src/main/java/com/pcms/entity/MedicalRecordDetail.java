@@ -7,7 +7,13 @@ import lombok.*;
  * Chi tiết dịch vụ thực hiện trong một lần khám (Requires: MedicalRecord 1 - N MedicalRecordDetail, Service 1 - N MedicalRecordDetail).
  */
 @Entity
-@Table(name = "MedicalRecordDetail")
+@Table(
+        name = "MedicalRecordDetail",
+        uniqueConstraints = @UniqueConstraint(
+                name = "UQ_MedicalRecordDetail_Record_Service",
+                columnNames = {"recordId", "serviceId"}
+        )
+)
 @Getter
 @Setter
 @NoArgsConstructor

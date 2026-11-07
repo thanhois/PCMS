@@ -25,7 +25,7 @@ export default function ReceptionistServicesPage() {
   }, []);
 
   useEffect(() => {
-    loadCatalog();
+    void Promise.resolve().then(loadCatalog);
   }, [loadCatalog]);
 
   const filteredServices = useMemo(() => {

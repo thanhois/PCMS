@@ -11,7 +11,10 @@ public record UserInfoResponse(
         String fullName,
         String email,
         String phoneNumber,
-        String role
+        String role,
+        String gender,
+        String address,
+        Boolean mustChangePassword
 ) {
     public static UserInfoResponse from(UserAccount user) {
         return new UserInfoResponse(
@@ -20,7 +23,10 @@ public record UserInfoResponse(
                 user.getFullName(),
                 user.getEmail(),
                 user.getPhoneNumber(),
-                user.getRole().getRoleName()
+                user.getRole().getRoleName(),
+                user.getGender(),
+                user.getAddress(),
+                Boolean.TRUE.equals(user.getMustChangePassword())
         );
     }
 }

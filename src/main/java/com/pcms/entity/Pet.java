@@ -22,6 +22,7 @@ public class Pet {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "petId")
     private Integer petId;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "ownerId", nullable = false)
     private PetOwner petOwner;
@@ -35,8 +36,12 @@ public class Pet {
     @Column(name = "breed", length = 100)
     private String breed;
 
-    @Column(name = "gender", nullable = false, length = 20)
-    private String gender;
+    @Column(name = "color", length = 50)
+    private String color;
+
+    @Builder.Default
+    @Column(name = "gender", length = 20)
+    private String gender = "UNKNOWN";
 
     @Column(name = "dateOfBirth")
     private LocalDate dateOfBirth;

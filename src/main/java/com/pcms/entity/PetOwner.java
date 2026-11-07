@@ -26,7 +26,7 @@ public class PetOwner {
     @Column(name = "fullName", nullable = false, length = 150)
     private String fullName;
 
-    @Column(name = "phoneNumber", nullable = false, length = 20)
+    @Column(name = "phoneNumber", nullable = false, unique = true, length = 20)
     private String phoneNumber;
 
     @Column(name = "email", length = 150)

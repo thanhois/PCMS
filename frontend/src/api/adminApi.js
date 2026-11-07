@@ -1,66 +1,12 @@
 import axiosClient from './axiosClient';
 
-/**
- * @typedef {Object} RoleDto
- * @property {number} roleId
- * @property {string} roleName
- * @property {string} description
- * @property {boolean} [active]
- */
-
-/**
- * @typedef {Object} StaffAccountDto
- * @property {number} userId
- * @property {string} username
- * @property {string} fullName
- * @property {string} email
- * @property {string} phoneNumber
- * @property {'ACTIVE'|'INACTIVE'} status
- * @property {number} roleId
- * @property {string} roleName
- * @property {string} createdAt
- */
-
-/**
- * @typedef {Object} ServiceCatalogDto
- * @property {number} serviceId
- * @property {string} serviceName
- * @property {string} description
- * @property {number} price
- * @property {'ACTIVE'|'INACTIVE'} status
- */
-
-/**
- * @typedef {Object} MedicineCatalogDto
- * @property {number} medicineId
- * @property {string} medicineName
- * @property {string} unit
- * @property {number} unitPrice
- * @property {'ACTIVE'|'INACTIVE'} status
- * @property {number} minThreshold
- * @property {number} totalStock
- * @property {string|null} nearestExpirationDate
- */
-
-/**
- * @typedef {Object} AuditLogDto
- * @property {number} logId
- * @property {string} actionTime
- * @property {number} userId
- * @property {string} username
- * @property {string} fullName
- * @property {string} actionType
- * @property {string} targetEntity
- * @property {string} actionDetails
- */
-
 const adminApi = {
-  //  1. OVERVIEW
+  // 1. OVERVIEW
   getOverviewSummary(params) {
     return axiosClient.get('/api/admin/overview', { params });
   },
 
-  //  2. ACCOUNTS
+  // 2. ACCOUNTS
   getAccounts(params) {
     return axiosClient.get('/api/admin/accounts', { params });
   },
@@ -86,8 +32,17 @@ const adminApi = {
     return axiosClient.get('/api/admin/roles-permissions');
   },
 
+  updateRolePermissions(roleId, permissionIds) {
+    return axiosClient.put(`/api/admin/roles/${roleId}/permissions`, { permissionIds });
+  },
+
   assignAccountRole(userId, roleName) {
     return axiosClient.patch(`/api/admin/accounts/${userId}/role`, { roleName });
+  },
+
+  // 3B. HISTORICAL MIGRATION
+  importHistoricalCustomers(csvContent) {
+    return axiosClient.post('/api/admin/migration/import-customers', { csvContent });
   },
 
   // 4. SERVICES & MEDICINES

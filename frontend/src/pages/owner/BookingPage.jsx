@@ -1,77 +1,143 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ownerApi from '../../api/ownerApi';
+import ConfirmDialog from '../../components/admin/ui/ConfirmDialog';
+import ModalDialog from '../../components/admin/ui/ModalDialog';
 import PageHeader from '../../components/admin/ui/PageHeader';
-import '../../styles/vetTheme.css';
+import StatusBadge from '../../components/admin/ui/StatusBadge';
+import ToastMessage from '../../components/admin/ui/ToastMessage';
+import '../../styles/adminTheme.css';
+
+const INITIAL_PET_FORM = {
+  petId: null,
+  petName: '',
+  species: 'Chó',
+  breed: '',
+  color: '',
+  gender: 'Đực',
+  dateOfBirth: '',
+  weight: '',
+};
 
 export default function BookingPage() {
   const [pets, setPets] = useState([]);
   const [services, setServices] = useState([]);
+  const [veterinarians, setVeterinarians] = useState([]);
+  const [slots, setSlots] = useState([]);
   const [myAppointments, setMyAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [serverError, setServerError] = useState('');
+  const [toast, setToast] = useState({ type: 'info', message: '' });
   const [bookedSuccess, setBookedSuccess] = useState(null);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const [formData, setFormData] = useState({
     petId: '',
+    veterinarianId: '',
     appointmentDate: todayStr,
-    shift: 'MORNING',
+    appointmentTime: '09:00',
     serviceId: '',
-    reason: '',
     notes: '',
   });
 
-  const [newPetOpen, setNewPetOpen] = useState(false);
-  const [newPetData, setNewPetData] = useState({
-    petName: '',
-    species: 'Chó',
-    breed: '',
-    gender: 'Đực',
-    weight: '',
+  // Modal tạo / cập nhật thú cưng (UC13, UC14)
+  const [petModalOpen, setPetModalOpen] = useState(false);
+  const [petForm, setPetForm] = useState(INITIAL_PET_FORM);
+  const [deletePetTarget, setDeletePetTarget] = useState(null);
+
+  // Modal đổi lịch (UC08) & hủy lịch (UC09)
+  const [rescheduleTarget, setRescheduleTarget] = useState(null);
+  const [rescheduleForm, setRescheduleForm] = useState({
+    appointmentDate: todayStr,
+    appointmentTime: '09:00',
+    veterinarianId: '',
+    serviceId: '',
+    notes: '',
   });
+  const [rescheduleSlots, setRescheduleSlots] = useState([]);
 
-  useEffect(() => {
-    loadInitialData();
-  }, []);
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
 
-  const loadInitialData = async () => {
+  const loadInitialData = useCallback(async () => {
     setLoading(true);
     try {
-      const [petsData, servicesData, appsData] = await Promise.all([
+      const [petsData, servicesData, vetsData, appsData] = await Promise.all([
         ownerApi.getMyPets(),
         ownerApi.getServices(),
+        ownerApi.getVeterinarians(),
         ownerApi.getMyAppointments(),
       ]);
-      setPets(petsData || []);
-      setServices(servicesData || []);
+      const pList = petsData || [];
+      const sList = servicesData || [];
+      setPets(pList);
+      setServices(sList);
+      setVeterinarians(vetsData || []);
       setMyAppointments(appsData || []);
 
-      if (petsData && petsData.length > 0) {
-        setFormData((prev) => ({ ...prev, petId: String(petsData[0].petId) }));
-      }
-      if (servicesData && servicesData.length > 0) {
-        setFormData((prev) => ({ ...prev, serviceId: String(servicesData[0].serviceId) }));
-      }
+      setFormData((prev) => ({
+        ...prev,
+        petId: prev.petId || (pList[0] ? String(pList[0].petId) : ''),
+        serviceId: prev.serviceId || (sList[0] ? String(sList[0].serviceId) : ''),
+      }));
     } catch (err) {
-      console.error('Lỗi tải dữ liệu đặt lịch:', err);
-      setServerError(err.message || 'Không thể tải dữ liệu dịch vụ.');
+      setToast({ type: 'error', message: err?.message || 'Không thể tải dữ liệu đặt lịch.' });
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(loadInitialData);
+  }, [loadInitialData]);
+
+  const loadSlots = useCallback(async (date, vetId, setter, timeUpdater) => {
+    if (!date) return;
+    try {
+      const res = await ownerApi.getAvailableSlots({
+        date,
+        veterinarianId: vetId ? Number(vetId) : undefined,
+      });
+      const list = Array.isArray(res) ? res : [];
+      setter(list);
+      const firstAvail = list.find((s) => s.available);
+      if (firstAvail && timeUpdater) {
+        timeUpdater(firstAvail.time);
+      }
+    } catch {
+      setter([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSlots(formData.appointmentDate, formData.veterinarianId, setSlots, (nextTime) => {
+      setFormData((prev) => {
+        const currentValid = slots.some((s) => s.time === prev.appointmentTime && s.available);
+        return currentValid ? prev : { ...prev, appointmentTime: nextTime };
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.appointmentDate, formData.veterinarianId]);
+
+  useEffect(() => {
+    if (rescheduleTarget) {
+      loadSlots(
+        rescheduleForm.appointmentDate,
+        rescheduleForm.veterinarianId,
+        setRescheduleSlots,
+        null
+      );
+    }
+  }, [rescheduleTarget, rescheduleForm.appointmentDate, rescheduleForm.veterinarianId, loadSlots]);
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
-    setServerError('');
-
     if (!formData.petId) {
-      setServerError('Vui lòng chọn thú cưng cần đặt lịch (hoặc bấm Thêm bé mới).');
+      setToast({ type: 'error', message: 'Vui lòng chọn thú cưng cần đặt lịch.' });
       return;
     }
-    if (!formData.appointmentDate) {
-      setServerError('Vui lòng chọn ngày hẹn khám.');
+    if (!formData.appointmentDate || !formData.appointmentTime) {
+      setToast({ type: 'error', message: 'Vui lòng chọn ngày và khung giờ khám.' });
       return;
     }
 
@@ -79,49 +145,164 @@ export default function BookingPage() {
     try {
       const res = await ownerApi.bookAppointment({
         petId: Number(formData.petId),
+        veterinarianId: formData.veterinarianId ? Number(formData.veterinarianId) : null,
         appointmentDate: formData.appointmentDate,
-        shift: formData.shift,
+        appointmentTime: formData.appointmentTime,
         serviceId: formData.serviceId ? Number(formData.serviceId) : null,
-        reason: formData.reason.trim() || undefined,
         notes: formData.notes.trim() || undefined,
       });
-
       setBookedSuccess(res);
       const updatedApps = await ownerApi.getMyAppointments();
       setMyAppointments(updatedApps || []);
+      await loadSlots(formData.appointmentDate, formData.veterinarianId, setSlots, null);
     } catch (err) {
-      setServerError(err.message || 'Đặt lịch hẹn không thành công. Vui lòng thử lại.');
+      setToast({
+        type: 'error',
+        message: err?.message || 'Đặt lịch hẹn không thành công. Vui lòng kiểm tra lại khung giờ.',
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleCreatePet = async (e) => {
+  // ==================== PET CRUD (UC13, UC14) ====================
+  const openAddPet = () => {
+    setPetForm(INITIAL_PET_FORM);
+    setPetModalOpen(true);
+  };
+
+  const openEditPet = (p, e) => {
+    e.stopPropagation();
+    setPetForm({
+      petId: p.petId,
+      petName: p.petName || '',
+      species: p.species || 'Chó',
+      breed: p.breed || '',
+      color: p.color || '',
+      gender: p.gender || 'Đực',
+      dateOfBirth: p.dateOfBirth || '',
+      weight: p.weight != null ? String(p.weight) : '',
+    });
+    setPetModalOpen(true);
+  };
+
+  const handleSavePet = async (e) => {
     e.preventDefault();
-    if (!newPetData.petName.trim()) {
-      alert('Vui lòng nhập tên bé thú cưng');
+    if (!petForm.petName.trim()) {
+      setToast({ type: 'error', message: 'Tên thú cưng không được để trống.' });
       return;
     }
-
+    setSubmitting(true);
     try {
-      const created = await ownerApi.createPet(newPetData);
-      setPets((prev) => [...prev, created]);
-      setFormData((prev) => ({ ...prev, petId: String(created.petId) }));
-      setNewPetOpen(false);
-      setNewPetData({ petName: '', species: 'Chó', breed: '', gender: 'Đực', weight: '' });
+      const payload = {
+        petName: petForm.petName.trim(),
+        species: petForm.species,
+        breed: petForm.breed.trim(),
+        color: petForm.color.trim(),
+        gender: petForm.gender,
+        dateOfBirth: petForm.dateOfBirth || null,
+        weight: petForm.weight !== '' ? Number(petForm.weight) : null,
+      };
+      if (petForm.petId) {
+        await ownerApi.updatePet(petForm.petId, payload);
+        setToast({ type: 'success', message: `Đã cập nhật hồ sơ thú cưng ${payload.petName}.` });
+      } else {
+        const created = await ownerApi.createPet(payload);
+        setFormData((prev) => ({ ...prev, petId: String(created.petId) }));
+        setToast({ type: 'success', message: `Đã thêm thú cưng ${payload.petName}.` });
+      }
+      setPetModalOpen(false);
+      const updatedPets = await ownerApi.getMyPets();
+      setPets(updatedPets || []);
     } catch (err) {
-      alert(err.message || 'Không thể tạo hồ sơ bé.');
+      setToast({ type: 'error', message: err?.message || 'Không thể lưu hồ sơ thú cưng.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleConfirmDeletePet = async () => {
+    if (!deletePetTarget) return;
+    setSubmitting(true);
+    try {
+      await ownerApi.updatePetStatus(deletePetTarget.petId, 'INACTIVE');
+      setToast({ type: 'success', message: `Đã xóa mềm hồ sơ thú cưng ${deletePetTarget.petName}.` });
+      setDeletePetTarget(null);
+      const updatedPets = await ownerApi.getMyPets();
+      setPets(updatedPets || []);
+      if (String(formData.petId) === String(deletePetTarget.petId)) {
+        setFormData((prev) => ({ ...prev, petId: updatedPets?.[0] ? String(updatedPets[0].petId) : '' }));
+      }
+    } catch (err) {
+      setToast({ type: 'error', message: err?.message || 'Không thể xóa hồ sơ thú cưng.' });
+      setDeletePetTarget(null);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ==================== RESCHEDULE & CANCEL (UC08, UC09, BR-10) ====================
+  const openRescheduleModal = (app) => {
+    setRescheduleTarget(app);
+    setRescheduleForm({
+      appointmentDate: app.appointmentDate || todayStr,
+      appointmentTime: app.appointmentTime || '09:00',
+      veterinarianId: app.veterinarianId ? String(app.veterinarianId) : '',
+      serviceId: app.serviceId ? String(app.serviceId) : '',
+      notes: app.notes || '',
+    });
+  };
+
+  const handleRescheduleSubmit = async (e) => {
+    e.preventDefault();
+    if (!rescheduleTarget) return;
+    setSubmitting(true);
+    try {
+      await ownerApi.rescheduleAppointment(rescheduleTarget.appointmentId, {
+        appointmentDate: rescheduleForm.appointmentDate,
+        appointmentTime: rescheduleForm.appointmentTime,
+        veterinarianId: rescheduleForm.veterinarianId ? Number(rescheduleForm.veterinarianId) : null,
+        serviceId: rescheduleForm.serviceId ? Number(rescheduleForm.serviceId) : null,
+        notes: rescheduleForm.notes.trim(),
+      });
+      setToast({ type: 'success', message: `Đã đổi lịch hẹn ${rescheduleTarget.appointmentCode} thành công.` });
+      setRescheduleTarget(null);
+      const updatedApps = await ownerApi.getMyAppointments();
+      setMyAppointments(updatedApps || []);
+    } catch (err) {
+      setToast({ type: 'error', message: err?.message || 'Không thể đổi lịch hẹn.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCancelSubmit = async (e) => {
+    e.preventDefault();
+    if (!cancelTarget) return;
+    setSubmitting(true);
+    try {
+      await ownerApi.cancelAppointment(cancelTarget.appointmentId, cancelReason.trim());
+      setToast({ type: 'success', message: `Đã hủy lịch hẹn ${cancelTarget.appointmentCode}.` });
+      setCancelTarget(null);
+      setCancelReason('');
+      const updatedApps = await ownerApi.getMyAppointments();
+      setMyAppointments(updatedApps || []);
+    } catch (err) {
+      setToast({ type: 'error', message: err?.message || 'Không thể hủy lịch hẹn.' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const selectedPet = pets.find((p) => String(p.petId) === String(formData.petId));
   const selectedService = services.find((s) => String(s.serviceId) === String(formData.serviceId));
+  const selectedVet = veterinarians.find((v) => String(v.userId) === String(formData.veterinarianId));
 
   return (
-    <div className="pcms-page">
+    <div>
       <PageHeader
-        title="Đặt lịch khám trực tuyến"
-        subtitle="Chọn thú cưng, ngày và buổi khám (Sáng / Chiều) để được tiếp đón nhanh tại quầy Lễ tân"
+        title="Đặt lịch khám & Quản lý Thú cưng"
+        subtitle="Đặt lịch khám trước tối thiểu 2 giờ. Đổi hoặc hủy lịch trực tuyến trước tối thiểu 24 giờ."
         actions={
           <Link to="/owner/medical-history" className="pcms-btn pcms-btn-outline">
             Sổ khám bệnh điện tử
@@ -129,93 +310,33 @@ export default function BookingPage() {
         }
       />
 
+      <ToastMessage
+        type={toast.type}
+        message={toast.message}
+        onClose={() => setToast({ type: 'info', message: '' })}
+      />
+
       {loading ? (
-        <div className="pcms-card pcms-state-box">
-          <h4>Đang tải dữ liệu đặt lịch...</h4>
-          <p>Vui lòng chờ trong giây lát.</p>
+        <div className="pcms-card" style={{ padding: 32, textAlign: 'center' }}>
+          Đang tải dữ liệu cổng chủ nuôi...
         </div>
       ) : bookedSuccess ? (
-        <div
-          className="pcms-card"
-          style={{
-            padding: '36px 32px',
-            textAlign: 'center',
-            maxWidth: 620,
-            margin: '12px auto',
-          }}
-        >
-          <div
-            style={{
-              display: 'inline-block',
-              padding: '4px 12px',
-              borderRadius: 9999,
-              background: '#dcfce7',
-              color: '#15803d',
-              fontSize: 12,
-              fontWeight: 700,
-              marginBottom: 14,
-            }}
-          >
-            Gửi yêu cầu thành công
-          </div>
-
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>
-            Đặt lịch khám thành công
-          </h2>
-          <p style={{ fontSize: 14, color: '#64748b', marginBottom: 24 }}>
-            Yêu cầu hẹn khám của bạn đã được gửi tới hệ thống tiếp nhận quầy Lễ tân PCMS.
+        <div className="pcms-card" style={{ padding: 32, maxWidth: 620, margin: '12px auto' }}>
+          <h2 style={{ marginTop: 0, marginBottom: 8 }}>Đặt lịch khám thành công</h2>
+          <p style={{ color: 'var(--pcms-text-muted)', marginBottom: 20 }}>
+            Yêu cầu hẹn khám của bạn đã được ghi nhận và gửi thông báo xác nhận.
           </p>
-
-          <div
-            style={{
-              background: '#f8fafc',
-              border: '1px solid #e5e7eb',
-              borderRadius: 12,
-              padding: 20,
-              textAlign: 'left',
-              marginBottom: 24,
-              fontSize: 13.5,
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 10, borderBottom: '1px dashed #e5e7eb', marginBottom: 10 }}>
-              <span style={{ color: '#64748b' }}>Mã lịch hẹn:</span>
-              <strong style={{ color: '#6320ee', fontSize: 15 }}>{bookedSuccess.appointmentCode}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ color: '#64748b' }}>Thú cưng:</span>
-              <strong>{bookedSuccess.petName} ({bookedSuccess.species})</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ color: '#64748b' }}>Ngày khám:</span>
-              <strong>{bookedSuccess.appointmentDate}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ color: '#64748b' }}>Buổi hẹn:</span>
-              <span style={{ fontWeight: 700, color: '#6320ee' }}>{bookedSuccess.shiftDisplay}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ color: '#64748b' }}>Dịch vụ:</span>
-              <strong>{bookedSuccess.serviceName}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
-              <span style={{ color: '#64748b' }}>Trạng thái tiếp nhận:</span>
-              <span style={{ background: '#fef3c7', color: '#b45309', padding: '3px 8px', borderRadius: 6, fontWeight: 700, fontSize: 12 }}>
-                {bookedSuccess.statusDisplay || 'Chờ duyệt'}
-              </span>
-            </div>
+          <div style={{ background: 'var(--pcms-bg-subtle, #f8fafc)', border: '1px solid var(--pcms-border, #e2e8f0)', borderRadius: 8, padding: 16, marginBottom: 20 }}>
+            <p style={{ margin: '4px 0' }}><strong>Mã lịch hẹn:</strong> {bookedSuccess.appointmentCode}</p>
+            <p style={{ margin: '4px 0' }}><strong>Thú cưng:</strong> {bookedSuccess.petName} ({bookedSuccess.species})</p>
+            <p style={{ margin: '4px 0' }}><strong>Thời gian hẹn:</strong> {bookedSuccess.appointmentDateTimeDisplay || `${bookedSuccess.appointmentDate} ${bookedSuccess.appointmentTime}`}</p>
+            <p style={{ margin: '4px 0' }}><strong>Bác sĩ:</strong> {bookedSuccess.veterinarianName}</p>
+            <p style={{ margin: '4px 0' }}><strong>Dịch vụ:</strong> {bookedSuccess.serviceName}</p>
+            <p style={{ margin: '4px 0' }}><strong>Trạng thái:</strong> {bookedSuccess.statusDisplay}</p>
           </div>
-
-          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 24 }}>
-            Khi đưa bé đến phòng khám, quý khách chỉ cần báo mã lịch hẹn <strong>{bookedSuccess.appointmentCode}</strong> hoặc số điện thoại tại quầy Lễ tân để được phân công Bác sĩ ngay.
-          </p>
-
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <button
-              type="button"
-              className="pcms-btn pcms-btn-outline"
-              onClick={() => setBookedSuccess(null)}
-            >
-              Đặt thêm lịch hẹn khác
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button type="button" className="pcms-btn pcms-btn-outline" onClick={() => setBookedSuccess(null)}>
+              Đặt thêm lịch khác
             </button>
             <Link to="/owner/medical-history" className="pcms-btn pcms-btn-primary">
               Xem Sổ bệnh án điện tử
@@ -223,97 +344,83 @@ export default function BookingPage() {
           </div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(0, 1fr)', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.55fr) minmax(0, 1fr)', gap: 20, alignItems: 'start' }}>
+          {/* Cột trái: Form Đặt lịch & Hồ sơ thú cưng */}
           <div className="pcms-card" style={{ padding: 24 }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 4px 0', color: '#0f172a' }}>
-              Thông tin Lịch hẹn Khám
-            </h2>
-            <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
-              Quý khách vui lòng chọn bé thú cưng, ngày và buổi khám mong muốn.
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <h2 style={{ margin: 0, fontSize: 17 }}>1. Hồ sơ Thú cưng của bạn</h2>
+              <button type="button" className="pcms-btn pcms-btn-outline pcms-btn-sm" onClick={openAddPet}>
+                + Thêm thú cưng
+              </button>
+            </div>
 
-            {serverError ? (
-              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 18 }}>
-                {serverError}
+            {pets.length === 0 ? (
+              <div style={{ padding: 18, border: '1px dashed var(--pcms-border, #cbd5e1)', borderRadius: 8, textAlign: 'center', marginBottom: 20 }}>
+                <p style={{ marginTop: 0 }}>Bạn chưa có hồ sơ thú cưng đang hoạt động.</p>
+                <button type="button" className="pcms-btn pcms-btn-primary pcms-btn-sm" onClick={openAddPet}>
+                  Tạo hồ sơ thú cưng ngay
+                </button>
               </div>
-            ) : null}
-
-            <form onSubmit={handleBookingSubmit}>
-              <div style={{ marginBottom: 18 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <label style={{ fontSize: 13.5, fontWeight: 700, color: '#334155' }}>
-                    1. Chọn Thú cưng của bạn <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setNewPetOpen(true)}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#6320ee',
-                      fontSize: 12.5,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    + Thêm bé mới
-                  </button>
-                </div>
-
-                {pets.length === 0 ? (
-                  <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 8, padding: 16, textAlign: 'center' }}>
-                    <p style={{ margin: '0 0 10px 0', fontSize: 13, color: '#64748b' }}>
-                      Bạn chưa có hồ sơ thú cưng nào trong hệ thống.
-                    </p>
-                    <button
-                      type="button"
-                      className="pcms-btn pcms-btn-primary pcms-btn-sm"
-                      onClick={() => setNewPetOpen(true)}
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 10, marginBottom: 20 }}>
+                {pets.map((p) => {
+                  const isSelected = String(p.petId) === String(formData.petId);
+                  return (
+                    <div
+                      key={p.petId}
+                      onClick={() => setFormData((prev) => ({ ...prev, petId: String(p.petId) }))}
+                      style={{
+                        border: isSelected ? '2px solid var(--pcms-primary, #4f46e5)' : '1px solid var(--pcms-border, #e2e8f0)',
+                        borderRadius: 8,
+                        padding: 12,
+                        cursor: 'pointer',
+                        background: isSelected ? 'rgba(79, 70, 229, 0.05)' : '#fff',
+                      }}
                     >
-                      Tạo hồ sơ Thú cưng ngay
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(145px, 1fr))', gap: 10 }}>
-                    {pets.map((p) => {
-                      const isSelected = String(p.petId) === String(formData.petId);
-                      return (
-                        <div
-                          key={p.petId}
-                          onClick={() => setFormData((prev) => ({ ...prev, petId: String(p.petId) }))}
-                          style={{
-                            border: isSelected ? '2px solid #6320ee' : '1px solid #e5e7eb',
-                            background: isSelected ? '#f5f3ff' : '#ffffff',
-                            borderRadius: 10,
-                            padding: '10px 12px',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{p.petName}</div>
+                      <div style={{ fontSize: 12, color: 'var(--pcms-text-muted)' }}>
+                        {p.species} {p.breed ? `• ${p.breed}` : ''}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--pcms-text-muted)', marginTop: 2 }}>
+                        {p.color ? `Màu: ${p.color} • ` : ''}
+                        {p.weight ? `${p.weight} kg` : 'Chưa cân'}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                        <button
+                          type="button"
+                          className="pcms-btn pcms-btn-outline pcms-btn-sm"
+                          style={{ padding: '2px 8px', fontSize: 11.5 }}
+                          onClick={(e) => openEditPet(p, e)}
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          type="button"
+                          className="pcms-btn pcms-btn-danger pcms-btn-sm"
+                          style={{ padding: '2px 8px', fontSize: 11.5 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletePetTarget(p);
                           }}
                         >
-                          <div style={{ fontWeight: 700, fontSize: 14, color: isSelected ? '#6320ee' : '#0f172a' }}>
-                            {p.petName}
-                          </div>
-                          <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                            {p.species} • {p.breed || 'Chưa rõ giống'}
-                          </div>
-                          {p.weight ? (
-                            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{p.weight} kg</div>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                          Ẩn
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+            )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                    2. Ngày khám mong muốn <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
+            <form onSubmit={handleBookingSubmit}>
+              <h2 style={{ marginTop: 0, marginBottom: 14, fontSize: 17 }}>2. Chọn Lịch khám & Bác sĩ</h2>
+
+              <div className="pcms-form-grid" style={{ marginBottom: 16 }}>
+                <div className="pcms-form-group">
+                  <label className="pcms-label">Ngày khám mong muốn *</label>
                   <input
                     type="date"
-                    className="vet-input"
+                    className="pcms-input"
                     min={todayStr}
                     value={formData.appointmentDate}
                     onChange={(e) => setFormData((prev) => ({ ...prev, appointmentDate: e.target.value }))}
@@ -321,72 +428,56 @@ export default function BookingPage() {
                   />
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                    3. Buổi khám <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <div style={{ display: 'flex', gap: 8, height: 39 }}>
-                    <label
-                      style={{
-                        flex: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: 8,
-                        border: formData.shift === 'MORNING' ? '2px solid #6320ee' : '1px solid #cbd5e1',
-                        background: formData.shift === 'MORNING' ? '#f5f3ff' : '#ffffff',
-                        cursor: 'pointer',
-                        fontWeight: 700,
-                        fontSize: 12.5,
-                        color: formData.shift === 'MORNING' ? '#6320ee' : '#475569',
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="shift"
-                        value="MORNING"
-                        checked={formData.shift === 'MORNING'}
-                        onChange={() => setFormData((prev) => ({ ...prev, shift: 'MORNING' }))}
-                        style={{ display: 'none' }}
-                      />
-                      Sáng (8h - 12h)
-                    </label>
-
-                    <label
-                      style={{
-                        flex: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: 8,
-                        border: formData.shift === 'AFTERNOON' ? '2px solid #6320ee' : '1px solid #cbd5e1',
-                        background: formData.shift === 'AFTERNOON' ? '#f5f3ff' : '#ffffff',
-                        cursor: 'pointer',
-                        fontWeight: 700,
-                        fontSize: 12.5,
-                        color: formData.shift === 'AFTERNOON' ? '#6320ee' : '#475569',
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="shift"
-                        value="AFTERNOON"
-                        checked={formData.shift === 'AFTERNOON'}
-                        onChange={() => setFormData((prev) => ({ ...prev, shift: 'AFTERNOON' }))}
-                        style={{ display: 'none' }}
-                      />
-                      Chiều (13h30 - 17h30)
-                    </label>
-                  </div>
+                <div className="pcms-form-group">
+                  <label className="pcms-label">Bác sĩ phụ trách (Tùy chọn)</label>
+                  <select
+                    className="pcms-select"
+                    value={formData.veterinarianId}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, veterinarianId: e.target.value }))}
+                  >
+                    <option value="">-- Để phòng khám điều phối --</option>
+                    {veterinarians.map((v) => (
+                      <option key={v.userId} value={v.userId}>
+                        BS. {v.fullName}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
-              <div style={{ marginBottom: 18 }}>
-                <label style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                  4. Dịch vụ khám mong muốn
-                </label>
+              <div className="pcms-form-group" style={{ marginBottom: 16 }}>
+                <label className="pcms-label">Khung giờ khám (Cách thời điểm hiện tại ít nhất 2 giờ) *</label>
+                {slots.length === 0 ? (
+                  <p style={{ fontSize: 13, color: 'var(--pcms-text-muted)' }}>Không có khung giờ khả dụng trong ngày này.</p>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))', gap: 8 }}>
+                    {slots.map((s) => {
+                      const active = formData.appointmentTime === s.time;
+                      return (
+                        <button
+                          key={s.time}
+                          type="button"
+                          disabled={!s.available}
+                          title={s.reasonUnavailable || 'Khả dụng'}
+                          onClick={() => setFormData((prev) => ({ ...prev, appointmentTime: s.time }))}
+                          className={active ? 'pcms-btn pcms-btn-primary pcms-btn-sm' : 'pcms-btn pcms-btn-outline pcms-btn-sm'}
+                          style={{
+                            justifyContent: 'center',
+                            opacity: s.available ? 1 : 0.42,
+                          }}
+                        >
+                          {s.time}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="pcms-form-group" style={{ marginBottom: 16 }}>
+                <label className="pcms-label">Dịch vụ đăng ký</label>
                 <select
-                  className="vet-select"
+                  className="pcms-select"
                   value={formData.serviceId}
                   onChange={(e) => setFormData((prev) => ({ ...prev, serviceId: e.target.value }))}
                 >
@@ -399,119 +490,108 @@ export default function BookingPage() {
                 </select>
               </div>
 
-              <div style={{ marginBottom: 22 }}>
-                <label style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                  5. Triệu chứng của bé / Ghi chú cho Bác sĩ
-                </label>
+              <div className="pcms-form-group" style={{ marginBottom: 18 }}>
+                <label className="pcms-label">Triệu chứng / Ghi chú</label>
                 <textarea
-                  className="vet-textarea"
+                  className="pcms-textarea"
                   rows={3}
-                  placeholder="Mô tả triệu chứng của bé (Ví dụ: Bé mệt, bỏ ăn 2 ngày nay, nôn mửa, ngứa gãi nhiều...)"
+                  placeholder="Mô tả triệu chứng hoặc yêu cầu đặc biệt..."
                   value={formData.notes}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value, reason: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                 />
               </div>
 
               <button
                 type="submit"
-                disabled={submitting || pets.length === 0}
                 className="pcms-btn pcms-btn-primary"
-                style={{ width: '100%', height: 42, justifyContent: 'center', fontSize: 14 }}
+                disabled={submitting || pets.length === 0}
+                style={{ width: '100%', justifyContent: 'center' }}
               >
-                {submitting ? 'Đang gửi yêu cầu đặt lịch...' : 'Xác nhận Đặt lịch khám ngay'}
+                {submitting ? 'Đang gửi yêu cầu...' : 'Xác nhận Đặt lịch Khám'}
               </button>
             </form>
           </div>
 
+          {/* Cột phải: Tóm tắt & Danh sách lịch hẹn của chủ nuôi */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div className="pcms-card" style={{ padding: 22 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 14px 0', color: '#0f172a' }}>
-                Tóm tắt lịch hẹn
-              </h3>
-              <div style={{ fontSize: 13, lineHeight: 1.8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748b' }}>Bệnh nhân:</span>
-                  <strong>{selectedPet ? `${selectedPet.petName} (${selectedPet.species})` : 'Chưa chọn'}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748b' }}>Ngày khám:</span>
-                  <strong>{formData.appointmentDate}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748b' }}>Buổi khám:</span>
-                  <strong style={{ color: '#6320ee' }}>
-                    {formData.shift === 'MORNING' ? 'Buổi sáng (8h - 12h)' : 'Buổi chiều (13h30 - 17h30)'}
-                  </strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748b' }}>Dịch vụ:</span>
-                  <strong>{selectedService ? selectedService.serviceName : 'Khám lâm sàng tổng quát'}</strong>
-                </div>
+            <div className="pcms-card" style={{ padding: 20 }}>
+              <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 15 }}>Tóm tắt yêu cầu đặt hẹn</h3>
+              <div style={{ fontSize: 13.5, lineHeight: 1.8 }}>
+                <div><strong>Thú cưng:</strong> {selectedPet ? `${selectedPet.petName} (${selectedPet.species})` : 'Chưa chọn'}</div>
+                <div><strong>Ngày & Giờ:</strong> {formData.appointmentDate} lúc {formData.appointmentTime}</div>
+                <div><strong>Bác sĩ:</strong> {selectedVet ? `BS. ${selectedVet.fullName}` : 'Phòng khám điều phối'}</div>
+                <div><strong>Dịch vụ:</strong> {selectedService ? selectedService.serviceName : 'Khám tổng quát'}</div>
                 {selectedService?.price ? (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTop: '1px dashed #e5e7eb' }}>
-                    <span style={{ color: '#64748b' }}>Phí tham khảo:</span>
-                    <strong style={{ color: '#6320ee' }}>{Number(selectedService.price).toLocaleString('vi-VN')} đ</strong>
-                  </div>
+                  <div><strong>Chi phí dự kiến:</strong> {Number(selectedService.price).toLocaleString('vi-VN')} đ</div>
                 ) : null}
-              </div>
-
-              <div style={{ marginTop: 14, padding: '10px 12px', background: '#f5f3ff', border: '1px solid #ede9fe', borderRadius: 8, fontSize: 12, color: '#5218cc' }}>
-                Bác sĩ trực sẵn sàng sẽ được điều phối ngay khi bạn đưa bé tới quầy tiếp đón Lễ tân.
               </div>
             </div>
 
-            <div className="pcms-card" style={{ padding: 22 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 12px 0', color: '#0f172a' }}>
+            <div className="pcms-card" style={{ padding: 20 }}>
+              <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 15 }}>
                 Lịch hẹn của bạn ({myAppointments.length})
               </h3>
-
               {myAppointments.length === 0 ? (
-                <p style={{ fontSize: 12.5, color: '#94a3b8', margin: 0, textAlign: 'center', padding: '16px 0' }}>
-                  Bạn chưa có lịch hẹn nào.
-                </p>
+                <p style={{ fontSize: 13, color: 'var(--pcms-text-muted)' }}>Bạn chưa có lịch hẹn nào.</p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 320, overflowY: 'auto' }}>
-                  {myAppointments.slice(0, 5).map((app) => (
-                    <div
-                      key={app.appointmentId}
-                      style={{
-                        background: '#f8fafc',
-                        borderRadius: 8,
-                        padding: '10px 12px',
-                        border: '1px solid #eef2f6',
-                        fontSize: 12.5,
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                        <strong style={{ color: '#6320ee' }}>{app.appointmentCode}</strong>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            padding: '2px 8px',
-                            borderRadius: 9999,
-                            background:
-                              app.status === 'CONFIRMED' || app.status === 'APPROVED'
-                                ? '#dcfce7'
-                                : app.status === 'CHECKED_IN'
-                                ? '#ede9fe'
-                                : '#fef3c7',
-                            color:
-                              app.status === 'CONFIRMED' || app.status === 'APPROVED'
-                                ? '#15803d'
-                                : app.status === 'CHECKED_IN'
-                                ? '#6320ee'
-                                : '#b45309',
-                          }}
-                        >
-                          {app.statusDisplay}
-                        </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 460, overflowY: 'auto' }}>
+                  {myAppointments.map((app) => {
+                    const modifiableStatus = ['PENDING_APPROVAL', 'CONFIRMED', 'APPROVED'].includes(
+                      (app.status || '').toUpperCase()
+                    );
+                    return (
+                      <div
+                        key={app.appointmentId}
+                        style={{
+                          border: '1px solid var(--pcms-border, #e2e8f0)',
+                          borderRadius: 8,
+                          padding: 12,
+                          fontSize: 13,
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <strong>{app.appointmentCode} — {app.petName}</strong>
+                          <StatusBadge status={app.status} />
+                        </div>
+                        <div>Thời gian: <strong>{app.appointmentDateTimeDisplay || `${app.appointmentDate} ${app.appointmentTime}`}</strong></div>
+                        <div>Bác sĩ: {app.veterinarianName}</div>
+                        <div>Dịch vụ: {app.serviceName}</div>
+                        {app.rejectionReason ? (
+                          <div style={{ color: '#b91c1c', marginTop: 4 }}>Lý do hủy/từ chối: {app.rejectionReason}</div>
+                        ) : null}
+
+                        {modifiableStatus ? (
+                          <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                            {app.canModifyOnline ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="pcms-btn pcms-btn-outline pcms-btn-sm"
+                                  onClick={() => openRescheduleModal(app)}
+                                >
+                                  Đổi lịch
+                                </button>
+                                <button
+                                  type="button"
+                                  className="pcms-btn pcms-btn-danger pcms-btn-sm"
+                                  onClick={() => {
+                                    setCancelTarget(app);
+                                    setCancelReason('');
+                                  }}
+                                >
+                                  Hủy lịch
+                                </button>
+                              </>
+                            ) : (
+                              <span style={{ fontSize: 11.5, color: 'var(--pcms-text-muted)' }}>
+                                Dưới 24 giờ trước lịch hẹn: Vui lòng liên hệ hotline Lễ tân để đổi hoặc hủy lịch.
+                              </span>
+                            )}
+                          </div>
+                        ) : null}
                       </div>
-                      <div>
-                        <strong>{app.petName}</strong> • {app.appointmentDate} • {app.shiftDisplay}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -519,101 +599,209 @@ export default function BookingPage() {
         </div>
       )}
 
-      {newPetOpen ? (
-        <div className="vet-modal-backdrop">
-          <div className="vet-modal" style={{ maxWidth: 440 }}>
-            <div className="vet-modal-header">
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#0f172a' }}>
-                Tạo hồ sơ Thú cưng mới
-              </h3>
-              <button
-                type="button"
-                className="vet-btn vet-btn-outline vet-btn-sm"
-                onClick={() => setNewPetOpen(false)}
-              >
-                Đóng
-              </button>
-            </div>
-
-            <form onSubmit={handleCreatePet}>
-              <div className="vet-modal-body">
-                <div className="vet-form-group">
-                  <label className="vet-form-label">
-                    Tên bé thú cưng <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    className="vet-input"
-                    placeholder="Ví dụ: Milo, Lu, Bơ..."
-                    value={newPetData.petName}
-                    onChange={(e) => setNewPetData((prev) => ({ ...prev, petName: e.target.value }))}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  <div className="vet-form-group">
-                    <label className="vet-form-label">Loài</label>
-                    <select
-                      className="vet-select"
-                      value={newPetData.species}
-                      onChange={(e) => setNewPetData((prev) => ({ ...prev, species: e.target.value }))}
-                    >
-                      <option value="Chó">Chó</option>
-                      <option value="Mèo">Mèo</option>
-                      <option value="Khác">Khác</option>
-                    </select>
-                  </div>
-                  <div className="vet-form-group">
-                    <label className="vet-form-label">Giống</label>
-                    <input
-                      type="text"
-                      className="vet-input"
-                      placeholder="Poodle, Golden, Mèo Anh..."
-                      value={newPetData.breed}
-                      onChange={(e) => setNewPetData((prev) => ({ ...prev, breed: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  <div className="vet-form-group" style={{ marginBottom: 0 }}>
-                    <label className="vet-form-label">Giới tính</label>
-                    <select
-                      className="vet-select"
-                      value={newPetData.gender}
-                      onChange={(e) => setNewPetData((prev) => ({ ...prev, gender: e.target.value }))}
-                    >
-                      <option value="Đực">Đực</option>
-                      <option value="Cái">Cái</option>
-                    </select>
-                  </div>
-                  <div className="vet-form-group" style={{ marginBottom: 0 }}>
-                    <label className="vet-form-label">Cân nặng (kg)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      className="vet-input"
-                      placeholder="Ví dụ: 4.5"
-                      value={newPetData.weight}
-                      onChange={(e) => setNewPetData((prev) => ({ ...prev, weight: e.target.value }))}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="vet-modal-footer">
-                <button type="button" className="vet-btn vet-btn-outline" onClick={() => setNewPetOpen(false)}>
-                  Hủy
-                </button>
-                <button type="submit" className="vet-btn vet-btn-primary">
-                  Lưu hồ sơ bé
-                </button>
-              </div>
-            </form>
+      {/* Modal Thêm / Sửa Thú cưng */}
+      <ModalDialog
+        open={petModalOpen}
+        title={petForm.petId ? 'Cập nhật Hồ sơ Thú cưng' : 'Thêm Hồ sơ Thú cưng mới'}
+        onClose={() => setPetModalOpen(false)}
+        footer={
+          <>
+            <button type="button" className="pcms-btn pcms-btn-outline" onClick={() => setPetModalOpen(false)}>
+              Hủy
+            </button>
+            <button type="submit" form="owner-pet-form" className="pcms-btn pcms-btn-primary" disabled={submitting}>
+              Lưu hồ sơ
+            </button>
+          </>
+        }
+      >
+        <form id="owner-pet-form" onSubmit={handleSavePet} className="pcms-form-grid">
+          <div className="pcms-form-group" style={{ gridColumn: '1 / -1' }}>
+            <label className="pcms-label">Tên thú cưng *</label>
+            <input
+              className="pcms-input"
+              required
+              value={petForm.petName}
+              onChange={(e) => setPetForm((prev) => ({ ...prev, petName: e.target.value }))}
+            />
           </div>
-        </div>
-      ) : null}
+          <div className="pcms-form-group">
+            <label className="pcms-label">Loài *</label>
+            <select
+              className="pcms-select"
+              value={petForm.species}
+              onChange={(e) => setPetForm((prev) => ({ ...prev, species: e.target.value }))}
+            >
+              <option value="Chó">Chó</option>
+              <option value="Mèo">Mèo</option>
+              <option value="Thỏ">Thỏ</option>
+              <option value="Hamster">Hamster</option>
+              <option value="Khác">Khác</option>
+            </select>
+          </div>
+          <div className="pcms-form-group">
+            <label className="pcms-label">Giống (Breed)</label>
+            <input
+              className="pcms-input"
+              value={petForm.breed}
+              onChange={(e) => setPetForm((prev) => ({ ...prev, breed: e.target.value }))}
+            />
+          </div>
+          <div className="pcms-form-group">
+            <label className="pcms-label">Màu lông (Color)</label>
+            <input
+              className="pcms-input"
+              placeholder="Trắng, Vàng, Tam thể..."
+              value={petForm.color}
+              onChange={(e) => setPetForm((prev) => ({ ...prev, color: e.target.value }))}
+            />
+          </div>
+          <div className="pcms-form-group">
+            <label className="pcms-label">Giới tính</label>
+            <select
+              className="pcms-select"
+              value={petForm.gender}
+              onChange={(e) => setPetForm((prev) => ({ ...prev, gender: e.target.value }))}
+            >
+              <option value="Đực">Đực</option>
+              <option value="Cái">Cái</option>
+              <option value="UNKNOWN">Chưa rõ</option>
+            </select>
+          </div>
+          <div className="pcms-form-group">
+            <label className="pcms-label">Ngày sinh</label>
+            <input
+              type="date"
+              className="pcms-input"
+              max={todayStr}
+              value={petForm.dateOfBirth}
+              onChange={(e) => setPetForm((prev) => ({ ...prev, dateOfBirth: e.target.value }))}
+            />
+          </div>
+          <div className="pcms-form-group">
+            <label className="pcms-label">Cân nặng (kg)</label>
+            <input
+              type="number"
+              step="0.1"
+              min="0.1"
+              max="250"
+              className="pcms-input"
+              value={petForm.weight}
+              onChange={(e) => setPetForm((prev) => ({ ...prev, weight: e.target.value }))}
+            />
+          </div>
+        </form>
+      </ModalDialog>
+
+      {/* Modal Đổi lịch hẹn (UC08) */}
+      <ModalDialog
+        open={Boolean(rescheduleTarget)}
+        title={`Đổi lịch hẹn ${rescheduleTarget?.appointmentCode || ''}`}
+        onClose={() => setRescheduleTarget(null)}
+        footer={
+          <>
+            <button type="button" className="pcms-btn pcms-btn-outline" onClick={() => setRescheduleTarget(null)}>
+              Hủy
+            </button>
+            <button type="submit" form="owner-reschedule-form" className="pcms-btn pcms-btn-primary" disabled={submitting}>
+              Lưu lịch hẹn mới
+            </button>
+          </>
+        }
+      >
+        <form id="owner-reschedule-form" onSubmit={handleRescheduleSubmit} className="pcms-form-grid">
+          <div className="pcms-form-group">
+            <label className="pcms-label">Ngày hẹn mới *</label>
+            <input
+              type="date"
+              className="pcms-input"
+              min={todayStr}
+              required
+              value={rescheduleForm.appointmentDate}
+              onChange={(e) => setRescheduleForm((prev) => ({ ...prev, appointmentDate: e.target.value }))}
+            />
+          </div>
+          <div className="pcms-form-group">
+            <label className="pcms-label">Bác sĩ phụ trách</label>
+            <select
+              className="pcms-select"
+              value={rescheduleForm.veterinarianId}
+              onChange={(e) => setRescheduleForm((prev) => ({ ...prev, veterinarianId: e.target.value }))}
+            >
+              <option value="">-- Để phòng khám điều phối --</option>
+              {veterinarians.map((v) => (
+                <option key={v.userId} value={v.userId}>
+                  BS. {v.fullName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="pcms-form-group" style={{ gridColumn: '1 / -1' }}>
+            <label className="pcms-label">Khung giờ mới *</label>
+            <select
+              className="pcms-select"
+              value={rescheduleForm.appointmentTime}
+              onChange={(e) => setRescheduleForm((prev) => ({ ...prev, appointmentTime: e.target.value }))}
+            >
+              {rescheduleSlots.map((s) => (
+                <option key={s.time} value={s.time} disabled={!s.available}>
+                  {s.time} {!s.available ? `(${s.reasonUnavailable})` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="pcms-form-group" style={{ gridColumn: '1 / -1' }}>
+            <label className="pcms-label">Ghi chú cập nhật</label>
+            <textarea
+              className="pcms-textarea"
+              rows={2}
+              value={rescheduleForm.notes}
+              onChange={(e) => setRescheduleForm((prev) => ({ ...prev, notes: e.target.value }))}
+            />
+          </div>
+        </form>
+      </ModalDialog>
+
+      {/* Modal Hủy lịch hẹn (UC09) */}
+      <ModalDialog
+        open={Boolean(cancelTarget)}
+        title={`Hủy lịch hẹn ${cancelTarget?.appointmentCode || ''}`}
+        onClose={() => setCancelTarget(null)}
+        footer={
+          <>
+            <button type="button" className="pcms-btn pcms-btn-outline" onClick={() => setCancelTarget(null)}>
+              Đóng
+            </button>
+            <button type="submit" form="owner-cancel-form" className="pcms-btn pcms-btn-danger" disabled={submitting}>
+              Xác nhận Hủy lịch
+            </button>
+          </>
+        }
+      >
+        <form id="owner-cancel-form" onSubmit={handleCancelSubmit}>
+          <div className="pcms-form-group">
+            <label className="pcms-label">Lý do hủy lịch</label>
+            <textarea
+              className="pcms-textarea"
+              rows={3}
+              placeholder="Nhập lý do hủy lịch (tùy chọn)..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+            />
+          </div>
+        </form>
+      </ModalDialog>
+
+      {/* Confirm xóa mềm thú cưng */}
+      <ConfirmDialog
+        open={Boolean(deletePetTarget)}
+        title="Ẩn / Xóa mềm Hồ sơ Thú cưng"
+        message={`Bạn có chắc chắn muốn ẩn hồ sơ thú cưng "${deletePetTarget?.petName}"? Lịch sử bệnh án cũ vẫn được lưu trữ an toàn.`}
+        confirmLabel="Xác nhận ẩn"
+        variant="danger"
+        onCancel={() => setDeletePetTarget(null)}
+        onConfirm={handleConfirmDeletePet}
+      />
     </div>
   );
 }

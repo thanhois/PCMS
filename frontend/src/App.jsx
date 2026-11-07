@@ -28,6 +28,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import ProfilePage from './pages/ProfilePage';
 
 // Admin Pages
 import AdminAccountsPage from './pages/admin/AdminAccountsPage';
@@ -57,6 +58,9 @@ import PetOwnerMedicalPage from './pages/owner/PetOwnerMedicalPage';
 
 // Inventory Pages
 import InventoryBatchesPage from './pages/inventory/InventoryBatchesPage';
+import InventoryMedicinesPage from './pages/inventory/InventoryMedicinesPage';
+import InventoryReportsPage from './pages/inventory/InventoryReportsPage';
+import InventoryServicesPage from './pages/inventory/InventoryServicesPage';
 
 // Billing Pages
 import BillingQueuePage from './pages/billing/BillingQueuePage';
@@ -73,6 +77,7 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
 
           {/* ================= ADMIN ROUTES ================= */}
           <Route path="/admin" element={<AdminRouteGuard />}>
@@ -116,6 +121,9 @@ export default function App() {
             <Route element={<InventoryLayout />}>
               <Route index element={<Navigate to="batches" replace />} />
               <Route path="batches" element={<InventoryBatchesPage />} />
+              <Route path="medicines" element={<InventoryMedicinesPage />} />
+              <Route path="services" element={<InventoryServicesPage />} />
+              <Route path="reports" element={<InventoryReportsPage />} />
             </Route>
           </Route>
 

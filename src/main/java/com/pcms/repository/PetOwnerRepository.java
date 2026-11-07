@@ -11,6 +11,8 @@ public interface PetOwnerRepository extends JpaRepository<PetOwner, Integer> {
 
     Optional<PetOwner> findByUserAccount_UserId(Integer userId);
 
+    Optional<PetOwner> findByPhoneNumber(String phoneNumber);
+
     /** Pet Owner walk-in (do Lễ tân tạo) chưa có tài khoản online. */
     Optional<PetOwner> findFirstByPhoneNumberAndUserAccountIsNull(String phoneNumber);
 

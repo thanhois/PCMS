@@ -171,6 +171,9 @@ export default function ReceptionistLayout() {
                   <strong>{displayName}</strong>
                   <span>{user?.email || 'receptionist@pcms.vn'} • {user?.role}</span>
                 </div>
+                <Link to="/profile" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
+                  <span>Hồ sơ & Đổi mật khẩu</span>
+                </Link>
                 <Link to="/" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
                   <span>Về Trang chủ phòng khám</span>
                 </Link>

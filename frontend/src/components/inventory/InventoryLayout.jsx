@@ -4,7 +4,10 @@ import { useAuth } from '../../context/AuthContext';
 import '../../styles/adminTheme.css';
 
 const MAIN_NAV_ITEMS = [
-  { to: '/inventory/batches', label: 'Quản lý lô thuốc' },
+  { to: '/inventory/batches', label: 'Quản lý lô tồn kho' },
+  { to: '/inventory/medicines', label: 'Danh mục thuốc' },
+  { to: '/inventory/services', label: 'Danh mục dịch vụ' },
+  { to: '/inventory/reports', label: 'Báo cáo tồn kho' },
 ];
 
 export default function InventoryLayout() {
@@ -54,7 +57,7 @@ export default function InventoryLayout() {
 
   return (
     <div className="pcms-admin-shell">
-      <header className="pcms-topbar">
+      <header className="pcms-topbar no-print">
         <div className="pcms-topbar-left">
           <button
             type="button"
@@ -68,7 +71,7 @@ export default function InventoryLayout() {
           <Link to="/inventory/batches" className="pcms-brand-link">
             <div>
               <span className="pcms-brand-title">PCMS</span>
-              <span className="pcms-brand-subtitle">Quản lý Kho Dược phẩm</span>
+              <span className="pcms-brand-subtitle">Quản lý Kho & Danh mục</span>
             </div>
           </Link>
         </div>
@@ -104,6 +107,9 @@ export default function InventoryLayout() {
                   <strong>{displayName}</strong>
                   <span>{user?.email || 'inventory@pcms.vn'} • {user?.role}</span>
                 </div>
+                <Link to="/profile" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
+                  <span>Hồ sơ & Đổi mật khẩu</span>
+                </Link>
                 <Link to="/" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
                   <span>Về Trang chủ phòng khám</span>
                 </Link>
@@ -122,9 +128,9 @@ export default function InventoryLayout() {
       </header>
 
       <div className="pcms-admin-body">
-        <aside className={`pcms-sidebar ${collapsed ? 'collapsed' : ''}`}>
+        <aside className={`pcms-sidebar no-print ${collapsed ? 'collapsed' : ''}`}>
           <nav className="pcms-sidebar-nav" aria-label="Menu quản lý kho">
-            <div className="pcms-sidebar-section-label">Nghiệp vụ Kho thuốc</div>
+            <div className="pcms-sidebar-section-label">Nghiệp vụ Thủ kho</div>
             {MAIN_NAV_ITEMS.map((item) => (
               <NavLink
                 key={item.to}
@@ -134,14 +140,6 @@ export default function InventoryLayout() {
                 <span className="pcms-nav-label">{item.label}</span>
               </NavLink>
             ))}
-            {user?.role === 'ADMIN' ? (
-              <NavLink
-                to="/admin/medicines"
-                className={({ isActive }) => `pcms-nav-item ${isActive ? 'active' : ''}`}
-              >
-                <span className="pcms-nav-label">Danh mục thuốc</span>
-              </NavLink>
-            ) : null}
           </nav>
 
           <div className="pcms-sidebar-bottom">

@@ -9,7 +9,13 @@ import java.time.LocalDate;
  * Lô hàng tồn kho của thuốc (Stored in: Medicine 1 - N InventoryBatch).
  */
 @Entity
-@Table(name = "InventoryBatch")
+@Table(
+        name = "InventoryBatch",
+        uniqueConstraints = @UniqueConstraint(
+                name = "UQ_InventoryBatch_Medicine_BatchNumber",
+                columnNames = {"medicineId", "batchNumber"}
+        )
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -37,4 +43,9 @@ public class InventoryBatch {
 
     @Column(name = "supplier", length = 150)
     private String supplier;
+
+    @Version
+    @Builder.Default
+    @Column(name = "version")
+    private Integer version = 0;
 }

@@ -20,9 +20,7 @@ public class VeterinarianController {
 
     private final VeterinarianService veterinarianService;
 
-    // =========================================================================
     // 1. QUẢN LÝ CÔNG VIỆC & CA KHÁM (UC-01, UC-02)
-    // =========================================================================
 
     @GetMapping("/appointments")
     public ResponseEntity<Map<String, Object>> getAssignedAppointments(
@@ -43,6 +41,7 @@ public class VeterinarianController {
     }
 
     @PatchMapping("/appointments/{id}/status")
+    @PreAuthorize("hasRole('VETERINARIAN')")
     public ResponseEntity<Map<String, Object>> updateAppointmentStatus(
             @PathVariable Integer id,
             @RequestBody Map<String, Object> payload,
@@ -54,6 +53,7 @@ public class VeterinarianController {
     }
 
     @PostMapping("/appointments/{id}/start")
+    @PreAuthorize("hasRole('VETERINARIAN')")
     public ResponseEntity<Map<String, Object>> startExamination(
             @PathVariable Integer id,
             @AuthenticationPrincipal UserPrincipal principal) {
@@ -61,9 +61,7 @@ public class VeterinarianController {
         return ResponseEntity.ok(veterinarianService.startExamination(id, actor));
     }
 
-    // =========================================================================
     // 2. QUÁ TRÌNH KHÁM & BỆNH SỬ PET (UC-03, UC-04)
-    // =========================================================================
 
     @GetMapping("/pets/{petId}/history")
     public ResponseEntity<Map<String, Object>> getPetMedicalHistory(@PathVariable Integer petId) {
@@ -71,6 +69,7 @@ public class VeterinarianController {
     }
 
     @PatchMapping("/pets/{petId}/vitals")
+    @PreAuthorize("hasRole('VETERINARIAN')")
     public ResponseEntity<Map<String, Object>> updatePetVitals(
             @PathVariable Integer petId,
             @RequestBody Map<String, Object> payload,
@@ -85,9 +84,7 @@ public class VeterinarianController {
         return ResponseEntity.ok(veterinarianService.searchPets(query));
     }
 
-    // =========================================================================
-    // 3. QUẢN LÝ BỆNH ÁN (UC-05, UC-06, UC-07, UC-08)
-    // =========================================================================
+    // 3. QUẢN LÝ BỆNH ÁN (UC17 - UC22, BR-12, BR-13, BR-15)
 
     @GetMapping("/medical-records")
     public ResponseEntity<Map<String, Object>> getMedicalRecords(
@@ -108,6 +105,7 @@ public class VeterinarianController {
     }
 
     @PostMapping("/medical-records")
+    @PreAuthorize("hasRole('VETERINARIAN')")
     public ResponseEntity<Map<String, Object>> createMedicalRecord(
             @RequestBody Map<String, Object> payload,
             @AuthenticationPrincipal UserPrincipal principal) {
@@ -117,6 +115,7 @@ public class VeterinarianController {
     }
 
     @PutMapping("/medical-records/{id}")
+    @PreAuthorize("hasRole('VETERINARIAN')")
     public ResponseEntity<Map<String, Object>> updateMedicalRecord(
             @PathVariable Integer id,
             @RequestBody Map<String, Object> payload,
@@ -126,6 +125,7 @@ public class VeterinarianController {
     }
 
     @PostMapping("/medical-records/{id}/complete")
+    @PreAuthorize("hasRole('VETERINARIAN')")
     public ResponseEntity<Map<String, Object>> completeMedicalRecord(
             @PathVariable Integer id,
             @RequestBody(required = false) Map<String, Object> payload,
@@ -135,6 +135,7 @@ public class VeterinarianController {
     }
 
     @PostMapping("/medical-records/{id}/cancel")
+    @PreAuthorize("hasRole('VETERINARIAN')")
     public ResponseEntity<Map<String, Object>> cancelMedicalRecord(
             @PathVariable Integer id,
             @RequestBody Map<String, Object> payload,
@@ -144,9 +145,7 @@ public class VeterinarianController {
         return ResponseEntity.ok(veterinarianService.cancelMedicalRecord(id, reason, actor));
     }
 
-    // =========================================================================
-    // 4. CHỈ ĐỊNH DỊCH VỤ / Y LỆNH (UC-09, UC-10, UC-11, UC-12)
-    // =========================================================================
+    // 4. CHỈ ĐỊNH DỊCH VỤ / Y LỆNH
 
     @GetMapping("/services")
     public ResponseEntity<List<Map<String, Object>>> getAvailableServices() {
@@ -159,6 +158,7 @@ public class VeterinarianController {
     }
 
     @PostMapping("/medical-records/{recordId}/services")
+    @PreAuthorize("hasRole('VETERINARIAN')")
     public ResponseEntity<Map<String, Object>> addServiceOrder(
             @PathVariable Integer recordId,
             @RequestBody Map<String, Object> payload,
@@ -169,6 +169,7 @@ public class VeterinarianController {
     }
 
     @PutMapping("/medical-records/{recordId}/services/{detailId}")
+    @PreAuthorize("hasRole('VETERINARIAN')")
     public ResponseEntity<Map<String, Object>> updateServiceOrder(
             @PathVariable Integer recordId,
             @PathVariable Integer detailId,
@@ -179,6 +180,7 @@ public class VeterinarianController {
     }
 
     @DeleteMapping("/medical-records/{recordId}/services/{detailId}")
+    @PreAuthorize("hasRole('VETERINARIAN')")
     public ResponseEntity<Map<String, Object>> deleteServiceOrder(
             @PathVariable Integer recordId,
             @PathVariable Integer detailId,
@@ -187,9 +189,7 @@ public class VeterinarianController {
         return ResponseEntity.ok(veterinarianService.deleteServiceOrder(recordId, detailId, actor));
     }
 
-    // =========================================================================
-    // 5. KÊ ĐƠN THUỐC & TÁI KHÁM (UC-13, UC-14)
-    // =========================================================================
+    // 5. KÊ ĐƠN THUỐC & TÁI KHÁM (BR-20, BR-23)
 
     @GetMapping("/medicines")
     public ResponseEntity<List<Map<String, Object>>> getAvailableMedicines() {
@@ -202,6 +202,7 @@ public class VeterinarianController {
     }
 
     @PostMapping("/medical-records/{recordId}/prescription")
+    @PreAuthorize("hasRole('VETERINARIAN')")
     public ResponseEntity<Map<String, Object>> savePrescription(
             @PathVariable Integer recordId,
             @RequestBody Map<String, Object> payload,
@@ -211,6 +212,7 @@ public class VeterinarianController {
     }
 
     @DeleteMapping("/medical-records/{recordId}/prescription")
+    @PreAuthorize("hasRole('VETERINARIAN')")
     public ResponseEntity<Map<String, Object>> deletePrescription(
             @PathVariable Integer recordId,
             @AuthenticationPrincipal UserPrincipal principal) {
@@ -224,6 +226,7 @@ public class VeterinarianController {
     }
 
     @PostMapping("/medical-records/{recordId}/follow-ups")
+    @PreAuthorize("hasRole('VETERINARIAN')")
     public ResponseEntity<Map<String, Object>> createFollowUp(
             @PathVariable Integer recordId,
             @RequestBody Map<String, Object> payload,
@@ -234,6 +237,7 @@ public class VeterinarianController {
     }
 
     @DeleteMapping("/follow-ups/{followUpId}")
+    @PreAuthorize("hasRole('VETERINARIAN')")
     public ResponseEntity<Map<String, Object>> deleteFollowUp(
             @PathVariable Integer followUpId,
             @AuthenticationPrincipal UserPrincipal principal) {

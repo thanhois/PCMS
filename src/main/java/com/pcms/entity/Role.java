@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * Vai trò trong hệ thống (ADMIN, VETERINARIAN, RECEPTIONIST, PET_OWNER).
+ * Vai trò trong hệ thống (ADMIN, VETERINARIAN, RECEPTIONIST, INVENTORY_MANAGER, PET_OWNER).
  */
 @Entity
 @Table(name = "Role")
@@ -25,4 +25,7 @@ public class Role {
 
     @Column(name = "description", length = 255)
     private String description;
+
+    @Column(name = "permissionCodes", length = 2000)
+    private String permissionCodes;
 }

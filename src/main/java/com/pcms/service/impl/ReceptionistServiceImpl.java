@@ -28,6 +28,8 @@ public class ReceptionistServiceImpl implements ReceptionistService {
     private final AuditLogRepository auditLogRepository;
     private final InvoiceRepository invoiceRepository;
     private final PaymentRepository paymentRepository;
+    private final DoctorScheduleSlotRepository doctorScheduleSlotRepository;
+    private final com.pcms.service.BillingService billingService;
     private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -204,7 +206,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
             throw new BadRequestException("Thú cưng này đã ngừng hoạt động, không thể đặt lịch.");
         }
         if (pet.getPetOwner() == null || "INACTIVE".equalsIgnoreCase(pet.getPetOwner().getStatus())) {
-            throw new BadRequestException("Chủ nuôi của thú cưng đã bị vô hiệu hóa (BR-06).");
+            throw new BadRequestException("Chủ nuôi của thú cưng đã bị vô hiệu hóa.");
         }
 
         LocalDateTime appointmentDateTime = parseAppointmentDateTime(payload);
@@ -296,7 +298,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
             throw new BadRequestException("Chỉ có thể từ chối lịch hẹn đang ở trạng thái Chờ duyệt.");
         }
         if (reason == null || reason.trim().isEmpty()) {
-            throw new BadRequestException("Vui lòng nhập lý do từ chối lịch hẹn (UC10).");
+            throw new BadRequestException("Vui lòng nhập lý do từ chối lịch hẹn.");
         }
 
         appointment.setStatus("REJECTED");
@@ -364,7 +366,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
             throw new BadRequestException("Lịch hẹn đã hoàn tất hoặc đã hủy trước đó.");
         }
         if (reason == null || reason.trim().isEmpty()) {
-            throw new BadRequestException("Vui lòng nhập lý do hủy lịch hẹn (UC09).");
+            throw new BadRequestException("Vui lòng nhập lý do hủy lịch hẹn.");
         }
 
         appointment.setStatus("CANCELLED");
@@ -466,10 +468,10 @@ public class ReceptionistServiceImpl implements ReceptionistService {
                 throw new BadRequestException("Số điện thoại chủ nuôi không hợp lệ (9-15 ký tự số).");
             }
             if (petOwnerRepository.existsByPhoneNumber(ownerPhone)) {
-                throw new BadRequestException("Số điện thoại này đã tồn tại trong hệ thống. Vui lòng chọn chế độ 'Khách hàng đã có hồ sơ' (BR-05).");
+                throw new BadRequestException("Số điện thoại này đã tồn tại trong hệ thống. Vui lòng chọn chế độ 'Khách hàng đã có hồ sơ'.");
             }
             if (ownerEmail != null && !ownerEmail.isBlank() && petOwnerRepository.existsByEmailIgnoreCase(ownerEmail)) {
-                throw new BadRequestException("Email chủ nuôi đã tồn tại trong hệ thống (BR-05).");
+                throw new BadRequestException("Email chủ nuôi đã tồn tại trong hệ thống.");
             }
 
             PetOwner newOwner = PetOwner.builder()
@@ -501,6 +503,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
                     .petName(petName)
                     .species(species)
                     .breed(strOrNull(payload.get("breed")))
+                    .color(strOrNull(payload.get("color")))
                     .gender(gender != null ? gender : "Chưa rõ")
                     .dateOfBirth(dob)
                     .weight(weight)
@@ -518,7 +521,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
                 throw new BadRequestException("Thú cưng này đã bị vô hiệu hóa.");
             }
             if (pet.getPetOwner() == null || "INACTIVE".equalsIgnoreCase(pet.getPetOwner().getStatus())) {
-                throw new BadRequestException("Chủ nuôi đã bị vô hiệu hóa (BR-06).");
+                throw new BadRequestException("Chủ nuôi đã bị vô hiệu hóa.");
             }
             if (payload.get("weight") != null && !String.valueOf(payload.get("weight")).isBlank()) {
                 pet.setWeight(parsePositiveWeight(payload.get("weight")));
@@ -612,14 +615,14 @@ public class ReceptionistServiceImpl implements ReceptionistService {
             throw new BadRequestException("Số điện thoại không hợp lệ (9-15 ký tự số).");
         }
         if (petOwnerRepository.existsByPhoneNumber(phoneNumber)) {
-            throw new BadRequestException("Số điện thoại này đã được đăng ký cho chủ nuôi khác (BR-05).");
+            throw new BadRequestException("Số điện thoại này đã được đăng ký cho chủ nuôi khác.");
         }
         if (email != null && !email.isBlank()) {
             if (!email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
                 throw new BadRequestException("Định dạng Email không hợp lệ.");
             }
             if (petOwnerRepository.existsByEmailIgnoreCase(email)) {
-                throw new BadRequestException("Email này đã được đăng ký cho chủ nuôi khác (BR-05).");
+                throw new BadRequestException("Email này đã được đăng ký cho chủ nuôi khác.");
             }
         }
 
@@ -658,7 +661,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         boolean phoneTaken = petOwnerRepository.findAll().stream()
                 .anyMatch(o -> !o.getOwnerId().equals(ownerId) && phoneNumber.equalsIgnoreCase(o.getPhoneNumber()));
         if (phoneTaken) {
-            throw new BadRequestException("Số điện thoại này đã thuộc về một chủ nuôi khác (BR-05).");
+            throw new BadRequestException("Số điện thoại này đã thuộc về một chủ nuôi khác.");
         }
 
         if (email != null && !email.isBlank()) {
@@ -668,7 +671,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
             boolean emailTaken = petOwnerRepository.findAll().stream()
                     .anyMatch(o -> !o.getOwnerId().equals(ownerId) && o.getEmail() != null && email.equalsIgnoreCase(o.getEmail()));
             if (emailTaken) {
-                throw new BadRequestException("Email này đã thuộc về một chủ nuôi khác (BR-05).");
+                throw new BadRequestException("Email này đã thuộc về một chủ nuôi khác.");
             }
         }
 
@@ -769,12 +772,12 @@ public class ReceptionistServiceImpl implements ReceptionistService {
     @Override
     @Transactional
     public Map<String, Object> createPet(Map<String, Object> payload, String actorUsername) {
-        Integer ownerId = parseInt(payload.get("ownerId"), "Vui lòng chọn chủ nuôi cho thú cưng (BR-06).");
+        Integer ownerId = parseInt(payload.get("ownerId"), "Vui lòng chọn chủ nuôi cho thú cưng.");
         PetOwner owner = petOwnerRepository.findById(ownerId)
                 .orElseThrow(() -> new BadRequestException("Không tìm thấy hồ sơ chủ nuôi #" + ownerId));
 
         if ("INACTIVE".equalsIgnoreCase(owner.getStatus())) {
-            throw new BadRequestException("Không thể thêm thú cưng cho chủ nuôi đang bị vô hiệu hóa (BR-06).");
+            throw new BadRequestException("Không thể thêm thú cưng cho chủ nuôi đang bị vô hiệu hóa.");
         }
 
         String petName = strOrNull(payload.get("petName"));
@@ -797,6 +800,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
                 .petName(petName)
                 .species(species)
                 .breed(strOrNull(payload.get("breed")))
+                .color(strOrNull(payload.get("color")))
                 .gender(gender != null ? gender : "Chưa rõ")
                 .dateOfBirth(dob)
                 .weight(weight)
@@ -820,7 +824,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
             PetOwner newOwner = petOwnerRepository.findById(newOwnerId)
                     .orElseThrow(() -> new BadRequestException("Không tìm thấy chủ nuôi #" + newOwnerId));
             if ("INACTIVE".equalsIgnoreCase(newOwner.getStatus())) {
-                throw new BadRequestException("Không thể chuyển thú cưng sang chủ nuôi đang bị vô hiệu hóa (BR-06).");
+                throw new BadRequestException("Không thể chuyển thú cưng sang chủ nuôi đang bị vô hiệu hóa.");
             }
             pet.setPetOwner(newOwner);
         }
@@ -843,6 +847,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         pet.setPetName(petName);
         pet.setSpecies(species);
         pet.setBreed(strOrNull(payload.get("breed")));
+        pet.setColor(strOrNull(payload.get("color")));
         pet.setGender(gender != null ? gender : "Chưa rõ");
         pet.setDateOfBirth(dob);
         pet.setWeight(weight);
@@ -866,9 +871,17 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         if ("ACTIVE".equalsIgnoreCase(targetStatus)
                 && pet.getPetOwner() != null
                 && "INACTIVE".equalsIgnoreCase(pet.getPetOwner().getStatus())) {
-            throw new BadRequestException("Chủ nuôi đang bị vô hiệu hóa. Vui lòng kích hoạt lại hồ sơ chủ nuôi trước (BR-06, BR-07).");
+            throw new BadRequestException("Chủ nuôi đang bị vô hiệu hóa. Vui lòng kích hoạt lại hồ sơ chủ nuôi trước.");
         }
 
+        if ("INACTIVE".equalsIgnoreCase(targetStatus)) {
+            boolean hasActiveApps = appointmentRepository.findByPet_PetIdOrderByAppointmentDateDesc(petId).stream()
+                    .anyMatch(a -> Set.of("PENDING_APPROVAL", "CONFIRMED", "APPROVED", "CHECKED_IN", "IN_PROGRESS")
+                            .contains(a.getStatus() != null ? a.getStatus().toUpperCase() : ""));
+            if (hasActiveApps) {
+                throw new BadRequestException("Không thể vô hiệu hóa thú cưng đang có lịch hẹn chờ khám. Vui lòng hủy lịch hẹn trước.");
+            }
+        }
         pet.setStatus(targetStatus);
         pet = petRepository.save(pet);
 
@@ -941,7 +954,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         LocalDateTime windowStart = targetTime.minusMinutes(29);
         LocalDateTime windowEnd = targetTime.plusMinutes(29);
 
-        List<Appointment> conflicts = appointmentRepository.findByAppointmentDateBetween(windowStart, windowEnd).stream()
+        List<Appointment> conflicts = appointmentRepository.findVetAppointmentsInWindowForUpdate(vetId, windowStart, windowEnd).stream()
                 .filter(a -> excludeAppointmentId == null || !excludeAppointmentId.equals(a.getAppointmentId()))
                 .filter(a -> a.getVeterinarian() != null && vetId.equals(a.getVeterinarian().getUserId()))
                 .filter(a -> !Set.of("CANCELLED", "REJECTED").contains(a.getStatus() != null ? a.getStatus().toUpperCase() : ""))
@@ -951,7 +964,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
             Appointment c = conflicts.get(0);
             throw new BadRequestException("Bác sĩ đã có ca hẹn #" + c.getAppointmentId()
                     + " lúc " + c.getAppointmentDate().format(DT_DISPLAY_FMT)
-                    + " (Khoảng cách tối thiểu giữa 2 ca khám là 30 phút - BR-09).");
+                    + " (Khoảng cách tối thiểu giữa 2 ca khám là 30 phút).");
         }
     }
 
@@ -1102,6 +1115,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
             pm.put("petName", p.getPetName());
             pm.put("species", p.getSpecies());
             pm.put("breed", p.getBreed());
+            pm.put("color", p.getColor() != null ? p.getColor() : "");
             pm.put("gender", p.getGender());
             pm.put("age", computeAgeYears(p));
             pm.put("weight", p.getWeight());
@@ -1132,6 +1146,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         m.put("petName", p.getPetName());
         m.put("species", p.getSpecies());
         m.put("breed", p.getBreed() != null ? p.getBreed() : "");
+        m.put("color", p.getColor() != null ? p.getColor() : "");
         m.put("gender", p.getGender() != null ? p.getGender() : "");
         m.put("age", computeAgeYears(p));
         m.put("dateOfBirth", p.getDateOfBirth() != null ? p.getDateOfBirth().format(DATE_FMT) : "");
@@ -1185,6 +1200,12 @@ public class ReceptionistServiceImpl implements ReceptionistService {
     @Override
     @Transactional
     public Map<String, Object> confirmInvoicePayment(Integer invoiceId, Map<String, Object> payload, String actorUsername) {
+        if (billingService != null) {
+            String pm = (payload != null && payload.get("paymentMethod") != null && !String.valueOf(payload.get("paymentMethod")).isBlank())
+                    ? String.valueOf(payload.get("paymentMethod")).trim().toUpperCase() : "CASH";
+            billingService.confirmPayment(invoiceId, new com.pcms.dto.request.billing.ConfirmPaymentRequest(pm, "SUCCESS"));
+            return getInvoiceById(invoiceId);
+        }
         Invoice invoice = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new BadRequestException("Không tìm thấy hóa đơn #" + invoiceId));
 
@@ -1228,6 +1249,10 @@ public class ReceptionistServiceImpl implements ReceptionistService {
     @Override
     @Transactional
     public Map<String, Object> voidInvoice(Integer invoiceId, String reason, String actorUsername) {
+        if (billingService != null) {
+            billingService.voidInvoice(invoiceId, new com.pcms.dto.request.billing.VoidInvoiceRequest(reason));
+            return getInvoiceById(invoiceId);
+        }
         Invoice invoice = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new BadRequestException("Không tìm thấy hóa đơn #" + invoiceId));
 
@@ -1253,7 +1278,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         m.put("invoiceDate", inv.getInvoiceDate() != null ? inv.getInvoiceDate().format(DT_DISPLAY_FMT) : "");
         m.put("totalAmount", inv.getTotalAmount());
         m.put("discountAmount", inv.getDiscountAmount());
-        m.put("status", inv.getStatus());
+        m.put("status", "VOIDED".equalsIgnoreCase(inv.getStatus()) ? "VOID" : inv.getStatus());
 
         MedicalRecord mr = inv.getMedicalRecord();
         if (mr != null) {
@@ -1295,6 +1320,169 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         } catch (Exception ex) {
             // Section 4.1.6: Notification failure must not roll back a successfully saved appointment
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getDoctorScheduleSlots(String fromDate, String toDate, Integer veterinarianId) {
+        LocalDate from = parseLocalDateOrNull(fromDate);
+        LocalDate to = parseLocalDateOrNull(toDate);
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new BadRequestException("Ngày bắt đầu không được lớn hơn ngày kết thúc.");
+        }
+        List<DoctorScheduleSlot> slots = (from != null && to != null)
+                ? doctorScheduleSlotRepository.findBySlotDateBetweenOrderBySlotDateAscStartTimeAsc(from, to)
+                : doctorScheduleSlotRepository.findAll();
+
+        return slots.stream()
+                .filter(s -> from == null || !s.getSlotDate().isBefore(from))
+                .filter(s -> to == null || !s.getSlotDate().isAfter(to))
+                .filter(s -> veterinarianId == null || veterinarianId <= 0
+                        || (s.getVeterinarian() != null && veterinarianId.equals(s.getVeterinarian().getUserId())))
+                .sorted(Comparator.comparing(DoctorScheduleSlot::getSlotDate)
+                        .thenComparing(DoctorScheduleSlot::getStartTime))
+                .map(this::toDoctorSlotMap)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> createDoctorScheduleSlot(Map<String, Object> payload, String actorUsername) {
+        UserAccount vet = resolveVeterinarian(payload.get("veterinarianId"));
+        if (vet == null) {
+            throw new BadRequestException("Vui lòng chọn Bác sĩ phụ trách ca trực.");
+        }
+        LocalDate slotDate = parseLocalDateOrNull(strOrNull(payload.get("slotDate")));
+        if (slotDate == null) {
+            throw new BadRequestException("Vui lòng chọn ngày làm việc.");
+        }
+        if (slotDate.isBefore(LocalDate.now())) {
+            throw new BadRequestException("Không thể tạo khung giờ làm việc trong quá khứ.");
+        }
+        LocalTime startTime = parseSlotTime(payload.get("startTime"), "Giờ bắt đầu không hợp lệ.");
+        LocalTime endTime = parseSlotTime(payload.get("endTime"), "Giờ kết thúc không hợp lệ.");
+        if (!startTime.isBefore(endTime)) {
+            throw new BadRequestException("Giờ kết thúc phải sau giờ bắt đầu.");
+        }
+
+        validateNoSlotOverlap(vet.getUserId(), slotDate, startTime, endTime, null);
+
+        String status = strOrNull(payload.get("status"));
+        status = (status != null && Set.of("AVAILABLE", "BLOCKED").contains(status.toUpperCase()))
+                ? status.toUpperCase() : "AVAILABLE";
+
+        DoctorScheduleSlot slot = DoctorScheduleSlot.builder()
+                .veterinarian(vet)
+                .slotDate(slotDate)
+                .startTime(startTime)
+                .endTime(endTime)
+                .status(status)
+                .notes(strOrNull(payload.get("notes")))
+                .build();
+        slot = doctorScheduleSlotRepository.save(slot);
+        recordAudit(actorUsername, "DOCTOR_SLOT_CREATE", "DoctorScheduleSlot #" + slot.getSlotId(),
+                "Tạo khung giờ làm việc Bác sĩ " + vet.getFullName() + " ngày " + slotDate + " (" + startTime + "-" + endTime + ")");
+        return toDoctorSlotMap(slot);
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> updateDoctorScheduleSlot(Integer slotId, Map<String, Object> payload, String actorUsername) {
+        DoctorScheduleSlot slot = doctorScheduleSlotRepository.findById(slotId)
+                .orElseThrow(() -> new BadRequestException("Không tìm thấy khung giờ #" + slotId));
+        if ("BOOKED".equalsIgnoreCase(slot.getStatus())) {
+            throw new BadRequestException("Không thể chỉnh sửa khung giờ đã có khách đặt lịch.");
+        }
+
+        UserAccount vet = payload.containsKey("veterinarianId")
+                ? resolveVeterinarian(payload.get("veterinarianId"))
+                : slot.getVeterinarian();
+        if (vet == null) {
+            throw new BadRequestException("Vui lòng chọn Bác sĩ phụ trách.");
+        }
+        LocalDate slotDate = payload.containsKey("slotDate")
+                ? parseLocalDateOrNull(strOrNull(payload.get("slotDate")))
+                : slot.getSlotDate();
+        if (slotDate == null) {
+            throw new BadRequestException("Ngày làm việc không hợp lệ.");
+        }
+        LocalTime startTime = payload.containsKey("startTime")
+                ? parseSlotTime(payload.get("startTime"), "Giờ bắt đầu không hợp lệ.")
+                : slot.getStartTime();
+        LocalTime endTime = payload.containsKey("endTime")
+                ? parseSlotTime(payload.get("endTime"), "Giờ kết thúc không hợp lệ.")
+                : slot.getEndTime();
+        if (!startTime.isBefore(endTime)) {
+            throw new BadRequestException("Giờ kết thúc phải sau giờ bắt đầu.");
+        }
+
+        validateNoSlotOverlap(vet.getUserId(), slotDate, startTime, endTime, slotId);
+
+        if (payload.containsKey("status")) {
+            String st = strOrNull(payload.get("status"));
+            if (st != null && Set.of("AVAILABLE", "BLOCKED").contains(st.toUpperCase())) {
+                slot.setStatus(st.toUpperCase());
+            }
+        }
+        if (payload.containsKey("notes")) {
+            slot.setNotes(strOrNull(payload.get("notes")));
+        }
+
+        slot.setVeterinarian(vet);
+        slot.setSlotDate(slotDate);
+        slot.setStartTime(startTime);
+        slot.setEndTime(endTime);
+        slot = doctorScheduleSlotRepository.save(slot);
+        recordAudit(actorUsername, "DOCTOR_SLOT_UPDATE", "DoctorScheduleSlot #" + slotId,
+                "Cập nhật khung giờ làm việc #" + slotId + " của Bác sĩ " + vet.getFullName());
+        return toDoctorSlotMap(slot);
+    }
+
+    @Override
+    @Transactional
+    public void deleteDoctorScheduleSlot(Integer slotId, String actorUsername) {
+        DoctorScheduleSlot slot = doctorScheduleSlotRepository.findById(slotId)
+                .orElseThrow(() -> new BadRequestException("Không tìm thấy khung giờ #" + slotId));
+        if ("BOOKED".equalsIgnoreCase(slot.getStatus())) {
+            throw new BadRequestException("Không thể xóa khung giờ đã có khách đặt lịch.");
+        }
+        doctorScheduleSlotRepository.delete(slot);
+        recordAudit(actorUsername, "DOCTOR_SLOT_DELETE", "DoctorScheduleSlot #" + slotId,
+                "Xóa khung giờ làm việc #" + slotId);
+    }
+
+    private LocalTime parseSlotTime(Object val, String errMsg) {
+        String s = strOrNull(val);
+        if (s == null) throw new BadRequestException(errMsg);
+        try {
+            return LocalTime.parse(s.length() > 5 ? s.substring(0, 5) : s);
+        } catch (Exception e) {
+            throw new BadRequestException(errMsg);
+        }
+    }
+
+    private void validateNoSlotOverlap(Integer vetId, LocalDate slotDate, LocalTime startTime, LocalTime endTime, Integer excludeSlotId) {
+        List<DoctorScheduleSlot> existing = doctorScheduleSlotRepository.findByVeterinarian_UserIdAndSlotDateOrderByStartTimeAsc(vetId, slotDate);
+        boolean overlap = existing.stream()
+                .filter(s -> excludeSlotId == null || !excludeSlotId.equals(s.getSlotId()))
+                .anyMatch(s -> startTime.isBefore(s.getEndTime()) && endTime.isAfter(s.getStartTime()));
+        if (overlap) {
+            throw new BadRequestException("Khung giờ này bị chồng lấn với một ca trực khác của bác sĩ trong cùng ngày.");
+        }
+    }
+
+    private Map<String, Object> toDoctorSlotMap(DoctorScheduleSlot s) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("slotId", s.getSlotId());
+        m.put("veterinarianId", s.getVeterinarian() != null ? s.getVeterinarian().getUserId() : null);
+        m.put("veterinarianName", s.getVeterinarian() != null ? s.getVeterinarian().getFullName() : "");
+        m.put("slotDate", s.getSlotDate() != null ? s.getSlotDate().format(DATE_FMT) : "");
+        m.put("startTime", s.getStartTime() != null ? s.getStartTime().format(TIME_FMT) : "");
+        m.put("endTime", s.getEndTime() != null ? s.getEndTime().format(TIME_FMT) : "");
+        m.put("shift", s.getStartTime() != null && s.getStartTime().getHour() < 12 ? "MORNING" : "AFTERNOON");
+        m.put("status", s.getStatus());
+        m.put("notes", s.getNotes() != null ? s.getNotes() : "");
+        return m;
     }
 
     private void recordAudit(String actorUsername, String actionType, String targetEntity, String details) {

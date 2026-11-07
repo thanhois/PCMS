@@ -50,7 +50,7 @@ export default function Footer() {
           </div>
 
           <div className="vtn-footer-col">
-            <h5>Liên hệ Chi nhánh</h5>
+            <h5>Liên hệ Phòng khám</h5>
             <ul>
               <li>123 Nguyễn Văn Linh, Quận 7, TP. HCM</li>
               <li>Cấp cứu 24/7: 1900 6868</li>

@@ -62,6 +62,13 @@ export default function LoginPage() {
         password: formData.password,
       });
       const loggedInRole = response?.data?.user?.role;
+      if (response?.data?.user?.mustChangePassword) {
+        navigate('/profile', {
+          replace: true,
+          state: { forcePasswordChange: true },
+        });
+        return;
+      }
       const from = location.state?.from;
       if (loggedInRole === 'ADMIN') {
         const target = from?.startsWith('/admin') ? from : '/admin/overview';
@@ -138,6 +145,7 @@ export default function LoginPage() {
                 { role: 'Admin', login: 'admin', pass: 'Admin@123', color: '#a78bfa' },
                 { role: 'Bác sĩ', login: 'vet', pass: 'Vet@123', color: '#a78bfa' },
                 { role: 'Lễ tân', login: 'receptionist', pass: 'Receptionist@123', color: '#fbbf24' },
+                { role: 'Thủ kho', login: 'inventory', pass: 'Inventory@123', color: '#34d399' },
                 { role: 'Chủ nuôi', login: 'petowner', pass: 'Owner@123', color: '#60a5fa' },
               ].map((acc) => (
                 <button

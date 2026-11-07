@@ -6,6 +6,7 @@ import com.pcms.exception.DuplicateResourceException;
 import com.pcms.exception.ResourceNotFoundException;
 import com.pcms.repository.*;
 import com.pcms.service.AdminService;
+import com.pcms.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,6 +29,9 @@ public class AdminServiceImpl implements AdminService {
 
     private final UserAccountRepository userAccountRepository;
     private final RoleRepository roleRepository;
+    private final BranchRepository branchRepository;
+    private final PetOwnerRepository petOwnerRepository;
+    private final PetRepository petRepository;
     private final ServiceRepository serviceRepository;
     private final MedicineRepository medicineRepository;
     private final InventoryBatchRepository inventoryBatchRepository;
@@ -35,6 +39,7 @@ public class AdminServiceImpl implements AdminService {
     private final InvoiceRepository invoiceRepository;
     private final AuditLogRepository auditLogRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     // Danh sách quyền mặc định cố định theo từng Role
     private static final List<Map<String, Object>> DEFAULT_PERMISSIONS = List.of(
@@ -178,6 +183,7 @@ public class AdminServiceImpl implements AdminService {
         String phone = getString(payload, "phoneNumber");
         String roleName = getString(payload, "roleName");
         String tempPass = getString(payload, "temporaryPassword");
+        String rawBranchId = getString(payload, "branchId");
 
         if (RoleName.ADMIN.equalsIgnoreCase(roleName)) {
             throw new BadRequestException("Không được phép gán vai trò ADMIN cho tài khoản mới");
@@ -200,19 +206,32 @@ public class AdminServiceImpl implements AdminService {
         Role role = roleRepository.findByRoleName(roleName)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò " + roleName));
 
+        Branch assignedBranch = resolveBranchOrDefault(rawBranchId);
+        String effectiveTempPass = tempPass.isEmpty() ? "Password123" : tempPass;
+
         UserAccount created = userAccountRepository.save(UserAccount.builder()
                 .username(username)
-                .passwordHash(passwordEncoder.encode(tempPass.isEmpty() ? "Password123" : tempPass))
+                .passwordHash(passwordEncoder.encode(effectiveTempPass))
                 .fullName(fullName)
                 .email(email)
                 .phoneNumber(phone)
                 .status(AccountStatus.ACTIVE)
+                .mustChangePassword(true)
                 .role(role)
+                .branch(assignedBranch)
                 .failedLoginAttempts(0)
                 .build());
 
         recordAudit(adminUsername, "CREATE_ACCOUNT", "UserAccount #" + created.getUserId() + " (" + created.getUsername() + ")",
                 "Tạo tài khoản nhân viên mới \"" + created.getFullName() + "\" với vai trò " + roleName + ".");
+
+        emailService.sendStaffWelcomeEmail(
+                created.getEmail(),
+                created.getFullName(),
+                created.getUsername(),
+                effectiveTempPass,
+                roleName
+        );
 
         return toStaffAccountDto(created);
     }
@@ -234,6 +253,18 @@ public class AdminServiceImpl implements AdminService {
 
         if (!fullName.isEmpty()) acc.setFullName(fullName);
         if (!phone.isEmpty()) acc.setPhoneNumber(phone);
+
+        if (payload != null && payload.containsKey("branchId")) {
+            String rawBranchId = getString(payload, "branchId");
+            if (rawBranchId.isEmpty()) {
+                acc.setBranch(null);
+            } else {
+                Integer bid = Integer.parseInt(rawBranchId);
+                Branch branch = branchRepository.findById(bid)
+                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi nhánh #" + bid));
+                acc.setBranch(branch);
+            }
+        }
 
         if (!roleName.isEmpty() && !RoleName.ADMIN.equalsIgnoreCase(acc.getRole().getRoleName())) {
             if (RoleName.ADMIN.equalsIgnoreCase(roleName)) {
@@ -257,13 +288,20 @@ public class AdminServiceImpl implements AdminService {
         UserAccount acc = userAccountRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản #" + userId));
 
-        if ("admin".equalsIgnoreCase(acc.getUsername()) && "INACTIVE".equalsIgnoreCase(nextStatus)) {
-            throw new BadRequestException("Không thể vô hiệu hóa tài khoản Quản trị viên gốc");
-        }
-
         AccountStatus statusEnum = "INACTIVE".equalsIgnoreCase(nextStatus)
                 ? AccountStatus.INACTIVE
+                : "LOCKED".equalsIgnoreCase(nextStatus)
+                ? AccountStatus.LOCKED
                 : AccountStatus.ACTIVE;
+
+        if (statusEnum != AccountStatus.ACTIVE) {
+            if (adminUsername != null && acc.getUsername().equalsIgnoreCase(adminUsername)) {
+                throw new BadRequestException("Quản trị viên không được tự khóa hoặc vô hiệu hóa tài khoản của chính mình.");
+            }
+            if ("admin".equalsIgnoreCase(acc.getUsername())) {
+                throw new BadRequestException("Không thể vô hiệu hóa tài khoản Quản trị viên gốc");
+            }
+        }
 
         acc.setStatus(statusEnum);
         if (statusEnum == AccountStatus.ACTIVE) {
@@ -287,6 +325,8 @@ public class AdminServiceImpl implements AdminService {
 
         String tempPassword = "Pcms@" + (1000 + RANDOM.nextInt(9000));
         acc.setPasswordHash(passwordEncoder.encode(tempPassword));
+        acc.setMustChangePassword(true);
+        acc.setStatus(AccountStatus.ACTIVE);
         acc.setFailedLoginAttempts(0);
         acc.setLockUntil(null);
         userAccountRepository.save(acc);
@@ -294,11 +334,19 @@ public class AdminServiceImpl implements AdminService {
         recordAudit(adminUsername, "RESET_PASSWORD", "UserAccount #" + acc.getUserId() + " (" + acc.getUsername() + ")",
                 "Admin đặt lại mật khẩu tạm thời mới cho nhân viên \"" + acc.getFullName() + "\".");
 
+        emailService.sendTemporaryPasswordEmail(
+                acc.getEmail(),
+                acc.getFullName(),
+                acc.getUsername(),
+                tempPassword
+        );
+
         Map<String, Object> res = new LinkedHashMap<>();
         res.put("userId", acc.getUserId());
         res.put("username", acc.getUsername());
         res.put("temporaryPassword", tempPassword);
-        res.put("message", "Đã cấp mật khẩu tạm thời mới cho " + acc.getFullName() + ": " + tempPassword);
+        res.put("mustChangePassword", true);
+        res.put("message", "Đã cấp mật khẩu tạm thời mới cho " + acc.getFullName() + " và gửi qua email.");
         return res;
     }
 
@@ -306,17 +354,25 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional(readOnly = true)
     public Map<String, Object> getRolesAndPermissions() {
-        List<Map<String, Object>> roles = roleRepository.findAll().stream()
+        List<Role> allRoles = roleRepository.findAll().stream()
                 .sorted(Comparator.comparing(Role::getRoleId))
-                .map(r -> {
-                    Map<String, Object> m = new LinkedHashMap<>();
-                    m.put("roleId", r.getRoleId());
-                    m.put("roleName", r.getRoleName());
-                    m.put("description", r.getDescription());
-                    m.put("active", true);
-                    return m;
-                })
                 .toList();
+
+        Map<String, List<Integer>> dynamicRolePerms = new LinkedHashMap<>();
+        List<Map<String, Object>> roles = new ArrayList<>();
+
+        for (Role r : allRoles) {
+            List<Integer> permIds = resolveRolePermissionIds(r);
+            dynamicRolePerms.put(r.getRoleName(), permIds);
+
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("roleId", r.getRoleId());
+            m.put("roleName", r.getRoleName());
+            m.put("description", r.getDescription());
+            m.put("permissionIds", permIds);
+            m.put("active", true);
+            roles.add(m);
+        }
 
         List<Map<String, Object>> staffAccounts = userAccountRepository.findAll().stream()
                 .filter(u -> u.getRole() != null && !RoleName.PET_OWNER.equals(u.getRole().getRoleName()))
@@ -327,9 +383,49 @@ public class AdminServiceImpl implements AdminService {
         Map<String, Object> res = new LinkedHashMap<>();
         res.put("roles", roles);
         res.put("permissions", DEFAULT_PERMISSIONS);
-        res.put("rolePermissions", ROLE_DEFAULT_PERM_IDS);
+        res.put("rolePermissions", dynamicRolePerms);
         res.put("accounts", staffAccounts);
         return res;
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> updateRolePermissions(Integer roleId, List<Integer> permissionIds, String adminUsername) {
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò #" + roleId));
+
+        Map<Integer, String> idToCode = DEFAULT_PERMISSIONS.stream()
+                .collect(Collectors.toMap(
+                        p -> (Integer) p.get("permissionId"),
+                        p -> String.valueOf(p.get("permissionCode"))
+                ));
+
+        List<Integer> sanitizedIds = (permissionIds == null ? List.<Integer>of() : permissionIds).stream()
+                .filter(idToCode::containsKey)
+                .distinct()
+                .sorted()
+                .toList();
+
+        if (RoleName.ADMIN.equalsIgnoreCase(role.getRoleName())) {
+            if (sanitizedIds.isEmpty() || !sanitizedIds.contains(1) || !sanitizedIds.contains(2)) {
+                throw new BadRequestException(
+                        "Không được phép gỡ bỏ toàn bộ quyền hoặc quyền quản trị cốt lõi của vai trò ADMIN.");
+            }
+        }
+
+        String joinedCodes = sanitizedIds.stream()
+                .map(idToCode::get)
+                .collect(Collectors.joining(","));
+
+        // Lưu chuỗi mã quyền (nếu rỗng thì lưu "NONE" để phân biệt với NULL mặc định ban đầu)
+        role.setPermissionCodes(joinedCodes.isEmpty() ? "NONE" : joinedCodes);
+        roleRepository.save(role);
+
+        recordAudit(adminUsername, "UPDATE_ROLE_PERMISSIONS", "Role #" + role.getRoleId() + " (" + role.getRoleName() + ")",
+                "Cập nhật danh sách quyền cho vai trò " + role.getRoleName() + ": ["
+                        + (joinedCodes.isEmpty() ? "Không có quyền" : joinedCodes) + "].");
+
+        return getRolesAndPermissions();
     }
 
     @Override
@@ -357,6 +453,123 @@ public class AdminServiceImpl implements AdminService {
                 "Đổi vai trò của \"" + acc.getFullName() + "\" từ " + oldRole + " sang " + roleName + ".");
 
         return toStaffAccountDto(acc);
+    }
+
+    // 3B. DATA MIGRATION
+    @Override
+    @Transactional
+    public Map<String, Object> importHistoricalCustomers(String csvContent, String adminUsername) {
+        if (csvContent == null || csvContent.isBlank()) {
+            throw new BadRequestException("Nội dung CSV trống. Vui lòng chọn file CSV hoặc dán dữ liệu.");
+        }
+
+        String[] lines = csvContent.replace("\uFEFF", "").split("\\r?\\n");
+        int totalRows = 0;
+        int importedOwners = 0;
+        int importedPets = 0;
+        int skippedDuplicates = 0;
+        List<String> errors = new ArrayList<>();
+
+        for (int i = 0; i < lines.length; i++) {
+            String rawLine = lines[i].trim();
+            if (rawLine.isEmpty()) continue;
+
+            // Bỏ qua dòng tiêu đề nếu có
+            if (i == 0 && (rawLine.toLowerCase().contains("fullname") || rawLine.toLowerCase().contains("phonenumber") || rawLine.toLowerCase().contains("sđt"))) {
+                continue;
+            }
+
+            totalRows++;
+            String[] cols = rawLine.split(",", -1);
+            if (cols.length < 4) {
+                errors.add("Dòng " + (i + 1) + ": Thiếu cột bắt buộc (yêu cầu tối thiểu: fullName,phoneNumber,petName,species).");
+                continue;
+            }
+
+            String fullName = cols[0].trim();
+            String phone = normalizePhone(cols[1].trim());
+            String email = cols.length > 2 ? cols[2].trim().toLowerCase() : "";
+            String address = cols.length > 3 ? cols[3].trim() : "";
+            String petName = cols.length > 4 ? cols[4].trim() : "";
+            String species = cols.length > 5 ? cols[5].trim() : "";
+            String breed = cols.length > 6 ? cols[6].trim() : "";
+            String gender = cols.length > 7 && !cols[7].trim().isEmpty() ? cols[7].trim().toUpperCase() : "UNKNOWN";
+            String rawWeight = cols.length > 8 ? cols[8].trim() : "";
+
+            // Hỗ trợ cả định dạng rút gọn 4 cột: fullName,phoneNumber,petName,species
+            if (cols.length == 4) {
+                email = "";
+                address = "";
+                petName = cols[2].trim();
+                species = cols[3].trim();
+            }
+
+            if (fullName.length() < 2 || !phone.matches("^0\\d{9}$")) {
+                errors.add("Dòng " + (i + 1) + ": Họ tên hoặc SĐT không hợp lệ (" + phone + ").");
+                continue;
+            }
+
+            PetOwner owner = petOwnerRepository.findByPhoneNumber(phone).orElse(null);
+            if (owner == null) {
+                String safeEmail = (!email.isEmpty() && !petOwnerRepository.existsByEmailIgnoreCase(email)) ? email : null;
+                owner = petOwnerRepository.save(PetOwner.builder()
+                        .fullName(fullName)
+                        .phoneNumber(phone)
+                        .email(safeEmail)
+                        .address(address.isEmpty() ? null : address)
+                        .status("ACTIVE")
+                        .build());
+                importedOwners++;
+            }
+
+            if (!petName.isEmpty() && !species.isEmpty()) {
+                final Integer ownerId = owner.getOwnerId();
+                final String targetPetName = petName;
+                boolean duplicatePet = petRepository.findByPetOwner_OwnerId(ownerId).stream()
+                        .anyMatch(p -> p.getPetName() != null && p.getPetName().trim().equalsIgnoreCase(targetPetName));
+                if (duplicatePet) {
+                    skippedDuplicates++;
+                } else {
+                    BigDecimal weightVal = null;
+                    if (!rawWeight.isEmpty()) {
+                        try {
+                            weightVal = new BigDecimal(rawWeight);
+                        } catch (Exception ignored) {
+                        }
+                    }
+                    if (!List.of("MALE", "FEMALE", "UNKNOWN").contains(gender)) {
+                        gender = "UNKNOWN";
+                    }
+                    petRepository.save(Pet.builder()
+                            .petOwner(owner)
+                            .petName(petName)
+                            .species(species)
+                            .breed(breed.isEmpty() ? null : breed)
+                            .gender(gender)
+                            .weight(weightVal)
+                            .status("ACTIVE")
+                            .build());
+                    importedPets++;
+                }
+            } else {
+                skippedDuplicates++;
+            }
+        }
+
+        recordAudit(adminUsername, "HISTORICAL_DATA_IMPORT", "PetOwner / Pet",
+                "Import dữ liệu lịch sử CSV: Tổng dòng=" + totalRows
+                        + ", Chủ nuôi mới=" + importedOwners
+                        + ", Thú cưng mới=" + importedPets
+                        + ", Bỏ qua trùng=" + skippedDuplicates
+                        + ", Lỗi=" + errors.size());
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("totalRows", totalRows);
+        result.put("importedOwners", importedOwners);
+        result.put("importedPets", importedPets);
+        result.put("skippedDuplicates", skippedDuplicates);
+        result.put("errors", errors);
+        return result;
     }
 
     // 4. SERVICES CATALOG
@@ -536,8 +749,16 @@ public class AdminServiceImpl implements AdminService {
             quantityChange = Integer.parseInt(String.valueOf(payload.get("quantity")));
         }
 
-        String reason = payload != null && payload.containsKey("reason")
-                ? String.valueOf(payload.get("reason")) : "Điều chỉnh tồn kho định kỳ";
+        String reason = payload != null && payload.containsKey("reason") && payload.get("reason") != null
+                ? String.valueOf(payload.get("reason")).trim()
+                : "";
+        if (reason.isEmpty()) {
+            throw new BadRequestException("Vui lòng nhập lý do điều chỉnh tồn kho.");
+        }
+        if (quantityChange == 0) {
+            throw new BadRequestException("Số lượng điều chỉnh phải khác 0.");
+        }
+
         String supplier = payload != null && payload.containsKey("supplier")
                 ? String.valueOf(payload.get("supplier")) : "Kho tổng hợp";
         String batchNumber = payload != null && payload.containsKey("batchNumber") && !String.valueOf(payload.get("batchNumber")).isBlank()
@@ -548,21 +769,28 @@ public class AdminServiceImpl implements AdminService {
         if (payload != null && payload.containsKey("expirationDate") && payload.get("expirationDate") != null) {
             try {
                 expiry = LocalDate.parse(String.valueOf(payload.get("expirationDate")));
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
 
         List<InventoryBatch> existingBatches = inventoryBatchRepository.findByMedicine_MedicineId(medicineId);
         if (!existingBatches.isEmpty()) {
             InventoryBatch batch = existingBatches.get(0);
-            int newQty = Math.max(0, batch.getQuantityInStock() + quantityChange);
+            int newQty = batch.getQuantityInStock() + quantityChange;
+            if (newQty < 0) {
+                throw new BadRequestException("Số lượng tồn kho sau điều chỉnh không được âm.");
+            }
             batch.setQuantityInStock(newQty);
             inventoryBatchRepository.save(batch);
         } else {
+            if (quantityChange < 0) {
+                throw new BadRequestException("Số lượng tồn kho sau điều chỉnh không được âm.");
+            }
             InventoryBatch newBatch = InventoryBatch.builder()
                     .medicine(entity)
                     .batchNumber(batchNumber)
                     .expirationDate(expiry)
-                    .quantityInStock(Math.max(0, quantityChange))
+                    .quantityInStock(quantityChange)
                     .supplier(supplier)
                     .build();
             inventoryBatchRepository.save(newBatch);
@@ -616,6 +844,43 @@ public class AdminServiceImpl implements AdminService {
 
     // PRIVATE HELPERS
 
+    private List<Integer> resolveRolePermissionIds(Role role) {
+        String rawCodes = role.getPermissionCodes();
+        if (rawCodes == null || rawCodes.isBlank()) {
+            return ROLE_DEFAULT_PERM_IDS.getOrDefault(role.getRoleName(), List.of());
+        }
+        if ("NONE".equalsIgnoreCase(rawCodes.trim())) {
+            return List.of();
+        }
+        Set<String> codeSet = Arrays.stream(rawCodes.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+
+        return DEFAULT_PERMISSIONS.stream()
+                .filter(p -> codeSet.contains(String.valueOf(p.get("permissionCode"))))
+                .map(p -> (Integer) p.get("permissionId"))
+                .toList();
+    }
+
+    private Branch resolveBranchOrDefault(String rawBranchId) {
+        if (rawBranchId != null && !rawBranchId.isBlank()) {
+            Integer bid = Integer.parseInt(rawBranchId);
+            return branchRepository.findById(bid)
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi nhánh #" + bid));
+        }
+        return branchRepository.findAll().stream().findFirst().orElse(null);
+    }
+
+    private static String normalizePhone(String raw) {
+        if (raw == null) return "";
+        String digits = raw.replaceAll("[^0-9]", "");
+        if (digits.startsWith("84") && digits.length() == 11) {
+            return "0" + digits.substring(2);
+        }
+        return digits;
+    }
+
     private void validateDateRange(String fromDate, String toDate) {
         if (fromDate != null && !fromDate.isBlank()
                 && toDate != null && !toDate.isBlank()
@@ -655,7 +920,6 @@ public class AdminServiceImpl implements AdminService {
         String outcome = logEntity.getOutcome() != null ? logEntity.getOutcome() : "SUCCESS";
         String cleanDetails = raw;
 
-        // Parse định dạng fallback "[ACTION_TYPE] [TargetEntity] Nội dung..."
         if (raw.startsWith("[")) {
             int firstClose = raw.indexOf(']');
             if (firstClose > 1) {
@@ -704,6 +968,9 @@ public class AdminServiceImpl implements AdminService {
         m.put("status", u.getStatus() != null ? u.getStatus().name() : "ACTIVE");
         m.put("roleId", u.getRole() != null ? u.getRole().getRoleId() : null);
         m.put("roleName", u.getRole() != null ? u.getRole().getRoleName() : "RECEPTIONIST");
+        m.put("branchId", u.getBranch() != null ? u.getBranch().getBranchId() : null);
+        m.put("branchName", u.getBranch() != null ? u.getBranch().getBranchName() : "Chưa gán chi nhánh");
+        m.put("mustChangePassword", Boolean.TRUE.equals(u.getMustChangePassword()));
         m.put("failedLoginAttempts", u.getFailedLoginAttempts() != null ? u.getFailedLoginAttempts() : 0);
         m.put("createdAt", u.getCreatedAt() != null ? u.getCreatedAt().withNano(0).toString() : "2026-01-10T08:00:00");
         return m;
@@ -776,7 +1043,7 @@ public class AdminServiceImpl implements AdminService {
 
         List<Map<String, Object>> result = new ArrayList<>();
         for (Map.Entry<String, List<Invoice>> entry : byYearMonth.entrySet()) {
-            String ym = entry.getKey(); // YYYY-MM
+            String ym = entry.getKey();
             String[] parts = ym.split("-");
             String monthLabel = "Tháng " + parts[1] + "/" + parts[0];
             String shortMonth = "T" + parts[1] + "/" + parts[0];
@@ -840,6 +1107,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     private static String getString(Map<String, Object> map, String key) {
+        if (map == null) return "";
         Object val = map.get(key);
         return val == null ? "" : String.valueOf(val).trim();
     }

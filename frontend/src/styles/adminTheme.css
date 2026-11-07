@@ -1308,3 +1308,74 @@
   padding: 28px 12px !important;
   color: var(--pcms-text-muted);
 }
+
+
+/* ==================== Print & Receipt Stamp Helpers (UC27, UC33-UC35) ==================== */
+.pcms-print-only {
+  display: none;
+}
+
+.pcms-paid-stamp {
+  display: inline-block;
+  border: 3px solid #15803d;
+  color: #15803d;
+  background: rgba(240, 253, 244, 0.92);
+  padding: 6px 18px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transform: rotate(-4deg);
+}
+
+.pcms-void-stamp {
+  display: inline-block;
+  border: 3px solid #b91c1c;
+  color: #b91c1c;
+  background: rgba(254, 242, 242, 0.92);
+  padding: 6px 18px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transform: rotate(-4deg);
+}
+
+@media print {
+  .pcms-sidebar,
+  .pcms-topbar,
+  .pcms-page-actions,
+  .no-print {
+    display: none !important;
+  }
+
+  .pcms-print-only {
+    display: block !important;
+  }
+
+  .pcms-admin-shell,
+  .pcms-main,
+  .pcms-content,
+  .pcms-page {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    min-height: auto !important;
+    width: 100% !important;
+  }
+
+  .pcms-card {
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    break-inside: avoid;
+  }
+
+  .pcms-paid-stamp,
+  .pcms-void-stamp {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

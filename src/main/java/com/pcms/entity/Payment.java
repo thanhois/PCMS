@@ -24,7 +24,7 @@ public class Payment {
     private Integer paymentId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "invoiceId", nullable = false)
+    @JoinColumn(name = "invoiceId", nullable = false, unique = true)
     private Invoice invoice;
 
     @Column(name = "paymentDate", nullable = false)

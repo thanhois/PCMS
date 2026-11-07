@@ -15,10 +15,14 @@ export default function AdminRolesPage() {
 
   const [banner, setBanner] = useState(null);
 
-  // State cho cụm Gán Role nhanh cho tài khoản
   const [selectedUserId, setSelectedUserId] = useState('');
   const [targetRoleName, setTargetRoleName] = useState('VETERINARIAN');
   const [assigning, setAssigning] = useState(false);
+
+  // Modal Cấu hình động quyền theo vai trò (UC40)
+  const [editingRole, setEditingRole] = useState(null);
+  const [checkedPermIds, setCheckedPermIds] = useState([]);
+  const [savingPerms, setSavingPerms] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -43,10 +47,9 @@ export default function AdminRolesPage() {
   }, [selectedUserId]);
 
   useEffect(() => {
-    fetchData();
+    void Promise.resolve().then(fetchData);
   }, [fetchData]);
 
-  // Xử lý gán Role cho tài khoản nhân viên
   const handleUserSelectChange = (e) => {
     const uid = e.target.value;
     setSelectedUserId(uid);
@@ -74,9 +77,7 @@ export default function AdminRolesPage() {
     setBanner(null);
     try {
       const updated = await adminApi.assignAccountRole(Number(selectedUserId), targetRoleName);
-      setAccounts((prev) =>
-        prev.map((a) => (a.userId === updated.userId ? updated : a))
-      );
+      setAccounts((prev) => prev.map((a) => (a.userId === updated.userId ? updated : a)));
       setBanner({
         type: 'success',
         text: `Đã gán vai trò "${targetRoleName}" cho nhân viên "${updated.fullName}" (@${updated.username}).`,
@@ -96,9 +97,7 @@ export default function AdminRolesPage() {
     setBanner(null);
     try {
       const updated = await adminApi.assignAccountRole(acc.userId, newRoleName);
-      setAccounts((prev) =>
-        prev.map((a) => (a.userId === updated.userId ? updated : a))
-      );
+      setAccounts((prev) => prev.map((a) => (a.userId === updated.userId ? updated : a)));
       setBanner({
         type: 'success',
         text: `Đã cập nhật vai trò của "${updated.fullName}" (@${updated.username}) thành ${newRoleName}.`,
@@ -108,6 +107,53 @@ export default function AdminRolesPage() {
         type: 'error',
         text: err?.message || 'Không thể đổi vai trò.',
       });
+    }
+  };
+
+  const openConfigurePermissions = (role) => {
+    const currentIds = rolePermissions[role.roleName] || [];
+    setEditingRole(role);
+    setCheckedPermIds([...currentIds]);
+  };
+
+  const togglePermissionCheckbox = (permId) => {
+    if (editingRole?.roleName === 'ADMIN' && (permId === 1 || permId === 2)) {
+      return; // Khóa quyền cốt lõi của ADMIN theo UC40 BR-01
+    }
+    setCheckedPermIds((prev) =>
+      prev.includes(permId) ? prev.filter((id) => id !== permId) : [...prev, permId]
+    );
+  };
+
+  const handleSavePermissions = async (e) => {
+    e.preventDefault();
+    if (!editingRole) return;
+
+    if (editingRole.roleName === 'ADMIN' && checkedPermIds.length === 0) {
+      setBanner({
+        type: 'error',
+        text: 'Không được phép gỡ bỏ toàn bộ quyền của vai trò ADMIN.',
+      });
+      return;
+    }
+
+    setSavingPerms(true);
+    try {
+      const updated = await adminApi.updateRolePermissions(editingRole.roleId, checkedPermIds);
+      setRoles(updated.roles || []);
+      setRolePermissions(updated.rolePermissions || {});
+      setBanner({
+        type: 'success',
+        text: `Đã lưu cấu hình quyền động cho vai trò ${editingRole.roleName} và ghi nhận vào AuditLog.`,
+      });
+      setEditingRole(null);
+    } catch (err) {
+      setBanner({
+        type: 'error',
+        text: err?.message || 'Không thể lưu cấu hình quyền.',
+      });
+    } finally {
+      setSavingPerms(false);
     }
   };
 
@@ -127,14 +173,17 @@ export default function AdminRolesPage() {
     {
       key: 'description',
       header: 'Mô tả chức trách',
-      width: '300px',
+      width: '260px',
     },
     {
       key: 'defaultPermissions',
-      header: 'Các quyền hạn mặc định của vai trò',
+      header: 'Các quyền hạn đang được cấp',
       render: (r) => {
         const permIds = rolePermissions[r.roleName] || [];
         const assignedPerms = permissions.filter((p) => permIds.includes(p.permissionId));
+        if (assignedPerms.length === 0) {
+          return <span style={{ color: 'var(--pcms-text-muted)' }}>Chưa cấp quyền nào</span>;
+        }
         return (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {assignedPerms.map((p) => (
@@ -143,6 +192,20 @@ export default function AdminRolesPage() {
           </div>
         );
       },
+    },
+    {
+      key: 'actions',
+      header: 'Cấu hình quyền',
+      width: '150px',
+      render: (r) => (
+        <button
+          type="button"
+          className="pcms-btn pcms-btn-outline pcms-btn-xs"
+          onClick={() => openConfigurePermissions(r)}
+        >
+          Cấu hình quyền
+        </button>
+      ),
     },
   ];
 
@@ -211,8 +274,8 @@ export default function AdminRolesPage() {
   return (
     <>
       <PageHeader
-        title="Vai trò & Phân quyền (Roles & Permissions)"
-        subtitle="Xem quyền hạn mặc định của từng vai trò (Bảng Role) và gán vai trò cho tài khoản nhân viên"
+        title="Vai trò & Phân quyền"
+        subtitle="Gán vai trò nhân sự và cấu hình bật/tắt quyền chi tiết cho từng vai trò"
         actions={
           <button
             type="button"
@@ -238,7 +301,19 @@ export default function AdminRolesPage() {
         </div>
       ) : null}
 
-      {/* 1. Gán Vai trò cho Tài khoản Nhân viên */}
+      <DataTable
+        title="Danh mục Vai trò & Cấu hình Quyền"
+        subtitle="Nhấn 'Cấu hình quyền' để bật/tắt quyền theo vai trò và lưu trực tiếp vào cơ sở dữ liệu."
+        columns={roleColumns}
+        data={roles}
+        rowKey="roleId"
+        loading={loading}
+        error={error}
+        onRetry={fetchData}
+        emptyTitle="Chưa có dữ liệu vai trò"
+        emptyMessage="Không tìm thấy danh sách vai trò trong hệ thống."
+      />
+
       {!loading && !error && accounts.length > 0 ? (
         <section className="pcms-card">
           <div className="pcms-card-header">
@@ -307,7 +382,6 @@ export default function AdminRolesPage() {
         </section>
       ) : null}
 
-      {/* 2. Bảng phân công vai trò nhân sự */}
       <DataTable
         title={`Bảng Phân công Vai trò Nhân sự (${accounts.length})`}
         subtitle="Có thể chọn nhanh vai trò ở cột bên phải để thay đổi quyền truy cập của nhân viên"
@@ -319,19 +393,89 @@ export default function AdminRolesPage() {
         onRetry={fetchData}
       />
 
-      {/* 3. Bảng Vai trò & Quyền mặc định (Read-only) */}
-      <DataTable
-        title="Danh mục Vai trò & Quyền hạn Mặc định (Bảng Role)"
-        subtitle="Quyền hạn được thiết lập mặc định theo từng chức danh trong phòng khám"
-        columns={roleColumns}
-        data={roles}
-        rowKey="roleId"
-        loading={loading}
-        error={error}
-        onRetry={fetchData}
-        emptyTitle="Chưa có dữ liệu vai trò"
-        emptyMessage="Không tìm thấy danh sách vai trò trong hệ thống."
-      />
+      {editingRole ? (
+        <div className="pcms-modal-backdrop" role="dialog" aria-modal="true">
+          <div className="pcms-modal-card" style={{ maxWidth: 640 }}>
+            <h3 className="pcms-modal-title">
+              Cấu hình Quyền cho Vai trò: {editingRole.roleName}
+            </h3>
+            <p className="pcms-modal-desc">
+              {editingRole.roleName === 'ADMIN'
+                ? 'Các quyền quản trị tài khoản và phân quyền cốt lõi của ADMIN được khóa bảo vệ để tránh mất quyền quản trị hệ thống.'
+                : `Chọn các quyền nghiệp vụ được phép thực hiện đối với vai trò ${editingRole.roleName}.`}
+            </p>
+
+            <form onSubmit={handleSavePermissions}>
+              <div
+                style={{
+                  maxHeight: 360,
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                  paddingRight: 4,
+                }}
+              >
+                {permissions.map((perm) => {
+                  const isLockedCoreAdmin =
+                    editingRole.roleName === 'ADMIN' &&
+                    (perm.permissionId === 1 || perm.permissionId === 2);
+                  const checked = checkedPermIds.includes(perm.permissionId);
+                  return (
+                    <label
+                      key={perm.permissionId}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 10,
+                        padding: '10px 12px',
+                        borderRadius: 8,
+                        border: '1px solid var(--pcms-border)',
+                        background: checked ? 'var(--pcms-surface-subtle, #f8fafc)' : '#fff',
+                        cursor: isLockedCoreAdmin ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={isLockedCoreAdmin}
+                        onChange={() => togglePermissionCheckbox(perm.permissionId)}
+                        style={{ marginTop: 3 }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, fontSize: 13.5 }}>
+                          {perm.permissionName}{' '}
+                          <small style={{ color: 'var(--pcms-text-muted)' }}>
+                            ({perm.permissionCode})
+                          </small>
+                        </div>
+                        <small style={{ color: 'var(--pcms-text-muted)' }}>
+                          Phân hệ: {perm.module}
+                          {isLockedCoreAdmin ? ' • Bắt buộc đối với ADMIN' : ''}
+                        </small>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+
+              <div className="pcms-modal-actions" style={{ marginTop: 20 }}>
+                <button
+                  type="button"
+                  className="pcms-btn pcms-btn-outline"
+                  onClick={() => setEditingRole(null)}
+                  disabled={savingPerms}
+                >
+                  Hủy
+                </button>
+                <button type="submit" className="pcms-btn pcms-btn-primary" disabled={savingPerms}>
+                  {savingPerms ? 'Đang lưu...' : 'Lưu quyền hạn'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

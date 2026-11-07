@@ -10,7 +10,6 @@ import {
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  // Toàn bộ token và thông tin user chỉ lưu trong bộ nhớ (React state + biến module in-memory)
   const [user, setUser] = useState(null);
   const [token, setTokenState] = useState(() => getAccessToken());
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -37,7 +36,6 @@ export function AuthProvider({ children }) {
     const response = await authApi.login({ login: loginId, password });
     const { accessToken, user: userData } = response.data;
 
-    // Lưu token vào biến toàn cục in-memory của Axios + state
     setIsLoggingOut(false);
     setAccessToken(accessToken);
     setTokenState(accessToken);
@@ -58,6 +56,20 @@ export function AuthProvider({ children }) {
     return response.data;
   }, []);
 
+  const updateProfile = useCallback(async (payload) => {
+    const response = await authApi.updateProfile(payload);
+    if (response?.data) {
+      setUser(response.data);
+    }
+    return response;
+  }, []);
+
+  const changePassword = useCallback(async (payload) => {
+    const response = await authApi.changePassword(payload);
+    setUser((prev) => (prev ? { ...prev, mustChangePassword: false } : prev));
+    return response;
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -69,8 +81,21 @@ export function AuthProvider({ children }) {
       logout,
       clearLoggingOut,
       refreshProfile,
+      updateProfile,
+      changePassword,
     }),
-    [user, token, isLoggingOut, login, register, logout, clearLoggingOut, refreshProfile]
+    [
+      user,
+      token,
+      isLoggingOut,
+      login,
+      register,
+      logout,
+      clearLoggingOut,
+      refreshProfile,
+      updateProfile,
+      changePassword,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

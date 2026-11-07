@@ -7,11 +7,6 @@ export default function PetHistoryModal({ petId, petName, onClose }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!petId) return;
-    loadHistory();
-  }, [petId]);
-
   const loadHistory = async () => {
     setLoading(true);
     setError('');
@@ -24,6 +19,11 @@ export default function PetHistoryModal({ petId, petName, onClose }) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!petId) return;
+    void Promise.resolve().then(loadHistory);
+  }, [petId]);
 
   const visits = data?.visits || [];
   const pet = data?.pet || {};

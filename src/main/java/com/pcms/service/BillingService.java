@@ -1,4 +1,3 @@
-
 package com.pcms.service;
 
 import com.pcms.dto.request.billing.ConfirmPaymentRequest;
@@ -12,6 +11,8 @@ import java.util.List;
 public interface BillingService {
 
     List<InvoiceResponse> getPaymentQueue();
+
+    List<InvoiceResponse> getPaymentQueue(String status);
 
     InvoiceResponse getInvoiceById(Integer invoiceId);
 
