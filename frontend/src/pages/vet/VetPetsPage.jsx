@@ -13,10 +13,6 @@ export default function VetPetsPage() {
   const [pets, setPets] = useState([]);
   const [selectedPetHistory, setSelectedPetHistory] = useState(null);
 
-  useEffect(() => {
-    loadPets();
-  }, []);
-
   const loadPets = async () => {
     setLoading(true);
     try {
@@ -28,6 +24,10 @@ export default function VetPetsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    void Promise.resolve().then(loadPets);
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();

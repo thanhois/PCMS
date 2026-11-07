@@ -223,9 +223,20 @@ export default function RegisterPage() {
               <span className={checklist.hasDigit ? 'ok' : ''}>• Chữ số</span>
             </div>
 
-            <button type="submit" className="vtn-btn-signin" disabled={submitting}>
-              {submitting ? 'Đang tạo tài khoản...' : 'Đăng ký ngay'}
-            </button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                type="button"
+                className="vtn-btn-signin"
+                style={{ background: 'rgba(255,255,255,0.08)', color: '#e2e8f0', flex: 1 }}
+                disabled={submitting}
+                onClick={() => navigate('/login')}
+              >
+                Hủy
+              </button>
+              <button type="submit" className="vtn-btn-signin" style={{ flex: 2 }} disabled={submitting}>
+                {submitting ? 'Đang tạo tài khoản...' : 'Đăng ký ngay'}
+              </button>
+            </div>
           </form>
 
           <div className="vtn-or-divider">

@@ -4,6 +4,7 @@ import ConfirmDialog from '../../components/admin/ui/ConfirmDialog';
 import DataTable from '../../components/admin/ui/DataTable';
 import PageHeader from '../../components/admin/ui/PageHeader';
 import StatusBadge from '../../components/admin/ui/StatusBadge';
+import { useAuth } from '../../context/AuthContext';
 import { exportToCsv } from '../../utils/csvExport';
 import { EMAIL_REGEX, STRONG_PASSWORD_REGEX, VN_PHONE_REGEX } from '../../utils/validators';
 
@@ -85,33 +86,30 @@ function validateAccountForm(form, isEdit, existingRows = []) {
 }
 
 export default function AdminAccountsPage() {
-  // Bộ lọc & phân trang
+  const { user: currentUser } = useAuth();
+
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [page, setPage] = useState(1);
   const [pageSize] = useState(5);
 
-  // Dữ liệu bảng
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [rows, setRows] = useState([]);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Thông báo kết quả thao tác
-  const [banner, setBanner] = useState(null); // { type: 'success'|'error'|'info', text: string }
+  const [banner, setBanner] = useState(null);
 
-  // Modal Tạo / Sửa tài khoản
   const [modalOpen, setModalOpen] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [formErrors, setFormErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
-  // Hộp thoại xác nhận hành động (Khóa/Mở khóa & Reset mật khẩu)
   const [confirmState, setConfirmState] = useState({
     open: false,
-    type: null, // 'TOGGLE_STATUS' | 'RESET_PASSWORD'
+    type: null,
     account: null,
     nextStatus: null,
     loading: false,
@@ -142,7 +140,6 @@ export default function AdminAccountsPage() {
     fetchAccounts();
   }, [fetchAccounts]);
 
-  // Reset về trang 1 khi đổi bộ lọc (theo đúng quy tắc trong RDS)
   const handleSearchChange = (val) => {
     setSearch(val);
     setPage(1);
@@ -155,14 +152,12 @@ export default function AdminAccountsPage() {
     setPage(1);
   };
 
-  // Mở modal Tạo mới
   const openCreateModal = () => {
-    setFormData(INITIAL_FORM);
+    setFormData({ ...INITIAL_FORM });
     setFormErrors({});
     setModalOpen(true);
   };
 
-  // Mở modal Chỉnh sửa
   const openEditModal = (acc) => {
     setFormData({
       userId: acc.userId,
@@ -206,7 +201,7 @@ export default function AdminAccountsPage() {
         await adminApi.createAccount(formData);
         setBanner({
           type: 'success',
-          text: `Đã tạo tài khoản "${formData.username}" (${formData.fullName}) thành công!`,
+          text: `Đã tạo tài khoản "${formData.username}" (${formData.fullName}) và gửi email mật khẩu tạm thời (yêu cầu đổi mật khẩu lần đầu).`,
         });
         setPage(1);
       }
@@ -225,7 +220,6 @@ export default function AdminAccountsPage() {
     }
   };
 
-  // Xác nhận Vô hiệu hóa / Kích hoạt lại
   const askToggleStatus = (acc) => {
     const nextStatus = acc.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     setConfirmState({
@@ -237,7 +231,6 @@ export default function AdminAccountsPage() {
     });
   };
 
-  // Xác nhận Đặt lại mật khẩu
   const askResetPassword = (acc) => {
     setConfirmState({
       open: true,
@@ -260,14 +253,14 @@ export default function AdminAccountsPage() {
           type: 'success',
           text:
             nextStatus === 'ACTIVE'
-              ? `Đã kích hoạt lại tài khoản "${account.fullName}" (${account.username}).`
+              ? `Đã mở khóa / kích hoạt lại tài khoản "${account.fullName}" (${account.username}).`
               : `Đã vô hiệu hóa tài khoản "${account.fullName}" (${account.username}).`,
         });
       } else if (type === 'RESET_PASSWORD') {
         const res = await adminApi.resetAccountPassword(account.userId);
         setBanner({
           type: 'info',
-          text: `Mật khẩu tạm thời mới của "${account.fullName}" (${account.username}): ${res.temporaryPassword} — Vui lòng sao chép gửi cho nhân viên.`,
+          text: `Đã gửi email và cấp mật khẩu tạm mới cho "${account.fullName}" (${account.username}): ${res.temporaryPassword}`,
         });
       }
       setConfirmState({ open: false, type: null, account: null, nextStatus: null, loading: false });
@@ -302,12 +295,12 @@ export default function AdminAccountsPage() {
     {
       key: 'userId',
       header: 'Mã NV',
-      width: '80px',
+      width: '75px',
       render: (row) => <strong>#{row.userId}</strong>,
     },
     {
       key: 'fullName',
-      header: 'Họ và tên / Username',
+      header: 'Họ và tên / Tài khoản',
       render: (row) => (
         <div>
           <div style={{ fontWeight: 600, color: 'var(--pcms-text-primary)' }}>{row.fullName}</div>
@@ -338,46 +331,54 @@ export default function AdminAccountsPage() {
       render: (row) => <StatusBadge status={row.status} />,
     },
     {
-      key: 'createdAt',
-      header: 'Ngày tạo',
-      width: '115px',
-      render: (row) => (row.createdAt ? row.createdAt.slice(0, 10) : '—'),
-    },
-    {
       key: 'actions',
       header: 'Thao tác quản trị',
-      width: '275px',
-      render: (row) => (
-        <div className="pcms-row-actions">
-          <button
-            type="button"
-            className="pcms-btn pcms-btn-outline pcms-btn-xs"
-            onClick={() => openEditModal(row)}
-          >
-            Sửa
-          </button>
+      width: '285px',
+      render: (row) => {
+        const isSelfOrRoot =
+          row.username === 'admin' ||
+          (currentUser?.username &&
+            row.username?.toLowerCase() === currentUser.username.toLowerCase());
+        return (
+          <div className="pcms-row-actions">
+            <button
+              type="button"
+              className="pcms-btn pcms-btn-outline pcms-btn-xs"
+              onClick={() => openEditModal(row)}
+            >
+              Sửa
+            </button>
 
-          <button
-            type="button"
-            className="pcms-btn pcms-btn-outline pcms-btn-xs"
-            onClick={() => askResetPassword(row)}
-          >
-            Đặt lại MK
-          </button>
+            <button
+              type="button"
+              className="pcms-btn pcms-btn-outline pcms-btn-xs"
+              onClick={() => askResetPassword(row)}
+            >
+              Đặt lại MK
+            </button>
 
-          <button
-            type="button"
-            className={`pcms-btn pcms-btn-xs ${
-              row.status === 'ACTIVE' ? 'pcms-btn-danger' : 'pcms-btn-primary'
-            }`}
-            onClick={() => askToggleStatus(row)}
-            disabled={row.username === 'admin'}
-            title={row.username === 'admin' ? 'Không thể tự khóa tài khoản Admin gốc' : ''}
-          >
-            {row.status === 'ACTIVE' ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
-          </button>
-        </div>
-      ),
+            <button
+              type="button"
+              className={`pcms-btn pcms-btn-xs ${
+                row.status === 'ACTIVE' ? 'pcms-btn-danger' : 'pcms-btn-primary'
+              }`}
+              onClick={() => askToggleStatus(row)}
+              disabled={row.status === 'ACTIVE' && isSelfOrRoot}
+              title={
+                row.status === 'ACTIVE' && isSelfOrRoot
+                  ? 'Không được tự khóa hoặc vô hiệu hóa tài khoản Admin hiện tại'
+                  : ''
+              }
+            >
+              {row.status === 'ACTIVE'
+                ? 'Vô hiệu hóa'
+                : row.status === 'LOCKED'
+                  ? 'Mở khóa'
+                  : 'Kích hoạt lại'}
+            </button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -386,8 +387,8 @@ export default function AdminAccountsPage() {
   return (
     <>
       <PageHeader
-        title="Quản lý Tài khoản Nhân viên (Accounts)"
-        subtitle="Danh sách nhân sự phòng khám: tìm kiếm, lọc theo vai trò/trạng thái, phân trang, tạo mới, cập nhật và đặt lại mật khẩu"
+        title="Quản lý Tài khoản Nhân viên"
+        subtitle="Tạo tài khoản nhân sự kèm gửi email mật khẩu tạm, mở khóa tài khoản bị khóa và đặt lại mật khẩu"
         actions={
           <button type="button" className="pcms-btn pcms-btn-primary" onClick={openCreateModal}>
             + Tạo tài khoản nhân viên
@@ -408,7 +409,6 @@ export default function AdminAccountsPage() {
         </div>
       ) : null}
 
-      {/* Thanh bộ lọc tìm kiếm */}
       <section className="pcms-card" style={{ padding: '14px 20px' }}>
         <div className="pcms-filter-bar" style={{ justifyContent: 'space-between' }}>
           <div className="pcms-filter-bar" style={{ flex: 1 }}>
@@ -448,6 +448,7 @@ export default function AdminAccountsPage() {
             >
               <option value="ALL">Tất cả trạng thái</option>
               <option value="ACTIVE">Đang hoạt động (ACTIVE)</option>
+              <option value="LOCKED">Tạm khóa đăng nhập sai (LOCKED)</option>
               <option value="INACTIVE">Ngừng hoạt động (INACTIVE)</option>
             </select>
 
@@ -458,7 +459,6 @@ export default function AdminAccountsPage() {
         </div>
       </section>
 
-      {/* Bảng dữ liệu tài khoản */}
       <DataTable
         title={`Danh sách Nhân viên Phòng khám (${totalItems})`}
         subtitle="Hiển thị các tài khoản nhân sự nội bộ trong hệ thống PCMS"
@@ -473,7 +473,6 @@ export default function AdminAccountsPage() {
         emptyMessage="Không có tài khoản nào khớp với từ khóa hoặc bộ lọc vai trò/trạng thái hiện tại."
       />
 
-      {/* Thanh phân trang */}
       {!loading && !error && totalItems > 0 ? (
         <div className="pcms-card" style={{ padding: '12px 20px' }}>
           <div className="pcms-pagination" style={{ marginTop: 0, paddingTop: 0, borderTop: 'none' }}>
@@ -513,7 +512,6 @@ export default function AdminAccountsPage() {
         </div>
       ) : null}
 
-      {/* Modal Tạo / Sửa Tài khoản Nhân viên */}
       {modalOpen ? (
         <div className="pcms-modal-backdrop" role="dialog" aria-modal="true">
           <div className="pcms-modal-card" style={{ maxWidth: 540 }}>
@@ -522,8 +520,8 @@ export default function AdminAccountsPage() {
             </h3>
             <p className="pcms-modal-desc">
               {isEditMode
-                ? 'Cập nhật họ tên, số điện thoại và vai trò công tác (Email và Username cố định).'
-                : 'Nhập thông tin nhân sự để cấp tài khoản truy cập hệ thống PCMS.'}
+                ? 'Cập nhật họ tên, số điện thoại và vai trò công tác của nhân viên.'
+                : 'Hệ thống sẽ gửi thông tin tài khoản và bắt buộc nhân viên đổi mật khẩu ngay lần đăng nhập đầu tiên.'}
             </p>
 
             <form onSubmit={handleSaveAccount} noValidate>
@@ -604,7 +602,7 @@ export default function AdminAccountsPage() {
 
                 <div className="pcms-field full">
                   <label className="pcms-label" htmlFor="acc-role">
-                    Vai trò trong phòng khám *
+                    Vai trò công tác *
                   </label>
                   <select
                     id="acc-role"
@@ -667,7 +665,6 @@ export default function AdminAccountsPage() {
         </div>
       ) : null}
 
-      {/* Hộp thoại Xác nhận hành động nguy hiểm */}
       <ConfirmDialog
         open={confirmState.open}
         title={
@@ -675,21 +672,21 @@ export default function AdminAccountsPage() {
             ? 'Xác nhận đặt lại mật khẩu nhân viên'
             : confirmState.nextStatus === 'INACTIVE'
               ? 'Xác nhận vô hiệu hóa tài khoản'
-              : 'Xác nhận kích hoạt lại tài khoản'
+              : 'Xác nhận mở khóa / kích hoạt lại tài khoản'
         }
         description={
           confirmState.type === 'RESET_PASSWORD'
-            ? `Hệ thống sẽ sinh một mật khẩu tạm thời mới cho nhân viên "${confirmState.account?.fullName}" (@${confirmState.account?.username}). Mật khẩu cũ sẽ không còn hiệu lực.`
+            ? `Hệ thống sẽ sinh một mật khẩu tạm thời mới, gửi email tới "${confirmState.account?.email}" và bắt buộc đổi mật khẩu ngay lần đăng nhập kế tiếp.`
             : confirmState.nextStatus === 'INACTIVE'
-              ? `Khi vô hiệu hóa, nhân viên "${confirmState.account?.fullName}" (@${confirmState.account?.username}) sẽ bị thu hồi quyền đăng nhập vào hệ thống PCMS ngay lập tức.`
-              : `Kích hoạt lại tài khoản và đặt lại bộ đếm đăng nhập sai về 0 cho nhân viên "${confirmState.account?.fullName}" (@${confirmState.account?.username})?`
+              ? `Khi vô hiệu hóa, nhân viên "${confirmState.account?.fullName}" (@${confirmState.account?.username}) sẽ bị thu hồi quyền đăng nhập ngay lập tức.`
+              : `Mở khóa / kích hoạt lại tài khoản và đặt lại bộ đếm đăng nhập sai về 0 cho nhân viên "${confirmState.account?.fullName}" (@${confirmState.account?.username})?`
         }
         confirmLabel={
           confirmState.type === 'RESET_PASSWORD'
             ? 'Đặt lại mật khẩu'
             : confirmState.nextStatus === 'INACTIVE'
               ? 'Vô hiệu hóa ngay'
-              : 'Kích hoạt lại'
+              : 'Mở khóa / Kích hoạt'
         }
         variant={
           confirmState.type === 'RESET_PASSWORD' || confirmState.nextStatus === 'INACTIVE'

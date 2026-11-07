@@ -1,8 +1,12 @@
 package com.pcms.repository;
 
 import com.pcms.entity.Appointment;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -14,6 +18,14 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Intege
 
     @EntityGraph(attributePaths = {"petOwner", "pet", "veterinarian", "service"})
     List<Appointment> findByAppointmentDateBetween(LocalDateTime start, LocalDateTime end);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT a FROM Appointment a WHERE a.veterinarian.userId = :vetId AND a.appointmentDate BETWEEN :start AND :end")
+    List<Appointment> findVetAppointmentsInWindowForUpdate(
+            @Param("vetId") Integer vetId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 
     @EntityGraph(attributePaths = {"petOwner", "pet", "veterinarian", "service"})
     List<Appointment> findByVeterinarian_UserId(Integer vetId);

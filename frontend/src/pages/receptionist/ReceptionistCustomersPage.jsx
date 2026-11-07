@@ -38,6 +38,7 @@ export default function ReceptionistCustomersPage() {
     ownerId: '',
     petName: '',
     species: 'Chó',
+
     breed: '',
     gender: 'Đực',
     age: '',
@@ -83,7 +84,7 @@ export default function ReceptionistCustomersPage() {
   }, [activeTab, search, statusFilter, ownerFilter]);
 
   useEffect(() => {
-    loadData();
+    void Promise.resolve().then(loadData);
   }, [loadData]);
 
   // ==================== HANDLERS CHỦ NUÔI (UC16, UC17, UC19) ====================
@@ -160,7 +161,10 @@ export default function ReceptionistCustomersPage() {
       ownerId: preselectedOwnerId ? String(preselectedOwnerId) : activeOwners[0]?.ownerId ? String(activeOwners[0].ownerId) : '',
       petName: '',
       species: 'Chó',
+
       breed: '',
+      color: '',
+  
       gender: 'Đực',
       age: '',
       weight: '',
@@ -175,6 +179,7 @@ export default function ReceptionistCustomersPage() {
       petName: pet.petName || '',
       species: pet.species || 'Chó',
       breed: pet.breed || '',
+      color: pet.color || '',
       gender: pet.gender || 'Đực',
       age: pet.age != null ? String(pet.age) : '',
       weight: pet.weight != null ? String(pet.weight) : '',
@@ -208,6 +213,7 @@ export default function ReceptionistCustomersPage() {
         petName: petForm.petName.trim(),
         species: petForm.species,
         breed: petForm.breed.trim() || null,
+        color: petForm.color ? petForm.color.trim() : null,
         gender: petForm.gender,
         age: petForm.age !== '' ? Number(petForm.age) : null,
         weight: petForm.weight !== '' ? Number(petForm.weight) : null,
@@ -757,6 +763,22 @@ export default function ReceptionistCustomersPage() {
               className="pcms-input"
               placeholder="Poodle, Corgi, Mèo Anh..."
               value={petForm.breed}
+              onChange={(e) => setPetForm((prev) => ({ ...prev, breed: e.target.value }))}
+            />
+          </div>
+
+          <div className="pcms-form-group">
+            <label className="pcms-label">Màu lông (Color)</label>
+            <input
+              type="text"
+              className="pcms-input"
+              placeholder="Trắng, Vàng, Đen, Tam thể..."
+              value={petForm.color || ''}
+              onChange={(e) => setPetForm((prev) => ({ ...prev, color: e.target.value }))}
+            />
+          </div>
+          <div style={{ display: 'none' }}>
+            <input value="" readOnly
               onChange={(e) => setPetForm((prev) => ({ ...prev, breed: e.target.value }))}
             />
           </div>

@@ -2,9 +2,12 @@ package com.pcms.exception;
 
 import com.pcms.config.security.CorrelationIdFilter;
 import com.pcms.dto.response.ErrorResponse;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -64,10 +67,17 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "MALFORMED_JSON", "Malformed JSON request", request, null);
     }
 
+    @ExceptionHandler({OptimisticLockingFailureException.class, OptimisticLockException.class, CannotAcquireLockException.class})
+    public ResponseEntity<ErrorResponse> handleConcurrencyConflict(Exception ex, HttpServletRequest request) {
+        log.warn("[{}] Concurrency conflict at {}: {}", resolveCorrelationId(request), request.getRequestURI(), ex.getMessage());
+        return build(HttpStatus.CONFLICT, "CONCURRENCY_CONFLICT",
+                "Dữ liệu vừa được cập nhật bởi một giao dịch khác. Vui lòng tải lại trang và thử lại.", request, null);
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
         log.warn("[{}] Data integrity conflict at {}: {}", resolveCorrelationId(request), request.getRequestURI(), ex.getMostSpecificCause().getMessage());
-        return build(HttpStatus.CONFLICT, "STATE_CONFLICT", "Data conflicts with an existing record", request, null);
+        return build(HttpStatus.CONFLICT, "STATE_CONFLICT", "Dữ liệu bị trùng lặp hoặc vi phạm ràng buộc toàn vẹn.", request, null);
     }
 
     @ExceptionHandler(AuthenticationException.class)
@@ -96,7 +106,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex, HttpServletRequest request) {
         String corrId = resolveCorrelationId(request);
         log.error("[{}] Internal server error at {}: {}", corrId, request.getRequestURI(), ex.getMessage(), ex);
-        // Trả về safe message, tuyệt đối không leak stack trace
         String safeMessage = "An unexpected error occurred. Please contact support with Correlation ID: " + corrId;
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", safeMessage, request, null);
     }

@@ -24,8 +24,20 @@ export default function VetLayout() {
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
 
+  const loadSummary = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const data = await vetApi.getWorklistSummary({ date: today });
+      if (data && data.waitingCount !== undefined) {
+        setWaitingCount((data.waitingCount || 0) + (data.inProgressCount || 0));
+      }
+    } catch {
+      // Ignored in background
+    }
+  };
+
   useEffect(() => {
-    loadSummary();
+    void Promise.resolve().then(loadSummary);
     const interval = setInterval(loadSummary, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -51,18 +63,6 @@ export default function VetLayout() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const loadSummary = async () => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const data = await vetApi.getWorklistSummary({ date: today });
-      if (data && data.waitingCount !== undefined) {
-        setWaitingCount((data.waitingCount || 0) + (data.inProgressCount || 0));
-      }
-    } catch {
-      // Ignored in background
-    }
-  };
 
   const handleLogout = () => {
     logout();
@@ -179,6 +179,9 @@ export default function VetLayout() {
                   <strong>{displayName}</strong>
                   <span>{user?.email || 'vet@pcms.vn'} • {user?.role}</span>
                 </div>
+                <Link to="/profile" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
+                  <span>Hồ sơ & Đổi mật khẩu</span>
+                </Link>
                 <Link to="/" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
                   <span>Về Trang chủ phòng khám</span>
                 </Link>

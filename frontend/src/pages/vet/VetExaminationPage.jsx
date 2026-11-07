@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import vetApi from '../../api/vetApi';
+import { useAuth } from '../../context/AuthContext';
 import PetHistoryModal from '../../components/vet/PetHistoryModal';
 import PrintableMedicalDocument from '../../components/common/PrintableMedicalDocument';
 import '../../styles/vetTheme.css';
@@ -8,6 +9,7 @@ import '../../styles/vetTheme.css';
 export default function VetExaminationPage() {
   const { recordId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [record, setRecord] = useState(null);
@@ -56,23 +58,23 @@ export default function VetExaminationPage() {
   const [followUpType, setFollowUpType] = useState('Tái khám đánh giá đáp ứng thuốc');
   const [followUpNotes, setFollowUpNotes] = useState('');
 
-  useEffect(() => {
-    if (recordId) {
-      loadRecord();
-      loadCatalogs();
-    }
-  }, [recordId]);
-
   const loadCatalogs = async () => {
     try {
       const [services, meds] = await Promise.all([
         vetApi.getAvailableServices(),
         vetApi.getAvailableMedicines(),
       ]);
-      setAvailableServices(services || []);
-      setAvailableMedicines(meds || []);
-      if (services?.length > 0) setSelectedServiceId(services[0].serviceId);
-      if (meds?.length > 0) setSelectedMedicineId(meds[0].medicineId);
+      const svcList = services || [];
+      const medList = meds || [];
+      setAvailableServices(svcList);
+      setAvailableMedicines(medList);
+      if (svcList.length > 0) setSelectedServiceId(svcList[0].serviceId);
+      const firstInStock = medList.find((m) => (m.availableStock ?? 0) > 0);
+      if (firstInStock) {
+        setSelectedMedicineId(firstInStock.medicineId);
+      } else if (medList.length > 0) {
+        setSelectedMedicineId('');
+      }
     } catch (err) {
       console.error('Lỗi tải danh mục:', err);
     }
@@ -92,16 +94,28 @@ export default function VetExaminationPage() {
         setPrescriptionInstructions(data.prescription.instructions);
       }
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không thể tải chi tiết bệnh án');
+      setError(err?.message || err?.response?.data?.message || 'Không thể tải chi tiết bệnh án');
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (recordId) {
+      void Promise.resolve().then(() => {
+        loadRecord();
+        loadCatalogs();
+      });
+    }
+  }, [recordId]);
+
   const showToast = (msg) => {
     setSuccessToast(msg);
     setTimeout(() => setSuccessToast(''), 3500);
   };
+
+  const extractErr = (err, fallback) =>
+    err?.message || err?.response?.data?.message || fallback;
 
   // Cập nhật thông tin bệnh án (Lâm sàng, Chẩn đoán, Phác đồ)
   const handleSaveRecord = async () => {
@@ -116,7 +130,7 @@ export default function VetExaminationPage() {
       setRecord(updated);
       showToast('Đã lưu thông tin bệnh án thành công!');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi khi lưu bệnh án');
+      alert(extractErr(err, 'Lỗi khi lưu bệnh án'));
     } finally {
       setSaving(false);
     }
@@ -129,7 +143,7 @@ export default function VetExaminationPage() {
       await vetApi.updatePetVitals(record.pet.petId, { weight: petWeight });
       showToast(`Đã cập nhật cân nặng của bé: ${petWeight} kg`);
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi cập nhật cân nặng');
+      alert(extractErr(err, 'Lỗi cập nhật cân nặng'));
     }
   };
 
@@ -149,7 +163,7 @@ export default function VetExaminationPage() {
       setServiceQuantity(1);
       showToast('Đã thêm y lệnh dịch vụ vào bệnh án!');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi khi thêm dịch vụ');
+      alert(extractErr(err, 'Lỗi khi thêm dịch vụ'));
     }
   };
 
@@ -166,7 +180,7 @@ export default function VetExaminationPage() {
       setEditingService(null);
       showToast('Đã cập nhật kết quả dịch vụ!');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi cập nhật dịch vụ');
+      alert(extractErr(err, 'Lỗi cập nhật dịch vụ'));
     }
   };
 
@@ -178,17 +192,35 @@ export default function VetExaminationPage() {
       setRecord(updated);
       showToast('Đã hủy dịch vụ khỏi y lệnh');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi xóa dịch vụ');
+      alert(extractErr(err, 'Lỗi xóa dịch vụ'));
     }
   };
 
   // Thêm thuốc vào đơn
   const handleAddMedicine = async (e) => {
     e.preventDefault();
-    if (!selectedMedicineId) return;
+    if (!selectedMedicineId) {
+      alert('Vui lòng chọn thuốc còn tồn kho khả dụng.');
+      return;
+    }
     try {
       const currentMeds = record?.prescription?.medicines || [];
       const medItem = availableMedicines.find((m) => m.medicineId === Number(selectedMedicineId));
+      const available = medItem?.availableStock ?? 0;
+      const alreadyPrescribedQty = currentMeds
+        .filter((m) => m.medicineId === Number(selectedMedicineId))
+        .reduce((sum, m) => sum + Number(m.quantity || 0), 0);
+
+      if (available <= 0) {
+        alert(`Thuốc "${medItem?.medicineName || ''}" hiện có tồn kho khả dụng bằng 0, không thể kê đơn.`);
+        return;
+      }
+      if (alreadyPrescribedQty + Number(medicineQuantity) > available) {
+        alert(
+          `Tổng số lượng kê (${alreadyPrescribedQty + Number(medicineQuantity)}) vượt quá tồn kho khả dụng (${available} ${medItem?.unit || ''}).`
+        );
+        return;
+      }
 
       const updatedItems = [
         ...currentMeds.map((m) => ({
@@ -213,9 +245,10 @@ export default function VetExaminationPage() {
       setShowAddMedicineModal(false);
       setMedicineNotes('');
       setMedicineQuantity(1);
+      loadCatalogs();
       showToast(`Đã thêm thuốc ${medItem?.medicineName || ''} vào đơn`);
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi khi kê thuốc');
+      alert(extractErr(err, 'Lỗi khi kê thuốc'));
     }
   };
 
@@ -238,9 +271,10 @@ export default function VetExaminationPage() {
         items: updatedItems,
       });
       setRecord(updated);
+      loadCatalogs();
       showToast('Đã xóa thuốc khỏi đơn');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi khi xóa thuốc');
+      alert(extractErr(err, 'Lỗi khi xóa thuốc'));
     }
   };
 
@@ -262,7 +296,7 @@ export default function VetExaminationPage() {
       setRecord(updated);
       showToast('Đã lưu lời dặn đơn thuốc!');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi lưu đơn thuốc');
+      alert(extractErr(err, 'Lỗi lưu đơn thuốc'));
     }
   };
 
@@ -281,7 +315,7 @@ export default function VetExaminationPage() {
       setFollowUpNotes('');
       showToast('Đã lên lịch hẹn tái khám thành công!');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi tạo lịch tái khám');
+      alert(extractErr(err, 'Lỗi tạo lịch tái khám'));
     }
   };
 
@@ -293,7 +327,7 @@ export default function VetExaminationPage() {
       setRecord(updated);
       showToast('Đã hủy lịch tái khám');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi xóa lịch tái khám');
+      alert(extractErr(err, 'Lỗi xóa lịch tái khám'));
     }
   };
 
@@ -304,7 +338,7 @@ export default function VetExaminationPage() {
       return;
     }
 
-    if (!window.confirm('Xác nhận HOÀN THÀNH ca khám & chốt bệnh án? Dữ liệu chi phí sẽ được chuyển sang bộ phận thu ngân.')) {
+    if (!window.confirm('Xác nhận HOÀN THÀNH ca khám & chốt bệnh án? Sau khi hoàn tất, bệnh án sẽ khóa chỉ đọc và chuyển sang bộ phận thu ngân.')) {
       return;
     }
 
@@ -317,7 +351,7 @@ export default function VetExaminationPage() {
       setRecord(updated);
       showToast('Đã hoàn tất ca khám & chốt bệnh án thành công!');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi khi hoàn tất ca khám');
+      alert(extractErr(err, 'Lỗi khi hoàn tất ca khám'));
     } finally {
       setSaving(false);
     }
@@ -336,7 +370,7 @@ export default function VetExaminationPage() {
       setShowCancelModal(false);
       showToast('Đã hủy ca khám thành công');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi khi hủy ca khám');
+      alert(extractErr(err, 'Lỗi khi hủy ca khám'));
     } finally {
       setSaving(false);
     }
@@ -350,7 +384,7 @@ export default function VetExaminationPage() {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '80px 0', color: '#6320ee' }}>
-                <h3 style={{ fontSize: 18, fontWeight: 700 }}>Đang mở Phòng khám lâm sàng...</h3>
+        <h3 style={{ fontSize: 18, fontWeight: 700 }}>Đang mở Phòng khám lâm sàng...</h3>
         <p style={{ color: '#64748b' }}>Đang nạp thông tin thú cưng & hồ sơ bệnh án #{recordId}</p>
       </div>
     );
@@ -371,9 +405,16 @@ export default function VetExaminationPage() {
   const owner = record.owner || {};
   const isCompleted = record.status === 'COMPLETED';
   const isCancelled = record.status === 'CANCELLED';
+  const isVet = user?.role === 'VETERINARIAN';
+  const invoiceStatusUpper = (record.invoice?.status || '').toUpperCase();
+  const isInvoiceLocked = invoiceStatusUpper === 'PAID' || invoiceStatusUpper === 'VOID' || invoiceStatusUpper === 'VOIDED';
+  const isReadOnly = record.status !== 'IN_PROGRESS' || isInvoiceLocked || !isVet;
+  const canManageFollowUp = isVet && !isCancelled && !isReadOnly;
+
   const services = record.services || [];
   const medicines = record.prescription?.medicines || [];
   const followUps = record.followUps || [];
+  const selectedMedicineObj = availableMedicines.find((m) => m.medicineId === Number(selectedMedicineId));
 
   return (
     <div>
@@ -438,7 +479,7 @@ export default function VetExaminationPage() {
           >
             In Phiếu Khám & Đơn Thuốc
           </button>
-          {!isCompleted && !isCancelled && (
+          {!isReadOnly && (
             <button
               type="button"
               className="vet-btn vet-btn-outline vet-btn-sm"
@@ -451,18 +492,38 @@ export default function VetExaminationPage() {
         </div>
       </div>
 
+      {/* Read-only lock banner (BR-13, BR-15, BR-18) */}
+      {isReadOnly && (
+        <div
+          style={{
+            marginBottom: 18,
+            padding: '12px 16px',
+            borderRadius: 10,
+            background: '#f8fafc',
+            border: '1px solid #cbd5e1',
+            color: '#334155',
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          {!isVet
+            ? 'Chế độ chỉ đọc: Quản trị viên không được phép chỉnh sửa nội dung chuyên môn lâm sàng trong bệnh án.'
+            : isCompleted
+            ? 'Bệnh án đã hoàn tất: Hồ sơ lâm sàng, dịch vụ và đơn thuốc đã khóa chỉ đọc.'
+            : isCancelled
+            ? 'Bệnh án đã hủy: Hồ sơ lâm sàng đã khóa chỉ đọc.'
+            : `Hóa đơn ở trạng thái ${invoiceStatusUpper}: Hồ sơ chi phí và bệnh án đã khóa chỉ đọc.`}
+        </div>
+      )}
+
       {/* Two Column Layout */}
       <div className="vet-exam-layout">
-        {/* =========================================================================
-            LEFT COLUMN: THÔNG TIN THÚ CƯNG & CHỦ NUÔI & LỊCH SỬ
-            ========================================================================= */}
+        {/* LEFT COLUMN */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* Card Thú cưng */}
           <div className="vet-card">
             <div className="vet-card-header">
-              <h4 className="vet-card-title">
-                Thông Tin Thú Cưng
-              </h4>
+              <h4 className="vet-card-title">Thông Tin Thú Cưng</h4>
             </div>
             <div className="vet-card-body">
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
@@ -471,7 +532,9 @@ export default function VetExaminationPage() {
                     width: 56,
                     height: 56,
                     borderRadius: 14,
-                    background: '#ede9fe', color: '#6320ee', fontWeight: 800,
+                    background: '#ede9fe',
+                    color: '#6320ee',
+                    fontWeight: 800,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -481,9 +544,7 @@ export default function VetExaminationPage() {
                   {(pet.petName || 'P').charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>
-                    {pet.petName}
-                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>{pet.petName}</div>
                   <div style={{ fontSize: 12.5, color: '#64748b' }}>
                     {pet.species} • {pet.breed}
                   </div>
@@ -505,21 +566,23 @@ export default function VetExaminationPage() {
                     className="vet-input"
                     style={{ fontWeight: 700, fontSize: 14 }}
                     value={petWeight}
+                    disabled={isReadOnly}
                     onChange={(e) => setPetWeight(e.target.value)}
                     placeholder="VD: 11.5"
                   />
-                  <button
-                    type="button"
-                    className="vet-btn vet-btn-primary vet-btn-sm"
-                    onClick={handleUpdateWeight}
-                    title="Lưu cân nặng của bé"
-                  >
-                    Lưu
-                  </button>
+                  {!isReadOnly && (
+                    <button
+                      type="button"
+                      className="vet-btn vet-btn-primary vet-btn-sm"
+                      onClick={handleUpdateWeight}
+                      title="Lưu cân nặng của bé"
+                    >
+                      Lưu
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* Nút xem bệnh sử cũ */}
               <button
                 type="button"
                 className="vet-btn vet-btn-outline"
@@ -534,9 +597,7 @@ export default function VetExaminationPage() {
           {/* Card Chủ nuôi */}
           <div className="vet-card">
             <div className="vet-card-header">
-              <h4 className="vet-card-title">
-                Thông Tin Chủ Nuôi
-              </h4>
+              <h4 className="vet-card-title">Thông Tin Chủ Nuôi</h4>
             </div>
             <div className="vet-card-body" style={{ fontSize: 13, lineHeight: 1.6 }}>
               <div>Họ tên: <strong>{owner.fullName || 'Chưa có thông tin'}</strong></div>
@@ -570,30 +631,30 @@ export default function VetExaminationPage() {
                 <div>• Tiền thuốc điều trị: <strong>{formatCurrency(record.totalMedicineAmount)}</strong></div>
               </div>
               <div style={{ marginTop: 12, fontSize: 11.5, color: '#64748b', fontStyle: 'italic' }}>
-                Hóa đơn sẽ tự động tạo và gửi đến quầy thu ngân khi bác sĩ hoàn thành ca khám.
+                Hóa đơn tự động đồng bộ sang quầy thu ngân khi có dịch vụ hoặc đơn thuốc phát sinh.
               </div>
             </div>
           </div>
         </div>
 
-        {/* =========================================================================
-            RIGHT COLUMN: KHÁM LÂM SÀNG, Y LỆNH DỊCH VỤ, ĐƠN THUỐC, TÁI KHÁM
-            ========================================================================= */}
+        {/* RIGHT COLUMN */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {/* SECTION 1: KHÁM LÂM SÀNG & CHẨN ĐOÁN (UC-04, UC-05, UC-07) */}
+          {/* SECTION 1: KHÁM LÂM SÀNG & CHẨN ĐOÁN */}
           <div className="vet-card">
             <div className="vet-card-header">
               <h4 className="vet-card-title">
                 1. Khám Lâm Sàng, Chẩn Đoán & Phác Đồ Điều Trị
               </h4>
-              <button
-                type="button"
-                className="vet-btn vet-btn-primary vet-btn-sm"
-                disabled={saving}
-                onClick={handleSaveRecord}
-              >
-                {saving ? 'Đang lưu...' : 'Lưu Lâm Sàng'}
-              </button>
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  className="vet-btn vet-btn-primary vet-btn-sm"
+                  disabled={saving}
+                  onClick={handleSaveRecord}
+                >
+                  {saving ? 'Đang lưu...' : 'Lưu Lâm Sàng'}
+                </button>
+              )}
             </div>
             <div className="vet-card-body">
               <div className="vet-form-group">
@@ -603,6 +664,7 @@ export default function VetExaminationPage() {
                 <textarea
                   className="vet-textarea"
                   rows={3}
+                  disabled={isReadOnly}
                   placeholder="Ví dụ: Bé sốt nhẹ 39.2°C, nôn dịch vàng, niêm mạc nhợt, ấn đau vùng thượng vị..."
                   value={symptoms}
                   onChange={(e) => setSymptoms(e.target.value)}
@@ -616,6 +678,7 @@ export default function VetExaminationPage() {
                 <input
                   type="text"
                   className="vet-input"
+                  disabled={isReadOnly}
                   style={{ fontWeight: 700, color: '#5218cc', fontSize: 14 }}
                   placeholder="Ví dụ: Viêm dạ dày ruột cấp tính / Dị vật đường ruột..."
                   value={diagnosis}
@@ -630,6 +693,7 @@ export default function VetExaminationPage() {
                 <textarea
                   className="vet-textarea"
                   rows={3}
+                  disabled={isReadOnly}
                   placeholder="Ví dụ: 1. Truyền bù nước Ringer Lactate 200ml. 2. Kháng sinh và men tiêu hóa 5 ngày..."
                   value={treatmentPlan}
                   onChange={(e) => setTreatmentPlan(e.target.value)}
@@ -638,7 +702,7 @@ export default function VetExaminationPage() {
             </div>
           </div>
 
-          {/* SECTION 2: CHỈ ĐỊNH DỊCH VỤ / Y LỆNH CẬN LÂM SÀNG (UC-09, 10, 11, 12) */}
+          {/* SECTION 2: CHỈ ĐỊNH DỊCH VỤ / Y LỆNH CẬN LÂM SÀNG */}
           <div className="vet-card">
             <div className="vet-card-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -649,26 +713,30 @@ export default function VetExaminationPage() {
                   {formatCurrency(record.totalServicesAmount)}
                 </span>
               </div>
-              <button
-                type="button"
-                className="vet-btn vet-btn-primary vet-btn-sm"
-                onClick={() => setShowAddServiceModal(true)}
-              >
-                Chỉ định Dịch vụ mới
-              </button>
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  className="vet-btn vet-btn-primary vet-btn-sm"
+                  onClick={() => setShowAddServiceModal(true)}
+                >
+                  Chỉ định Dịch vụ mới
+                </button>
+              )}
             </div>
 
             {services.length === 0 ? (
               <div style={{ padding: '30px 20px', textAlign: 'center', color: '#64748b' }}>
                 <p style={{ margin: 0, fontSize: 13 }}>Chưa có y lệnh dịch vụ cận lâm sàng nào.</p>
-                <button
-                  type="button"
-                  className="vet-btn vet-btn-outline vet-btn-sm"
-                  style={{ marginTop: 10 }}
-                  onClick={() => setShowAddServiceModal(true)}
-                >
-                  Thêm Siêu âm / Xét nghiệm / X-Quang...
-                </button>
+                {!isReadOnly && (
+                  <button
+                    type="button"
+                    className="vet-btn vet-btn-outline vet-btn-sm"
+                    style={{ marginTop: 10 }}
+                    onClick={() => setShowAddServiceModal(true)}
+                  >
+                    Thêm Siêu âm / Xét nghiệm / X-Quang...
+                  </button>
+                )}
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
@@ -680,7 +748,7 @@ export default function VetExaminationPage() {
                       <th style={{ width: 80, textAlign: 'center' }}>SL</th>
                       <th style={{ width: 130 }}>Thành tiền</th>
                       <th>Kết quả / Ghi chú kỹ thuật</th>
-                      <th style={{ width: 90, textAlign: 'center' }}>Thao tác</th>
+                      {!isReadOnly && <th style={{ width: 90, textAlign: 'center' }}>Thao tác</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -695,27 +763,29 @@ export default function VetExaminationPage() {
                             {s.notes || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Chưa có ghi chú</span>}
                           </div>
                         </td>
-                        <td style={{ textAlign: 'center' }}>
-                          <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                            <button
-                              type="button"
-                              className="vet-btn vet-btn-outline vet-btn-sm"
-                              title="Cập nhật kết quả/ghi chú"
-                              onClick={() => setEditingService(s)}
-                            >
-                              Sửa
-                            </button>
-                            <button
-                              type="button"
-                              className="vet-btn vet-btn-outline vet-btn-sm"
-                              style={{ color: '#ef4444' }}
-                              title="Hủy y lệnh dịch vụ này"
-                              onClick={() => handleDeleteService(s.recordDetailId)}
-                            >
-                              Xóa
-                            </button>
-                          </div>
-                        </td>
+                        {!isReadOnly && (
+                          <td style={{ textAlign: 'center' }}>
+                            <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                              <button
+                                type="button"
+                                className="vet-btn vet-btn-outline vet-btn-sm"
+                                title="Cập nhật kết quả/ghi chú"
+                                onClick={() => setEditingService(s)}
+                              >
+                                Sửa
+                              </button>
+                              <button
+                                type="button"
+                                className="vet-btn vet-btn-outline vet-btn-sm"
+                                style={{ color: '#ef4444' }}
+                                title="Hủy y lệnh dịch vụ này"
+                                onClick={() => handleDeleteService(s.recordDetailId)}
+                              >
+                                Xóa
+                              </button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -724,7 +794,7 @@ export default function VetExaminationPage() {
             )}
           </div>
 
-          {/* SECTION 3: KÊ ĐƠN THUỐC ĐIỆN TỬ (UC-13, UC-14) */}
+          {/* SECTION 3: KÊ ĐƠN THUỐC ĐIỆN TỬ */}
           <div className="vet-card">
             <div className="vet-card-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -735,26 +805,30 @@ export default function VetExaminationPage() {
                   {formatCurrency(record.totalMedicineAmount)}
                 </span>
               </div>
-              <button
-                type="button"
-                className="vet-btn vet-btn-primary vet-btn-sm"
-                onClick={() => setShowAddMedicineModal(true)}
-              >
-                Kê thêm thuốc vào đơn
-              </button>
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  className="vet-btn vet-btn-primary vet-btn-sm"
+                  onClick={() => setShowAddMedicineModal(true)}
+                >
+                  Kê thêm thuốc vào đơn
+                </button>
+              )}
             </div>
 
             {medicines.length === 0 ? (
               <div style={{ padding: '30px 20px', textAlign: 'center', color: '#64748b' }}>
                 <p style={{ margin: 0, fontSize: 13 }}>Đơn thuốc đang trống. Hãy chọn thuốc từ kho dược.</p>
-                <button
-                  type="button"
-                  className="vet-btn vet-btn-outline vet-btn-sm"
-                  style={{ marginTop: 10 }}
-                  onClick={() => setShowAddMedicineModal(true)}
-                >
-                  Chọn thuốc từ kho
-                </button>
+                {!isReadOnly && (
+                  <button
+                    type="button"
+                    className="vet-btn vet-btn-outline vet-btn-sm"
+                    style={{ marginTop: 10 }}
+                    onClick={() => setShowAddMedicineModal(true)}
+                  >
+                    Chọn thuốc từ kho
+                  </button>
+                )}
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
@@ -766,7 +840,7 @@ export default function VetExaminationPage() {
                       <th style={{ width: 80, textAlign: 'center' }}>SL</th>
                       <th style={{ width: 120 }}>Thành tiền</th>
                       <th>Liều dùng & Hướng dẫn uống</th>
-                      <th style={{ width: 70, textAlign: 'center' }}>Xóa</th>
+                      {!isReadOnly && <th style={{ width: 70, textAlign: 'center' }}>Xóa</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -785,17 +859,19 @@ export default function VetExaminationPage() {
                           </div>
                           {m.notes && <div style={{ fontSize: 11.5, color: '#64748b' }}>{m.notes}</div>}
                         </td>
-                        <td style={{ textAlign: 'center' }}>
-                          <button
-                            type="button"
-                            className="vet-btn vet-btn-outline vet-btn-sm"
-                            style={{ color: '#ef4444' }}
-                            title="Xóa thuốc khỏi đơn"
-                            onClick={() => handleDeleteMedicine(m.prescriptionDetailId)}
-                          >
-                            Xóa
-                          </button>
-                        </td>
+                        {!isReadOnly && (
+                          <td style={{ textAlign: 'center' }}>
+                            <button
+                              type="button"
+                              className="vet-btn vet-btn-outline vet-btn-sm"
+                              style={{ color: '#ef4444' }}
+                              title="Xóa thuốc khỏi đơn"
+                              onClick={() => handleDeleteMedicine(m.prescriptionDetailId)}
+                            >
+                              Xóa
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -809,17 +885,20 @@ export default function VetExaminationPage() {
                 <label className="vet-form-label" style={{ margin: 0 }}>
                   Lời dặn chung của Bác sĩ khi dùng thuốc tại nhà:
                 </label>
-                <button
-                  type="button"
-                  className="vet-btn vet-btn-outline vet-btn-sm"
-                  onClick={handleSavePrescriptionInstructions}
-                >
-                  Lưu lời dặn
-                </button>
+                {!isReadOnly && (
+                  <button
+                    type="button"
+                    className="vet-btn vet-btn-outline vet-btn-sm"
+                    onClick={handleSavePrescriptionInstructions}
+                  >
+                    Lưu lời dặn
+                  </button>
+                )}
               </div>
               <textarea
                 className="vet-textarea"
                 rows={2}
+                disabled={isReadOnly}
                 placeholder="Ví dụ: Cho uống sau khi ăn 30 phút. Không cho gặm xương cứng trong thời gian uống thuốc..."
                 value={prescriptionInstructions}
                 onChange={(e) => setPrescriptionInstructions(e.target.value)}
@@ -833,18 +912,20 @@ export default function VetExaminationPage() {
               <h4 className="vet-card-title">
                 4. Kế Hoạch & Lịch Hẹn Tái Khám ({followUps.length})
               </h4>
-              <button
-                type="button"
-                className="vet-btn vet-btn-primary vet-btn-sm"
-                onClick={() => setShowFollowUpModal(true)}
-              >
-                Đặt lịch tái khám
-              </button>
+              {canManageFollowUp && (
+                <button
+                  type="button"
+                  className="vet-btn vet-btn-primary vet-btn-sm"
+                  onClick={() => setShowFollowUpModal(true)}
+                >
+                  Đặt lịch tái khám
+                </button>
+              )}
             </div>
             <div className="vet-card-body">
               {followUps.length === 0 ? (
                 <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
-                  Chưa có lịch hẹn tái khám. Bấm <strong>Đặt lịch tái khám</strong> nếu cần theo dõi sau phác đồ.
+                  Chưa có lịch hẹn tái khám.
                 </p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -861,23 +942,23 @@ export default function VetExaminationPage() {
                         borderRadius: 8,
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: 13.5, color: '#0f172a' }}>
-                            Hẹn tái khám: <strong>{f.followUpDate}</strong> • {f.followUpType}
-                          </div>
-                          {f.notes && <div style={{ fontSize: 12, color: '#475569' }}>Ghi chú: {f.notes}</div>}
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 13.5, color: '#0f172a' }}>
+                          Hẹn tái khám: <strong>{f.followUpDate}</strong> • {f.followUpType}
                         </div>
+                        {f.notes && <div style={{ fontSize: 12, color: '#475569' }}>Ghi chú: {f.notes}</div>}
                       </div>
-                      <button
-                        type="button"
-                        className="vet-btn vet-btn-outline vet-btn-sm"
-                        style={{ color: '#ef4444' }}
-                        title="Hủy lịch hẹn tái khám"
-                        onClick={() => handleDeleteFollowUp(f.followUpId)}
-                      >
-                        Xóa
-                      </button>
+                      {canManageFollowUp && (
+                        <button
+                          type="button"
+                          className="vet-btn vet-btn-outline vet-btn-sm"
+                          style={{ color: '#ef4444' }}
+                          title="Hủy lịch hẹn tái khám"
+                          onClick={() => handleDeleteFollowUp(f.followUpId)}
+                        >
+                          Xóa
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -910,14 +991,16 @@ export default function VetExaminationPage() {
             </div>
 
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className="vet-btn vet-btn-outline"
-                disabled={saving}
-                onClick={handleSaveRecord}
-              >
-                Lưu cập nhật
-              </button>
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  className="vet-btn vet-btn-outline"
+                  disabled={saving}
+                  onClick={handleSaveRecord}
+                >
+                  Lưu cập nhật
+                </button>
+              )}
 
               <button
                 type="button"
@@ -927,7 +1010,7 @@ export default function VetExaminationPage() {
                 In Phiếu & Đơn
               </button>
 
-              {!isCompleted && !isCancelled && (
+              {!isReadOnly && (
                 <button
                   type="button"
                   className="vet-btn vet-btn-success"
@@ -943,11 +1026,7 @@ export default function VetExaminationPage() {
         </div>
       </div>
 
-      {/* =========================================================================
-          MODALS
-          ========================================================================= */}
-
-      {/* Modal Xem Bệnh Sử Pet */}
+      {/* MODALS */}
       {showHistoryModal && (
         <PetHistoryModal
           petId={pet.petId}
@@ -956,7 +1035,6 @@ export default function VetExaminationPage() {
         />
       )}
 
-      {/* Modal In Phiếu Khám & Đơn Thuốc */}
       {showPrintModal && (
         <PrintableMedicalDocument
           record={record}
@@ -965,11 +1043,11 @@ export default function VetExaminationPage() {
       )}
 
       {/* Modal Thêm Dịch Vụ Mới */}
-      {showAddServiceModal && (
+      {showAddServiceModal && !isReadOnly && (
         <div className="vet-modal-backdrop">
           <div className="vet-modal" style={{ maxWidth: 500 }}>
             <div className="vet-modal-header">
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
                 Chỉ Định Y Lệnh Dịch Vụ Mới
               </h3>
               <button type="button" className="vet-btn vet-btn-outline vet-btn-sm" onClick={() => setShowAddServiceModal(false)}>
@@ -1031,7 +1109,7 @@ export default function VetExaminationPage() {
       )}
 
       {/* Modal Sửa Kết Quả / Ghi Chú Dịch Vụ */}
-      {editingService && (
+      {editingService && !isReadOnly && (
         <div className="vet-modal-backdrop">
           <div className="vet-modal" style={{ maxWidth: 480 }}>
             <div className="vet-modal-header">
@@ -1080,11 +1158,11 @@ export default function VetExaminationPage() {
       )}
 
       {/* Modal Kê Thuốc Mới */}
-      {showAddMedicineModal && (
+      {showAddMedicineModal && !isReadOnly && (
         <div className="vet-modal-backdrop">
           <div className="vet-modal" style={{ maxWidth: 520 }}>
             <div className="vet-modal-header">
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
                 Kê Thuốc Vào Đơn Điện Tử
               </h3>
               <button type="button" className="vet-btn vet-btn-outline vet-btn-sm" onClick={() => setShowAddMedicineModal(false)}>
@@ -1094,26 +1172,34 @@ export default function VetExaminationPage() {
             <form onSubmit={handleAddMedicine}>
               <div className="vet-modal-body">
                 <div className="vet-form-group">
-                  <label className="vet-form-label">Chọn Thuốc Từ Kho Dược:</label>
+                  <label className="vet-form-label">Chọn Thuốc Từ Kho Dược (Chỉ cho phép thuốc còn tồn kho khả dụng):</label>
                   <select
                     className="vet-select"
                     value={selectedMedicineId}
                     onChange={(e) => setSelectedMedicineId(e.target.value)}
                     required
                   >
-                    {availableMedicines.map((m) => (
-                      <option key={m.medicineId} value={m.medicineId}>
-                        {m.medicineName} ({formatCurrency(m.unitPrice)} / {m.unit})
-                      </option>
-                    ))}
+                    <option value="">-- Chọn thuốc còn tồn kho --</option>
+                    {availableMedicines.map((m) => {
+                      const stock = m.availableStock ?? 0;
+                      return (
+                        <option key={m.medicineId} value={m.medicineId} disabled={stock <= 0}>
+                          {m.medicineName} ({formatCurrency(m.unitPrice)} / {m.unit}) —{' '}
+                          {stock > 0 ? `Tồn khả dụng: ${stock} ${m.unit}` : 'Hết hàng (0)'}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
                 <div className="vet-form-group">
-                  <label className="vet-form-label">Số lượng kê:</label>
+                  <label className="vet-form-label">
+                    Số lượng kê {selectedMedicineObj ? `(Tối đa ${selectedMedicineObj.availableStock ?? 0} ${selectedMedicineObj.unit})` : ''}:
+                  </label>
                   <input
                     type="number"
                     min={1}
+                    max={selectedMedicineObj?.availableStock || undefined}
                     className="vet-input"
                     value={medicineQuantity}
                     onChange={(e) => setMedicineQuantity(e.target.value)}
@@ -1148,7 +1234,11 @@ export default function VetExaminationPage() {
                 <button type="button" className="vet-btn vet-btn-outline" onClick={() => setShowAddMedicineModal(false)}>
                   Đóng
                 </button>
-                <button type="submit" className="vet-btn vet-btn-primary">
+                <button
+                  type="submit"
+                  className="vet-btn vet-btn-primary"
+                  disabled={!selectedMedicineId || (selectedMedicineObj?.availableStock ?? 0) <= 0}
+                >
                   Thêm vào Đơn Thuốc
                 </button>
               </div>
@@ -1158,11 +1248,11 @@ export default function VetExaminationPage() {
       )}
 
       {/* Modal Đặt Lịch Tái Khám */}
-      {showFollowUpModal && (
+      {showFollowUpModal && canManageFollowUp && (
         <div className="vet-modal-backdrop">
           <div className="vet-modal" style={{ maxWidth: 460 }}>
             <div className="vet-modal-header">
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
                 Đặt Lịch Tái Khám Cho Bé
               </h3>
               <button type="button" className="vet-btn vet-btn-outline vet-btn-sm" onClick={() => setShowFollowUpModal(false)}>
@@ -1222,7 +1312,7 @@ export default function VetExaminationPage() {
       )}
 
       {/* Modal Hủy Ca Khám */}
-      {showCancelModal && (
+      {showCancelModal && !isReadOnly && (
         <div className="vet-modal-backdrop">
           <div className="vet-modal" style={{ maxWidth: 440 }}>
             <div className="vet-modal-header">

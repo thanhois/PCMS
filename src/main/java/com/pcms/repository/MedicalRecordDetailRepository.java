@@ -5,9 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface MedicalRecordDetailRepository extends JpaRepository<MedicalRecordDetail, Integer> {
     List<MedicalRecordDetail> findByMedicalRecord_RecordId(Integer recordId);
+    Optional<MedicalRecordDetail> findByMedicalRecord_RecordIdAndService_ServiceId(Integer recordId, Integer serviceId);
     void deleteByMedicalRecord_RecordId(Integer recordId);
 }

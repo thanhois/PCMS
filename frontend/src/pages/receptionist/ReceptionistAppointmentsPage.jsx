@@ -4,9 +4,11 @@ import ModalDialog from '../../components/admin/ui/ModalDialog';
 import PageHeader from '../../components/admin/ui/PageHeader';
 import StatusBadge from '../../components/admin/ui/StatusBadge';
 import ToastMessage from '../../components/admin/ui/ToastMessage';
+import DoctorSlotsManager from '../../components/receptionist/DoctorSlotsManager';
 
 export default function ReceptionistAppointmentsPage() {
   const todayStr = new Date().toISOString().slice(0, 10);
+  const [activeView, setActiveView] = useState('APPOINTMENTS'); // 'APPOINTMENTS' | 'DOCTOR_SLOTS'
 
   // Bộ lọc (UC07)
   const [fromDate, setFromDate] = useState('');
@@ -108,11 +110,11 @@ export default function ReceptionistAppointmentsPage() {
   }, [fromDate, toDate, statusFilter, vetFilter, shiftFilter, search]);
 
   useEffect(() => {
-    loadLookups();
+    void Promise.resolve().then(loadLookups);
   }, [loadLookups]);
 
   useEffect(() => {
-    loadAppointments();
+    void Promise.resolve().then(loadAppointments);
   }, [loadAppointments]);
 
   const handleFromDateChange = (val) => {
@@ -319,6 +321,27 @@ export default function ReceptionistAppointmentsPage() {
         onClose={() => setToast({ type: 'info', message: '' })}
       />
 
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <button
+          type="button"
+          className={activeView === 'APPOINTMENTS' ? 'pcms-btn pcms-btn-primary' : 'pcms-btn pcms-btn-outline'}
+          onClick={() => setActiveView('APPOINTMENTS')}
+        >
+          Danh sách Lịch hẹn Khám
+        </button>
+        <button
+          type="button"
+          className={activeView === 'DOCTOR_SLOTS' ? 'pcms-btn pcms-btn-primary' : 'pcms-btn pcms-btn-outline'}
+          onClick={() => setActiveView('DOCTOR_SLOTS')}
+        >
+          Lịch làm việc & Slot Bác sĩ
+        </button>
+      </div>
+
+      {activeView === 'DOCTOR_SLOTS' ? (
+        <DoctorSlotsManager veterinarians={veterinarians} onToast={setToast} />
+      ) : (
+      <>
       {/* Bộ lọc lịch hẹn */}
       <div className="pcms-card" style={{ marginBottom: 20 }}>
         <div
@@ -601,6 +624,8 @@ export default function ReceptionistAppointmentsPage() {
           </table>
         </div>
       </div>
+      </>
+      )}
 
       {/* Modal Đặt lịch hẹn mới tại quầy theo Buổi */}
       <ModalDialog

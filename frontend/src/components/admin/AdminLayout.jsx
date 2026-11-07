@@ -95,7 +95,7 @@ export default function AdminLayout() {
 
   return (
     <div className="pcms-admin-shell">
-      <header className="pcms-topbar">
+      <header className="pcms-topbar no-print">
         <div className="pcms-topbar-left">
           <button
             type="button"
@@ -191,6 +191,9 @@ export default function AdminLayout() {
                   <strong>{displayName}</strong>
                   <span>{user?.email || 'admin@pcms.vn'} • ADMIN</span>
                 </div>
+                <Link to="/profile" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
+                  <span>Hồ sơ & Đổi mật khẩu</span>
+                </Link>
                 <Link to="/" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
                   <span>Về Trang chủ khách hàng</span>
                 </Link>
@@ -211,7 +214,7 @@ export default function AdminLayout() {
       </header>
 
       <div className="pcms-admin-body">
-        <aside className={`pcms-sidebar ${collapsed ? 'collapsed' : ''}`}>
+        <aside className={`pcms-sidebar no-print ${collapsed ? 'collapsed' : ''}`}>
           <nav className="pcms-sidebar-nav" aria-label="Menu quản trị chính">
             <div className="pcms-sidebar-section-label">Quản trị hệ thống</div>
             {MAIN_NAV_ITEMS.map((item) => (

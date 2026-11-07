@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import billingApi from '../../api/billingApi';
@@ -15,31 +14,26 @@ const formatVnd = (value) => {
 
 const formatDate = (value) => {
   if (!value) return '—';
-
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-
-  return date.toLocaleDateString('vi-VN');
+  return date.toLocaleString('vi-VN');
 };
 
 export default function BillingQueuePage() {
   const navigate = useNavigate();
 
+  const [statusFilter, setStatusFilter] = useState('PENDING');
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [keyword, setKeyword] = useState('');
 
-  const loadInvoices = async () => {
+  const loadInvoices = async (targetStatus = statusFilter) => {
     setLoading(true);
     setError('');
-
     try {
-      const response = await billingApi.getPaymentQueue();
-
-      setInvoices(
-        Array.isArray(response?.data) ? response.data : []
-      );
+      const response = await billingApi.getPaymentQueue(targetStatus);
+      setInvoices(Array.isArray(response?.data) ? response.data : []);
     } catch (err) {
       setError(err?.message || 'Không thể tải danh sách hóa đơn.');
     } finally {
@@ -48,44 +42,43 @@ export default function BillingQueuePage() {
   };
 
   useEffect(() => {
-    loadInvoices();
-  }, []);
+    void Promise.resolve().then(() => loadInvoices(statusFilter));
+  }, [statusFilter]);
 
   const filteredInvoices = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
-
     if (!normalizedKeyword) return invoices;
 
     return invoices.filter((invoice) => {
       const invoiceId = String(invoice.invoiceId || '').toLowerCase();
       const petName = String(invoice.petName || '').toLowerCase();
       const ownerName = String(invoice.ownerName || '').toLowerCase();
+      const ownerPhone = String(invoice.ownerPhone || '').toLowerCase();
 
       return (
         invoiceId.includes(normalizedKeyword) ||
         petName.includes(normalizedKeyword) ||
-        ownerName.includes(normalizedKeyword)
+        ownerName.includes(normalizedKeyword) ||
+        ownerPhone.includes(normalizedKeyword)
       );
     });
   }, [invoices, keyword]);
 
-  const totalPendingAmount = useMemo(() => {
-    return invoices.reduce((total, invoice) => {
+  const totalNetAmount = useMemo(() => {
+    return filteredInvoices.reduce((total, invoice) => {
+      if (invoice.status === 'VOID') return total;
       const amount =
         Number(invoice.totalAmount || 0) -
         Number(invoice.discountAmount || 0);
-
       return total + Math.max(amount, 0);
     }, 0);
-  }, [invoices]);
+  }, [filteredInvoices]);
 
   const columns = [
     {
       key: 'invoiceId',
       header: 'Mã hóa đơn',
-      render: (row) => (
-        <strong>HD-{row.invoiceId}</strong>
-      ),
+      render: (row) => <strong>HD-{row.invoiceId}</strong>,
     },
     {
       key: 'petName',
@@ -95,7 +88,16 @@ export default function BillingQueuePage() {
     {
       key: 'ownerName',
       header: 'Chủ thú cưng',
-      render: (row) => row.ownerName || '—',
+      render: (row) => (
+        <div>
+          <div style={{ fontWeight: 600 }}>{row.ownerName || '—'}</div>
+          {row.ownerPhone && (
+            <div style={{ fontSize: 12, color: 'var(--pcms-text-muted)' }}>
+              {row.ownerPhone}
+            </div>
+          )}
+        </div>
+      ),
     },
     {
       key: 'invoiceDate',
@@ -116,16 +118,13 @@ export default function BillingQueuePage() {
     },
     {
       key: 'amountDue',
-      header: 'Cần thanh toán',
+      header: 'Thực thu',
       align: 'right',
       render: (row) => {
         const amountDue =
           Number(row.totalAmount || 0) -
           Number(row.discountAmount || 0);
-
-        return (
-          <strong>{formatVnd(Math.max(amountDue, 0))}</strong>
-        );
+        return <strong>{formatVnd(Math.max(amountDue, 0))}</strong>;
       },
     },
     {
@@ -140,27 +139,25 @@ export default function BillingQueuePage() {
       render: (row) => (
         <button
           type="button"
-          className="pcms-btn pcms-btn-primary"
-          onClick={() =>
-            navigate(`/billing/invoices/${row.invoiceId}`)
-          }
+          className="pcms-btn pcms-btn-primary pcms-btn-sm"
+          onClick={() => navigate(`/billing/invoices/${row.invoiceId}`)}
         >
-          Chi tiết
+          {row.status === 'PAID' ? 'Xem & In biên lai' : 'Chi tiết'}
         </button>
       ),
     },
   ];
 
   return (
-    <div>
+    <div className="pcms-page">
       <PageHeader
-        title="Thanh toán hóa đơn"
-        subtitle="Theo dõi các hóa đơn đang chờ thanh toán và xử lý giao dịch tại quầy."
+        title="Thanh toán & Hóa đơn"
+        subtitle="Theo dõi hàng đợi thu ngân, xử lý thanh toán trừ kho FEFO và in biên lai điện tử."
         actions={
           <button
             type="button"
-            className="pcms-btn pcms-btn-secondary"
-            onClick={loadInvoices}
+            className="pcms-btn pcms-btn-outline"
+            onClick={() => loadInvoices(statusFilter)}
             disabled={loading}
           >
             {loading ? 'Đang tải...' : 'Làm mới'}
@@ -169,66 +166,76 @@ export default function BillingQueuePage() {
       />
 
       {error && (
-        <div className="pcms-alert pcms-alert-danger" role="alert">
+        <div className="pcms-alert pcms-alert-error" role="alert">
           {error}
         </div>
       )}
 
       <div className="pcms-kpi-grid" style={{ marginBottom: 20 }}>
         <div className="pcms-card">
-          <div className="pcms-card-label">
-            Số hóa đơn chờ thanh toán
-          </div>
-          <div className="pcms-card-value">
-            {invoices.length}
+          <div className="pcms-card-subtitle">Số hóa đơn theo bộ lọc</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--pcms-primary)', marginTop: 6 }}>
+            {filteredInvoices.length}
           </div>
         </div>
 
         <div className="pcms-card">
-          <div className="pcms-card-label">
-            Tổng tiền cần thu
+          <div className="pcms-card-subtitle">
+            {statusFilter === 'PAID' ? 'Tổng doanh thu đã thu' : 'Tổng giá trị hóa đơn'}
           </div>
-          <div className="pcms-card-value">
-            {formatVnd(totalPendingAmount)}
+          <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--pcms-text-primary)', marginTop: 6 }}>
+            {formatVnd(totalNetAmount)}
           </div>
         </div>
       </div>
 
       <div className="pcms-card" style={{ marginBottom: 16 }}>
-        <div className="pcms-filter-bar">
-          <input
-            type="search"
-            className="pcms-input"
-            placeholder="Tìm theo mã hóa đơn, tên thú cưng hoặc chủ thú cưng..."
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-          />
+        <div className="pcms-filter-bar" style={{ justifyContent: 'space-between' }}>
+          <div className="pcms-tabs">
+            {[
+              { key: 'PENDING', label: 'Chờ thanh toán' },
+              { key: 'PAID', label: 'Đã thanh toán' },
+              { key: 'VOID', label: 'Đã hủy (Void)' },
+              { key: 'ALL', label: 'Tất cả' },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                className={`pcms-tab-btn ${statusFilter === tab.key ? 'active' : ''}`}
+                onClick={() => setStatusFilter(tab.key)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-          <span style={{ color: 'var(--pcms-text-muted)' }}>
-            {filteredInvoices.length} / {invoices.length} hóa đơn
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <input
+              type="search"
+              className="pcms-input"
+              style={{ minWidth: 260 }}
+              placeholder="Tìm mã HĐ, tên thú cưng, chủ nuôi, SĐT..."
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+            <span style={{ color: 'var(--pcms-text-muted)', fontSize: 13 }}>
+              {filteredInvoices.length} / {invoices.length} hóa đơn
+            </span>
+          </div>
         </div>
       </div>
 
       <DataTable
-        title="Danh sách hóa đơn chờ thanh toán"
-        subtitle="Chọn Chi tiết để xem thông tin hóa đơn và thực hiện thanh toán."
+        title="Danh sách hóa đơn viện phí"
+        subtitle="Chọn Chi tiết để thu tiền hoặc Xem & In biên lai cho hóa đơn đã thanh toán."
         columns={columns}
         data={filteredInvoices}
         rowKey="invoiceId"
         loading={loading}
         error=""
-        emptyTitle={
-          keyword
-            ? 'Không tìm thấy hóa đơn phù hợp'
-            : 'Không có hóa đơn chờ thanh toán'
-        }
-        emptyMessage={
-          keyword
-            ? 'Thử tìm kiếm bằng mã hóa đơn hoặc tên khác.'
-            : 'Hiện tại không có hóa đơn nào cần thanh toán.'
-        }
-        onRetry={loadInvoices}
+        emptyTitle="Không tìm thấy hóa đơn phù hợp"
+        emptyMessage="Hiện không có hóa đơn nào khớp với bộ lọc đang chọn."
+        onRetry={() => loadInvoices(statusFilter)}
       />
     </div>
   );

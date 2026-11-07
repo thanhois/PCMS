@@ -19,7 +19,11 @@ public interface AdminService {
 
     Map<String, Object> getRolesAndPermissions();
 
+    Map<String, Object> updateRolePermissions(Integer roleId, List<Integer> permissionIds, String adminUsername);
+
     Map<String, Object> assignAccountRole(Integer userId, String roleName, String adminUsername);
+
+    Map<String, Object> importHistoricalCustomers(String csvContent, String adminUsername);
 
     List<Map<String, Object>> getServices();
 

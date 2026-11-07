@@ -1,39 +1,24 @@
-
 import axiosClient from './axiosClient';
 
 const billingApi = {
-  // 1. PAYMENT QUEUE
-  getPaymentQueue() {
-    return axiosClient.get('/api/v1/billing/queue');
+  getPaymentQueue(status = 'PENDING') {
+    return axiosClient.get('/api/v1/billing/queue', { params: { status } });
   },
 
-  // 2. INVOICE
   getInvoiceById(invoiceId) {
-    return axiosClient.get(
-      `/api/v1/billing/invoices/${invoiceId}`
-    );
+    return axiosClient.get(`/api/v1/billing/invoices/${invoiceId}`);
   },
 
   updateInvoice(invoiceId, payload) {
-    return axiosClient.put(
-      `/api/v1/billing/invoices/${invoiceId}`,
-      payload
-    );
+    return axiosClient.put(`/api/v1/billing/invoices/${invoiceId}`, payload);
   },
 
   voidInvoice(invoiceId, payload) {
-    return axiosClient.patch(
-      `/api/v1/billing/invoices/${invoiceId}/void`,
-      payload
-    );
+    return axiosClient.patch(`/api/v1/billing/invoices/${invoiceId}/void`, payload);
   },
 
-  // 3. PAYMENT
   confirmPayment(invoiceId, payload) {
-    return axiosClient.post(
-      `/api/v1/billing/invoices/${invoiceId}/payments`,
-      payload
-    );
+    return axiosClient.post(`/api/v1/billing/invoices/${invoiceId}/payments`, payload);
   },
 };
 

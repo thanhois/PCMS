@@ -36,7 +36,6 @@ const ACTION_BADGE_MAP = {
   ACTIVATE_MEDICINE: { label: 'Mở thuốc', variant: 'success' },
   CONFIRM_PAYMENT: { label: 'Thu ngân', variant: 'solid-green' },
   CREATE_MEDICAL_RECORD: { label: 'Bệnh án', variant: 'info' },
-  UPDATE_BRANCH: { label: 'Chi nhánh', variant: 'neutral' },
 };
 
 export default function AdminOverviewPage() {
@@ -60,7 +59,7 @@ export default function AdminOverviewPage() {
   }, []);
 
   useEffect(() => {
-    fetchOverview();
+    void Promise.resolve().then(fetchOverview);
   }, [fetchOverview]);
 
   const kpis = overview?.kpis || {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import vetApi from '../../api/vetApi';
+import { useAuth } from '../../context/AuthContext';
 import KpiCard from '../../components/admin/ui/KpiCard';
 import PageHeader from '../../components/admin/ui/PageHeader';
 import PetHistoryModal from '../../components/vet/PetHistoryModal';
@@ -8,6 +9,8 @@ import '../../styles/vetTheme.css';
 
 export default function VetWorkbenchPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isVet = user?.role === 'VETERINARIAN';
 
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [status, setStatus] = useState('ALL');
@@ -27,10 +30,6 @@ export default function VetWorkbenchPage() {
   const [cancelReason, setCancelReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, [date, status]);
-
   const loadData = async () => {
     setLoading(true);
     try {
@@ -49,6 +48,10 @@ export default function VetWorkbenchPage() {
     }
   };
 
+  useEffect(() => {
+    void Promise.resolve().then(loadData);
+  }, [date, status]);
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     loadData();
@@ -64,7 +67,7 @@ export default function VetWorkbenchPage() {
         loadData();
       }
     } catch (err) {
-      alert(err?.response?.data?.message || 'Không thể bắt đầu ca khám');
+      alert(err?.message || err?.response?.data?.message || 'Không thể bắt đầu ca khám');
     } finally {
       setActionLoading(false);
     }
@@ -82,7 +85,7 @@ export default function VetWorkbenchPage() {
       setCancelReason('');
       loadData();
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi khi hủy ca khám');
+      alert(err?.message || err?.response?.data?.message || 'Lỗi khi hủy ca khám');
     } finally {
       setActionLoading(false);
     }
@@ -99,6 +102,12 @@ export default function VetWorkbenchPage() {
           </button>
         }
       />
+
+      {!isVet && (
+        <div className="pcms-alert pcms-alert-info" style={{ marginBottom: 16 }}>
+          Chế độ tra cứu chỉ đọc: Chỉ Bác sĩ thú y được phân công mới được tiếp nhận khám và chỉnh sửa bệnh án lâm sàng.
+        </div>
+      )}
 
       <div className="pcms-kpi-grid">
         <KpiCard label="Tổng ca trong ngày" value={summary.totalToday} />
@@ -290,31 +299,32 @@ export default function VetWorkbenchPage() {
                             Bệnh sử
                           </button>
 
-                          {isInProgress && (
+                          {isInProgress && appt.recordId && (
                             <button
                               type="button"
-                              className="vet-btn vet-btn-primary vet-btn-sm"
+                              className={`vet-btn vet-btn-sm ${isVet ? 'vet-btn-primary' : 'vet-btn-outline'}`}
                               onClick={() => navigate(`/vet/examination/${appt.recordId}`)}
                             >
-                              Tiếp tục khám
+                              {isVet ? 'Tiếp tục khám' : 'Xem bệnh án'}
                             </button>
                           )}
 
-                          {(appt.status === 'WAITING' ||
-                            appt.status === 'CHECKED_IN' ||
-                            appt.status === 'CONFIRMED' ||
-                            appt.status === 'APPROVED') && (
-                            <button
-                              type="button"
-                              className="vet-btn vet-btn-primary vet-btn-sm"
-                              disabled={actionLoading}
-                              onClick={() => handleStartExam(appt)}
-                            >
-                              Khám ngay
-                            </button>
-                          )}
+                          {isVet &&
+                            (appt.status === 'WAITING' ||
+                              appt.status === 'CHECKED_IN' ||
+                              appt.status === 'CONFIRMED' ||
+                              appt.status === 'APPROVED') && (
+                              <button
+                                type="button"
+                                className="vet-btn vet-btn-primary vet-btn-sm"
+                                disabled={actionLoading}
+                                onClick={() => handleStartExam(appt)}
+                              >
+                                Khám ngay
+                              </button>
+                            )}
 
-                          {isCompleted && (
+                          {isCompleted && appt.recordId && (
                             <button
                               type="button"
                               className="vet-btn vet-btn-outline vet-btn-sm"
@@ -324,7 +334,7 @@ export default function VetWorkbenchPage() {
                             </button>
                           )}
 
-                          {!isCompleted && !isCancelled && (
+                          {isVet && !isCompleted && !isCancelled && (
                             <button
                               type="button"
                               className="vet-btn vet-btn-outline vet-btn-sm"

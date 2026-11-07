@@ -9,7 +9,11 @@ import com.pcms.dto.response.billing.PaymentResponse;
 import com.pcms.entity.AuditLog;
 import com.pcms.entity.InventoryBatch;
 import com.pcms.entity.Invoice;
+import com.pcms.entity.MedicalRecord;
+import com.pcms.entity.MedicalRecordDetail;
 import com.pcms.entity.Payment;
+import com.pcms.entity.Pet;
+import com.pcms.entity.PetOwner;
 import com.pcms.entity.Prescription;
 import com.pcms.entity.PrescriptionDetail;
 import com.pcms.entity.UserAccount;
@@ -18,14 +22,13 @@ import com.pcms.exception.ResourceNotFoundException;
 import com.pcms.repository.AuditLogRepository;
 import com.pcms.repository.InventoryBatchRepository;
 import com.pcms.repository.InvoiceRepository;
+import com.pcms.repository.MedicalRecordDetailRepository;
 import com.pcms.repository.PaymentRepository;
 import com.pcms.repository.PrescriptionDetailRepository;
 import com.pcms.repository.PrescriptionRepository;
 import com.pcms.repository.UserAccountRepository;
 import com.pcms.service.BillingService;
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -34,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -48,6 +52,7 @@ public class BillingServiceImpl implements BillingService {
     private final AuditLogRepository auditLogRepository;
     private final UserAccountRepository userAccountRepository;
     private final PaymentRepository paymentRepository;
+    private final MedicalRecordDetailRepository medicalRecordDetailRepository;
     private final PrescriptionRepository prescriptionRepository;
     private final PrescriptionDetailRepository prescriptionDetailRepository;
     private final InventoryBatchRepository inventoryBatchRepository;
@@ -55,23 +60,114 @@ public class BillingServiceImpl implements BillingService {
     @Override
     @Transactional(readOnly = true)
     public List<InvoiceResponse> getPaymentQueue() {
+        return getPaymentQueue("PENDING");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<InvoiceResponse> getPaymentQueue(String status) {
+        String filter = (status == null || status.isBlank()) ? "PENDING" : status.trim().toUpperCase();
         return invoiceRepository.findAll()
                 .stream()
-                .filter(invoice -> "PENDING".equalsIgnoreCase(invoice.getStatus()))
-                .map(this::mapToInvoiceResponse)
+                .filter(invoice -> {
+                    if ("ALL".equals(filter)) return true;
+                    String st = normalizeStatus(invoice.getStatus());
+                    return filter.equalsIgnoreCase(st);
+                })
+                .sorted(Comparator.comparing(Invoice::getInvoiceDate, Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(inv -> mapToInvoiceResponse(inv, false))
                 .toList();
     }
 
-    private InvoiceResponse mapToInvoiceResponse(Invoice invoice) {
+    private String normalizeStatus(String status) {
+        if (status == null) return "PENDING";
+        if ("VOIDED".equalsIgnoreCase(status)) return "VOID";
+        return status.toUpperCase();
+    }
+
+    private InvoiceResponse mapToInvoiceResponse(Invoice invoice, boolean includeDetails) {
+        MedicalRecord mr = invoice.getMedicalRecord();
+        Pet pet = mr != null ? mr.getPet() : null;
+        PetOwner owner = pet != null ? pet.getPetOwner() : null;
+        UserAccount vet = mr != null ? mr.getVeterinarian() : null;
+
+        List<InvoiceResponse.LineItem> serviceItems = List.of();
+        List<InvoiceResponse.LineItem> medicineItems = List.of();
+        List<PaymentResponse> payments = List.of();
+
+        if (includeDetails && mr != null) {
+            List<MedicalRecordDetail> recordDetails =
+                    medicalRecordDetailRepository.findByMedicalRecord_RecordId(mr.getRecordId());
+            serviceItems = recordDetails.stream().map(d -> {
+                String name = d.getService() != null ? d.getService().getServiceName() : "Dịch vụ";
+                int qty = d.getQuantity() != null ? d.getQuantity() : 1;
+                BigDecimal unitPrice = (d.getService() != null && d.getService().getPrice() != null)
+                        ? d.getService().getPrice() : BigDecimal.ZERO;
+                BigDecimal subTotal = unitPrice.multiply(BigDecimal.valueOf(qty));
+                return new InvoiceResponse.LineItem(
+                        name,
+                        "Lần",
+                        qty,
+                        unitPrice,
+                        subTotal,
+                        d.getNotes() != null ? d.getNotes() : ""
+                );
+            }).toList();
+
+            Prescription presc = prescriptionRepository.findByMedicalRecord_RecordId(mr.getRecordId()).orElse(null);
+            if (presc != null) {
+                List<PrescriptionDetail> pDetails =
+                        prescriptionDetailRepository.findByPrescription_PrescriptionId(presc.getPrescriptionId());
+                List<InvoiceResponse.LineItem> medList = new ArrayList<>();
+                for (PrescriptionDetail pd : pDetails) {
+                    String name = pd.getMedicine() != null ? pd.getMedicine().getMedicineName() : "Thuốc";
+                    String unit = pd.getMedicine() != null && pd.getMedicine().getUnit() != null
+                            ? pd.getMedicine().getUnit() : "Đơn vị";
+                    int qty = pd.getQuantity() != null ? pd.getQuantity() : 1;
+                    BigDecimal unitPrice = (pd.getMedicine() != null && pd.getMedicine().getUnitPrice() != null)
+                            ? pd.getMedicine().getUnitPrice() : BigDecimal.ZERO;
+                    BigDecimal subTotal = unitPrice.multiply(BigDecimal.valueOf(qty));
+                    medList.add(new InvoiceResponse.LineItem(
+                            name,
+                            unit,
+                            qty,
+                            unitPrice,
+                            subTotal,
+                            pd.getDosage() != null ? pd.getDosage() : ""
+                    ));
+                }
+                medicineItems = medList;
+            }
+
+            payments = paymentRepository.findByInvoice_InvoiceId(invoice.getInvoiceId())
+                    .stream()
+                    .map(p -> new PaymentResponse(
+                            p.getPaymentId(),
+                            invoice.getInvoiceId(),
+                            p.getPaymentDate(),
+                            p.getPaymentMethod(),
+                            p.getAmountPaid()
+                    ))
+                    .toList();
+        }
+
         return new InvoiceResponse(
                 invoice.getInvoiceId(),
-                invoice.getMedicalRecord().getRecordId(),
-                invoice.getMedicalRecord().getPet().getPetName(),
-                invoice.getMedicalRecord().getPet().getPetOwner().getFullName(),
+                mr != null ? mr.getRecordId() : null,
+                pet != null ? pet.getPetName() : "—",
+                pet != null && pet.getSpecies() != null ? pet.getSpecies() : "",
+                pet != null && pet.getBreed() != null ? pet.getBreed() : "",
+                owner != null ? owner.getFullName() : "—",
+                owner != null && owner.getPhoneNumber() != null ? owner.getPhoneNumber() : "",
+                owner != null && owner.getAddress() != null ? owner.getAddress() : "",
+                vet != null ? vet.getFullName() : "—",
                 invoice.getInvoiceDate(),
                 invoice.getTotalAmount(),
-                invoice.getDiscountAmount(),
-                invoice.getStatus()
+                invoice.getDiscountAmount() != null ? invoice.getDiscountAmount() : BigDecimal.ZERO,
+                normalizeStatus(invoice.getStatus()),
+                serviceItems,
+                medicineItems,
+                payments
         );
     }
 
@@ -80,10 +176,10 @@ public class BillingServiceImpl implements BillingService {
     public InvoiceResponse getInvoiceById(Integer invoiceId) {
         Invoice invoice = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Invoice not found with ID: " + invoiceId
+                        "Không tìm thấy hóa đơn với mã: " + invoiceId
                 ));
 
-        return mapToInvoiceResponse(invoice);
+        return mapToInvoiceResponse(invoice, true);
     }
 
     @Override
@@ -92,35 +188,38 @@ public class BillingServiceImpl implements BillingService {
             Integer invoiceId,
             InvoiceUpdateRequest request
     ) {
-        // Tim hoa don
         Invoice invoice = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Invoice not found with ID: " + invoiceId
+                        "Không tìm thấy hóa đơn với mã: " + invoiceId
                 ));
 
-        // Chi cho phep chinh sua hoa don dang cho thanh toan
         if (!"PENDING".equalsIgnoreCase(invoice.getStatus())) {
             throw new BadRequestException(
-                    "Only PENDING invoices can be updated"
+                    "Chỉ hóa đơn ở trạng thái PENDING mới được phép cập nhật giảm giá."
             );
         }
 
-        // Kiem tra discount khong duoc lon hon tong tien
         BigDecimal discountAmount = request.discountAmount();
-
+        if (discountAmount == null || discountAmount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BadRequestException("Số tiền giảm giá không được âm.");
+        }
         if (discountAmount.compareTo(invoice.getTotalAmount()) > 0) {
             throw new BadRequestException(
-                    "Discount amount cannot exceed invoice total"
+                    "Số tiền giảm giá không được vượt quá tổng hóa đơn (" + invoice.getTotalAmount() + ")."
             );
         }
 
-        // Cap nhat tien giam gia
         invoice.setDiscountAmount(discountAmount);
-
-        // Luu hoa don
         Invoice updatedInvoice = invoiceRepository.save(invoice);
 
-        return mapToInvoiceResponse(updatedInvoice);
+        recordBillingAudit(
+                "INVOICE_UPDATE",
+                "Invoice #" + invoiceId,
+                "SUCCESS",
+                "Cập nhật giảm giá hóa đơn #" + invoiceId + ": " + discountAmount + " VNĐ"
+        );
+
+        return mapToInvoiceResponse(updatedInvoice, true);
     }
 
     @Override
@@ -129,55 +228,32 @@ public class BillingServiceImpl implements BillingService {
             Integer invoiceId,
             VoidInvoiceRequest request
     ) {
-        // 1. Tim hoa don
         Invoice invoice = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Invoice not found with ID: " + invoiceId
+                        "Không tìm thấy hóa đơn với mã: " + invoiceId
                 ));
 
-        // 2. Chi cho phep huy hoa don PENDING
         if (!"PENDING".equalsIgnoreCase(invoice.getStatus())) {
             throw new BadRequestException(
-                    "Only PENDING invoices can be voided"
+                    "Chỉ hóa đơn ở trạng thái PENDING mới được phép hủy."
             );
         }
 
-        // 3. Lay thong tin nguoi dang dang nhap
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null
-                || !(authentication.getPrincipal() instanceof UserPrincipal principal)) {
-            throw new BadRequestException(
-                    "Unable to identify the current user"
-            );
+        if (request == null || request.reason() == null || request.reason().trim().isEmpty()) {
+            throw new BadRequestException("Vui lòng nhập lý do hủy hóa đơn.");
         }
 
-        // 4. Tim UserAccount trong database
-        UserAccount user = userAccountRepository.findById(principal.getId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "User not found with ID: " + principal.getId()
-                ));
-
-        // 5. Cap nhat trang thai hoa don
         invoice.setStatus("VOID");
-
         Invoice voidedInvoice = invoiceRepository.save(invoice);
 
-        // 6. Ghi nhat ky huy hoa don
-        AuditLog auditLog = AuditLog.builder()
-                .userAccount(user)
-                .actionTime(LocalDateTime.now())
-                .actionDetails(
-                        "Voided invoice #" + invoiceId
-                                + ". Reason: " + request.reason()
-                )
-                .build();
+        recordBillingAudit(
+                "INVOICE_VOID",
+                "Invoice #" + invoiceId,
+                "SUCCESS",
+                "Voided invoice #" + invoiceId + ". Reason: " + request.reason().trim()
+        );
 
-        auditLogRepository.save(auditLog);
-
-        // 7. Tra ve thong tin hoa don
-        return mapToInvoiceResponse(voidedInvoice);
+        return mapToInvoiceResponse(voidedInvoice, true);
     }
 
     @Override
@@ -186,88 +262,76 @@ public class BillingServiceImpl implements BillingService {
             Integer invoiceId,
             ConfirmPaymentRequest request
     ) {
-        // 1. Tim hoa don
         Invoice invoice = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Invoice not found with ID: " + invoiceId
+                        "Không tìm thấy hóa đơn với mã: " + invoiceId
                 ));
 
-        // 2. Chi cho phep thanh toan hoa don PENDING
         if (!"PENDING".equalsIgnoreCase(invoice.getStatus())) {
             throw new BadRequestException(
-                    "Only PENDING invoices can be paid"
+                    "Chỉ hóa đơn ở trạng thái PENDING mới có thể xác nhận thanh toán."
             );
         }
 
-        // 3. Kiem tra phuong thuc thanh toan
         String paymentMethod = request.paymentMethod().trim().toUpperCase();
-
         if (!List.of("CASH", "CARD", "BANK_TRANSFER").contains(paymentMethod)) {
             throw new BadRequestException(
-                    "Invalid payment method. Supported methods: CASH, CARD, BANK_TRANSFER"
+                    "Phương thức thanh toán không hợp lệ. Chỉ chấp nhận: CASH, CARD, BANK_TRANSFER."
             );
         }
 
-        // 4. Kiem tra giao dich trung lap
         if (!paymentRepository.findByInvoice_InvoiceId(invoiceId).isEmpty()) {
             throw new BadRequestException(
-                    "This invoice already has a payment transaction"
+                    "Hóa đơn #" + invoiceId + " đã tồn tại giao dịch thanh toán."
             );
         }
 
-        // 5. Kiem tra ket qua mock payment
-// 5. Kiem tra ket qua mock payment
-        String mockResult = request.mockResult();
-
-        if (!"SUCCESS".equalsIgnoreCase(mockResult)
-                && !"FAILED".equalsIgnoreCase(mockResult)) {
+        String mockResult = request.mockResult() != null ? request.mockResult().trim().toUpperCase() : "SUCCESS";
+        if (!"SUCCESS".equals(mockResult) && !"FAILED".equals(mockResult)) {
             throw new BadRequestException(
-                    "Invalid mock payment result. Supported values: SUCCESS, FAILED"
+                    "Kết quả mô phỏng thanh toán không hợp lệ (SUCCESS / FAILED)."
             );
         }
 
-        if ("FAILED".equalsIgnoreCase(mockResult)) {
+        if ("FAILED".equals(mockResult)) {
+            recordBillingAudit(
+                    "INVOICE_PAYMENT",
+                    "Invoice #" + invoiceId,
+                    "FAILED",
+                    "Giao dịch thanh toán thất bại cho hóa đơn #" + invoiceId + " (" + paymentMethod + ")"
+            );
             throw new BadRequestException(
-                    "Payment failed. Please try again"
+                    "Giao dịch thanh toán thất bại. Hóa đơn vẫn giữ trạng thái PENDING, vui lòng thử lại."
             );
         }
 
-        // 6. Tinh so tien thuc te can thanh toan
-        BigDecimal totalAmount = invoice.getTotalAmount();
+        BigDecimal totalAmount = invoice.getTotalAmount() != null ? invoice.getTotalAmount() : BigDecimal.ZERO;
         BigDecimal discountAmount = invoice.getDiscountAmount() == null
                 ? BigDecimal.ZERO
                 : invoice.getDiscountAmount();
 
         BigDecimal amountDue = totalAmount.subtract(discountAmount);
-
         if (amountDue.compareTo(BigDecimal.ZERO) < 0) {
             throw new BadRequestException(
-                    "Discount cannot exceed invoice total"
+                    "Số tiền giảm giá không được vượt quá tổng hóa đơn."
             );
         }
 
-        // 7. Lay danh sach thuoc can tru kho
-        Integer recordId = invoice.getMedicalRecord().getRecordId();
+        // FEFO stock deduction (BR-19)
+        Integer recordId = invoice.getMedicalRecord() != null ? invoice.getMedicalRecord().getRecordId() : null;
+        if (recordId != null) {
+            Map<Integer, Integer> requiredMedicines = getRequiredMedicineQuantities(recordId);
+            Map<InventoryBatch, Integer> deductionPlan = createStockDeductionPlan(requiredMedicines);
 
-        Map<Integer, Integer> requiredMedicines =
-                getRequiredMedicineQuantities(recordId);
-
-        // 8. Kiem tra ton kho va lap ke hoach tru kho
-        Map<InventoryBatch, Integer> deductionPlan =
-                createStockDeductionPlan(requiredMedicines);
-
-        // 9. Thuc hien tru kho sau khi da kiem tra tat ca thuoc
-        for (Map.Entry<InventoryBatch, Integer> entry : deductionPlan.entrySet()) {
-            InventoryBatch batch = entry.getKey();
-
-            batch.setQuantityInStock(
-                    batch.getQuantityInStock() - entry.getValue()
-            );
+            for (Map.Entry<InventoryBatch, Integer> entry : deductionPlan.entrySet()) {
+                InventoryBatch batch = entry.getKey();
+                batch.setQuantityInStock(batch.getQuantityInStock() - entry.getValue());
+            }
+            if (!deductionPlan.isEmpty()) {
+                inventoryBatchRepository.saveAll(deductionPlan.keySet());
+            }
         }
 
-        inventoryBatchRepository.saveAll(deductionPlan.keySet());
-
-        // 10. Tao giao dich thanh toan
         Payment payment = Payment.builder()
                 .invoice(invoice)
                 .paymentDate(LocalDateTime.now())
@@ -277,11 +341,17 @@ public class BillingServiceImpl implements BillingService {
 
         Payment savedPayment = paymentRepository.save(payment);
 
-        // 11. Cap nhat trang thai hoa don
         invoice.setStatus("PAID");
         invoiceRepository.save(invoice);
 
-        // 12. Tra ve ket qua
+        recordBillingAudit(
+                "INVOICE_PAYMENT",
+                "Invoice #" + invoiceId,
+                "SUCCESS",
+                "Thanh toán thành công hóa đơn #" + invoiceId + " - Thực thu: " + amountDue
+                        + " VNĐ - Phương thức: " + paymentMethod + " (Trừ kho FEFO hoàn tất)"
+        );
+
         return new PaymentResponse(
                 savedPayment.getPaymentId(),
                 invoice.getInvoiceId(),
@@ -290,58 +360,73 @@ public class BillingServiceImpl implements BillingService {
                 savedPayment.getAmountPaid()
         );
     }
-    private Map<Integer, Integer> getRequiredMedicineQuantities(
-            Integer recordId
-    ) {
+
+    private void recordBillingAudit(String actionType, String affectedResource, String outcome, String details) {
+        UserAccount actor = resolveCurrentUser();
+        if (actor != null) {
+            auditLogRepository.save(AuditLog.builder()
+                    .userAccount(actor)
+                    .actionTime(LocalDateTime.now())
+                    .actionType(actionType)
+                    .affectedResource(affectedResource)
+                    .outcome(outcome)
+                    .actionDetails("[" + actionType + "] [" + affectedResource + "] " + details)
+                    .build());
+        }
+    }
+
+    private UserAccount resolveCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UserPrincipal principal) {
+            return userAccountRepository.findById(principal.getId()).orElse(null);
+        }
+        if (authentication != null && authentication.getName() != null) {
+            return userAccountRepository.findByUsernameOrEmail(authentication.getName()).orElse(null);
+        }
+        return userAccountRepository.findAll().stream().findFirst().orElse(null);
+    }
+
+    private Map<Integer, Integer> getRequiredMedicineQuantities(Integer recordId) {
         Map<Integer, Integer> requiredMedicines = new HashMap<>();
 
-        // Tim don thuoc theo medical record
         Prescription prescription = prescriptionRepository
                 .findByMedicalRecord_RecordId(recordId)
                 .orElse(null);
 
-        // Ho so khong co don thuoc
         if (prescription == null) {
             return requiredMedicines;
         }
 
-        // Lay chi tiet don thuoc
         List<PrescriptionDetail> details =
                 prescriptionDetailRepository.findByPrescription_PrescriptionId(
                         prescription.getPrescriptionId()
                 );
 
-        // Gop so luong neu mot loai thuoc xuat hien nhieu dong
         for (PrescriptionDetail detail : details) {
             Integer medicineId = detail.getMedicine().getMedicineId();
             Integer quantity = detail.getQuantity();
 
             if (quantity == null || quantity <= 0) {
                 throw new BadRequestException(
-                        "Invalid medicine quantity in prescription"
+                        "Số lượng thuốc trong đơn không hợp lệ."
                 );
             }
 
-            requiredMedicines.merge(
-                    medicineId,
-                    quantity,
-                    Integer::sum
-            );
+            requiredMedicines.merge(medicineId, quantity, Integer::sum);
         }
 
         return requiredMedicines;
     }
+
     private Map<InventoryBatch, Integer> createStockDeductionPlan(
             Map<Integer, Integer> requiredMedicines
     ) {
         Map<InventoryBatch, Integer> deductionPlan = new LinkedHashMap<>();
 
-        // Xu ly tung loai thuoc
         for (Map.Entry<Integer, Integer> entry : requiredMedicines.entrySet()) {
             Integer medicineId = entry.getKey();
             Integer requiredQuantity = entry.getValue();
 
-            // Lay cac lo thuoc cua medicine
             List<InventoryBatch> batches = inventoryBatchRepository
                     .findByMedicine_MedicineId(medicineId)
                     .stream()
@@ -349,13 +434,12 @@ public class BillingServiceImpl implements BillingService {
                     .filter(batch -> !batch.getExpirationDate().isBefore(LocalDate.now()))
                     .filter(batch -> batch.getQuantityInStock() != null
                             && batch.getQuantityInStock() > 0)
-                    // FEFO: lo het han som nhat duoc su dung truoc
+                    // FEFO: lo het han som nhat duoc su dung truoc (BR-19)
                     .sorted(Comparator.comparing(InventoryBatch::getExpirationDate))
                     .toList();
 
             int remaining = requiredQuantity;
 
-            // Lap ke hoach tru kho, chua thay doi database
             for (InventoryBatch batch : batches) {
                 if (remaining <= 0) {
                     break;
@@ -364,19 +448,14 @@ public class BillingServiceImpl implements BillingService {
                 int available = batch.getQuantityInStock();
                 int quantityToDeduct = Math.min(available, remaining);
 
-                deductionPlan.merge(
-                        batch,
-                        quantityToDeduct,
-                        Integer::sum
-                );
-
+                deductionPlan.merge(batch, quantityToDeduct, Integer::sum);
                 remaining -= quantityToDeduct;
             }
 
-            // Neu thieu thuoc, dung giao dich
             if (remaining > 0) {
                 throw new BadRequestException(
-                        "Insufficient stock for medicine ID: " + medicineId
+                        "Không đủ tồn kho khả dụng (chưa hết hạn) cho thuốc ID #" + medicineId
+                                + " (thiếu " + remaining + " đơn vị) theo quy tắc FEFO."
                 );
             }
         }

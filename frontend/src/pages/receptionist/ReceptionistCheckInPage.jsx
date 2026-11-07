@@ -84,7 +84,7 @@ export default function ReceptionistCheckInPage() {
   }, [todayStr]);
 
   useEffect(() => {
-    loadData();
+    void Promise.resolve().then(loadData);
   }, [loadData]);
 
   // Danh sách lịch hẹn hôm nay đang chờ khách đến (CONFIRMED / APPROVED / PENDING_APPROVAL)

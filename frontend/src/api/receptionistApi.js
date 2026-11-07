@@ -84,6 +84,23 @@ const receptionistApi = {
   getPetHistory(petId) {
     return axiosClient.get(`/api/receptionist/pets/${petId}/history`);
   },
+
+  // Doctor Schedule & Slots (SRS 4.1.25)
+  getDoctorSlots(params = {}) {
+    return axiosClient.get('/api/receptionist/doctor-slots', { params });
+  },
+
+  createDoctorSlot(payload) {
+    return axiosClient.post('/api/receptionist/doctor-slots', payload);
+  },
+
+  updateDoctorSlot(slotId, payload) {
+    return axiosClient.put(`/api/receptionist/doctor-slots/${slotId}`, payload);
+  },
+
+  deleteDoctorSlot(slotId) {
+    return axiosClient.delete(`/api/receptionist/doctor-slots/${slotId}`);
+  },
 };
 
 export default receptionistApi;

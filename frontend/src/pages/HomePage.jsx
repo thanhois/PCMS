@@ -66,7 +66,7 @@ const HERO_TABS = [
 const FEATURE_PILLS = [
   'Đặt lịch khám trực tuyến nhanh chóng',
   'Hồ sơ bệnh án điện tử (Medical Record)',
-  'Quản lý đa chi nhánh phòng khám (Branch)',
+  'Quản lý lịch làm việc bác sĩ linh hoạt',
   'Tự động nhắc lịch tiêm phòng & tái khám',
   'Đặt lịch Spa, Tắm sấy & Grooming thẩm mỹ',
   'Kê đơn thuốc & Hướng dẫn liều dùng chi tiết',
@@ -270,7 +270,7 @@ export default function HomePage() {
                   <span />
                   <span />
                   <span />
-                  <strong>Danh sách tiếp nhận • Chi nhánh Quận 7</strong>
+                  <strong>Danh sách tiếp nhận • Phòng khám PCMS</strong>
                 </div>
                 <div className="vtn-mini-rows">
                   <div className="vtn-mini-row">
@@ -337,7 +337,7 @@ export default function HomePage() {
                 </div>
                 <div className="vtn-stat-box">
                   <strong>100%</strong>
-                  <span>Đồng bộ lịch sử khám giữa các chi nhánh</span>
+                  <span>Đồng bộ lịch sử khám &amp; đơn thuốc tức thì</span>
                 </div>
               </div>
             </div>
@@ -382,7 +382,7 @@ export default function HomePage() {
               <div className="vtn-floating-card vtn-float-left">
                 <span className="vtn-float-badge">Đã xác nhận lịch hẹn</span>
                 <strong>Spa &amp; Grooming + Tiêm phòng Dại</strong>
-                <small>Thứ Bảy, 10:00 SA • Chi nhánh chính PCMS</small>
+                <small>Thứ Bảy, 10:00 SA • Phòng khám Thú y PCMS</small>
               </div>
             </div>
           </div>
@@ -392,7 +392,7 @@ export default function HomePage() {
             <div className="vtn-zigzag-text">
               <h2>Kiểm soát chặt chẽ nguồn Vaccine &amp; Kho dược phẩm</h2>
               <p>
-                Quản lý tồn kho thuốc và vaccine theo từng lô nhập (Inventory Batch), tự động cảnh báo các lô sắp hết hạn hoặc dưới định mức tối thiểu tại từng chi nhánh phòng khám.
+                Quản lý tồn kho thuốc và vaccine theo từng lô nhập (Inventory Batch), tự động cảnh báo các lô sắp hết hạn hoặc dưới định mức tối thiểu tại kho dược phòng khám.
               </p>
               <div className="vtn-stat-cards-2">
                 <div className="vtn-stat-box">
@@ -434,7 +434,7 @@ export default function HomePage() {
               <span className="active">Nhắc lịch thông minh</span>
               <span>Đơn thuốc điện tử</span>
               <span>Hóa đơn minh bạch</span>
-              <span>Đa chi nhánh</span>
+              <span>Quản lý kho FEFO</span>
             </div>
           </div>
 

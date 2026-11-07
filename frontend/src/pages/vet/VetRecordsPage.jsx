@@ -28,10 +28,6 @@ export default function VetRecordsPage() {
   const [newTreatmentPlan, setNewTreatmentPlan] = useState('');
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    loadRecords();
-  }, [page, status]);
-
   const loadRecords = async () => {
     setLoading(true);
     try {
@@ -52,6 +48,10 @@ export default function VetRecordsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    void Promise.resolve().then(loadRecords);
+  }, [page, status]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();

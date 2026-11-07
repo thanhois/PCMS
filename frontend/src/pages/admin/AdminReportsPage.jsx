@@ -51,7 +51,7 @@ export default function AdminReportsPage() {
   }, [fromDate, toDate]);
 
   useEffect(() => {
-    fetchReports();
+    void Promise.resolve().then(fetchReports);
   }, [fetchReports]);
 
   const handleFromDateChange = (e) => {
@@ -351,7 +351,7 @@ export default function AdminReportsPage() {
       />
 
       {/* Bộ lọc khoảng ngày chung cho báo cáo */}
-      <section className="pcms-card" style={{ padding: '14px 20px' }}>
+      <section className="pcms-card no-print" style={{ padding: '14px 20px' }}>
         <div className="pcms-filter-bar" style={{ justifyContent: 'space-between' }}>
           <div className="pcms-filter-bar">
             <label className="pcms-label" htmlFor="rep-from">
@@ -383,6 +383,14 @@ export default function AdminReportsPage() {
             </button>
             {dateError ? <span className="pcms-field-error">{dateError}</span> : null}
           </div>
+
+          <button
+            type="button"
+            className="pcms-btn pcms-btn-primary"
+            onClick={() => window.print()}
+          >
+            In / Xuất PDF báo cáo
+          </button>
         </div>
       </section>
 

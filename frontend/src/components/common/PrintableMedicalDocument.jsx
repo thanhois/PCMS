@@ -1,5 +1,22 @@
 import '../../styles/vetTheme.css';
 
+const formatVnd = (val) => {
+  return Number(val || 0).toLocaleString('vi-VN') + ' ₫';
+};
+
+const formatPaymentMethod = (method) => {
+  switch ((method || '').toUpperCase()) {
+    case 'CASH':
+      return 'Tiền mặt';
+    case 'CARD':
+      return 'Thẻ ngân hàng';
+    case 'BANK_TRANSFER':
+      return 'Chuyển khoản';
+    default:
+      return method || '—';
+  }
+};
+
 export default function PrintableMedicalDocument({ record, onClose }) {
   if (!record) return null;
 
@@ -14,13 +31,16 @@ export default function PrintableMedicalDocument({ record, onClose }) {
   const prescription = record.prescription || {};
   const medicines = prescription.medicines || [];
   const followUps = record.followUps || [];
+  const invoice = record.invoice || null;
+  const isPaid = (invoice?.status || '').toUpperCase() === 'PAID';
+  const isVoid = (invoice?.status || '').toUpperCase() === 'VOID';
 
   return (
-    <div className="vet-modal-backdrop no-print">
+    <div className="vet-modal-backdrop">
       <div className="vet-modal" style={{ maxWidth: 850 }}>
         <div className="vet-modal-header no-print">
           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#0f172a' }}>
-            Xem trước Phiếu Khám & Đơn Thuốc Điện Tử
+            Xem trước Phiếu Khám, Đơn Thuốc & Biên Lai Điện Tử
           </h3>
           <div style={{ display: 'flex', gap: 10 }}>
             <button
@@ -28,7 +48,7 @@ export default function PrintableMedicalDocument({ record, onClose }) {
               className="vet-btn vet-btn-primary vet-btn-sm"
               onClick={handlePrint}
             >
-              In phiếu (Print / PDF)
+              In phiếu / Biên lai (Print / PDF)
             </button>
             <button
               type="button"
@@ -63,15 +83,29 @@ export default function PrintableMedicalDocument({ record, onClose }) {
               <div style={{ fontSize: 12, color: '#64748b' }}>
                 Bác sĩ điều trị: <strong>{vet.fullName || 'BS. Nguyễn Văn Minh'}</strong>
               </div>
+              {isPaid && (
+                <div style={{ marginTop: 8 }}>
+                  <span className="pcms-paid-stamp" style={{ fontSize: 13, padding: '4px 12px' }}>
+                    PAID — ĐÃ THANH TOÁN
+                  </span>
+                </div>
+              )}
+              {isVoid && (
+                <div style={{ marginTop: 8 }}>
+                  <span className="pcms-void-stamp" style={{ fontSize: 13, padding: '4px 12px' }}>
+                    VOID — ĐÃ HỦY
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <h2 style={{ fontSize: 18, fontWeight: 800, textTransform: 'uppercase', color: '#0f172a', margin: '0 0 4px', letterSpacing: 0.5 }}>
-              PHIẾU KHÁM BỆNH & ĐƠN THUỐC ĐIỆN TỬ
+              PHIẾU KHÁM BỆNH, ĐƠN THUỐC & BIÊN LAI VIỆN PHÍ
             </h2>
             <div style={{ fontSize: 12, color: '#64748b', fontStyle: 'italic' }}>
-              (Lưu hành và đối chiếu nội bộ phòng khám & hướng dẫn chăm sóc tại nhà cho chủ nuôi)
+              (Lưu hành nội bộ phòng khám, đối chiếu thanh toán và hướng dẫn chăm sóc tại nhà cho chủ nuôi)
             </div>
           </div>
 
@@ -82,7 +116,7 @@ export default function PrintableMedicalDocument({ record, onClose }) {
               </div>
               <div>Tên thú cưng: <strong>{pet.petName || 'N/A'}</strong></div>
               <div>Loài / Giống: <strong>{pet.species || 'Chó'} - {pet.breed || 'N/A'}</strong></div>
-              <div>Giới tính / Cân nặng: <strong>{pet.gender || 'Đực'} • {pet.weight ? `${pet.weight} kg` : 'N/A'}</strong></div>
+              <div>Giới tính / Cân nặng: <strong>{pet.gender || 'N/A'} • {pet.weight ? `${pet.weight} kg` : 'N/A'}</strong></div>
               <div>Ngày sinh: <strong>{pet.dateOfBirth || 'N/A'}</strong></div>
             </div>
             <div>
@@ -126,17 +160,22 @@ export default function PrintableMedicalDocument({ record, onClose }) {
                   <tr style={{ background: '#f8fafc', borderBottom: '1px solid #cbd5e1', textAlign: 'left' }}>
                     <th style={{ padding: '6px 8px' }}>STT</th>
                     <th style={{ padding: '6px 8px' }}>Tên Dịch Vụ / Xét Nghiệm</th>
-                    <th style={{ padding: '6px 8px', textAlign: 'center' }}>Số Lượng</th>
-                    <th style={{ padding: '6px 8px' }}>Kết Quả / Ghi Chú Kỹ Thuật</th>
+                    <th style={{ padding: '6px 8px', textAlign: 'center' }}>SL</th>
+                    <th style={{ padding: '6px 8px', textAlign: 'right' }}>Đơn giá</th>
+                    <th style={{ padding: '6px 8px', textAlign: 'right' }}>Thành tiền</th>
                   </tr>
                 </thead>
                 <tbody>
                   {services.map((s, idx) => (
                     <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
                       <td style={{ padding: '6px 8px' }}>{idx + 1}</td>
-                      <td style={{ padding: '6px 8px', fontWeight: 600 }}>{s.serviceName}</td>
+                      <td style={{ padding: '6px 8px', fontWeight: 600 }}>
+                        {s.serviceName}
+                        {s.notes && <div style={{ fontSize: 11.5, color: '#64748b', fontWeight: 400 }}>{s.notes}</div>}
+                      </td>
                       <td style={{ padding: '6px 8px', textAlign: 'center' }}>{s.quantity}</td>
-                      <td style={{ padding: '6px 8px', color: '#475569' }}>{s.notes || 'Bình thường'}</td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right' }}>{formatVnd(s.unitPrice)}</td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>{formatVnd(s.subTotal)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -158,9 +197,10 @@ export default function PrintableMedicalDocument({ record, onClose }) {
                   <thead>
                     <tr style={{ background: '#f8fafc', borderBottom: '1px solid #cbd5e1', textAlign: 'left' }}>
                       <th style={{ padding: '6px 8px' }}>STT</th>
-                      <th style={{ padding: '6px 8px' }}>Tên Thuốc & Quy Cách</th>
+                      <th style={{ padding: '6px 8px' }}>Tên Thuốc</th>
                       <th style={{ padding: '6px 8px', textAlign: 'center' }}>Số Lượng</th>
-                      <th style={{ padding: '6px 8px' }}>Liều Dùng & Hướng Dẫn Uống</th>
+                      <th style={{ padding: '6px 8px' }}>Liều Dùng & Hướng Dẫn</th>
+                      <th style={{ padding: '6px 8px', textAlign: 'right' }}>Thành Tiền</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -174,6 +214,9 @@ export default function PrintableMedicalDocument({ record, onClose }) {
                         <td style={{ padding: '8px', color: '#5218cc', fontWeight: 600 }}>
                           {m.dosage}
                           {m.notes && <span style={{ display: 'block', fontSize: 11.5, color: '#64748b', fontWeight: 400 }}>Ghi chú: {m.notes}</span>}
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'right', fontWeight: 600 }}>
+                          {formatVnd(m.subTotal)}
                         </td>
                       </tr>
                     ))}
@@ -190,7 +233,7 @@ export default function PrintableMedicalDocument({ record, onClose }) {
           </div>
 
           {followUps.length > 0 && (
-            <div style={{ marginBottom: 24 }}>
+            <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #cbd5e1', paddingBottom: 4, marginBottom: 8 }}>
                 IV. LỊCH HẸN TÁI KHÁM & THEO DÕI
               </div>
@@ -200,6 +243,31 @@ export default function PrintableMedicalDocument({ record, onClose }) {
                   {f.notes && <div>Ghi chú: {f.notes}</div>}
                 </div>
               ))}
+            </div>
+          )}
+
+          {invoice && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #cbd5e1', paddingBottom: 4, marginBottom: 8 }}>
+                V. THÔNG TIN HÓA ĐƠN & THANH TOÁN ({invoice.invoiceCode || `HD-${invoice.invoiceId}`})
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, background: '#f8fafc', padding: '12px 16px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }}>
+                <div>
+                  <div>Trạng thái hóa đơn: <strong>{isPaid ? 'ĐÃ THANH TOÁN (PAID)' : isVoid ? 'ĐÃ HỦY (VOID)' : 'CHỜ THANH TOÁN (PENDING)'}</strong></div>
+                  {invoice.paymentMethod && (
+                    <div style={{ marginTop: 4 }}>
+                      Phương thức thanh toán: <strong>{formatPaymentMethod(invoice.paymentMethod)}</strong> ({invoice.paymentDate || ''})
+                    </div>
+                  )}
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div>Tổng cộng: <strong>{formatVnd(invoice.totalAmount)}</strong></div>
+                  <div>Giảm giá: <strong>- {formatVnd(invoice.discountAmount)}</strong></div>
+                  <div style={{ fontSize: 15, color: '#6320ee', marginTop: 4 }}>
+                    Thực thu: <strong>{formatVnd(invoice.netAmount ?? invoice.totalAmount)}</strong>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

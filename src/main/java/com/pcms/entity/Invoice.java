@@ -38,4 +38,9 @@ public class Invoice {
 
     @Column(name = "status", nullable = false, length = 30)
     private String status;
+
+    @Version
+    @Builder.Default
+    @Column(name = "version")
+    private Integer version = 0;
 }

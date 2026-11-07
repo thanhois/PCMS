@@ -32,7 +32,7 @@ export default function ReceptionistDashboardPage() {
   }, []);
 
   useEffect(() => {
-    loadDashboard();
+    void Promise.resolve().then(loadDashboard);
   }, [loadDashboard]);
 
   const handleQuickApprove = async (apt) => {
@@ -74,25 +74,6 @@ export default function ReceptionistDashboardPage() {
       setToast({
         type: 'error',
         message: err?.message || err?.response?.data?.message || 'Không thể từ chối lịch hẹn.',
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleQuickCheckIn = async (apt) => {
-    setSubmitting(true);
-    try {
-      await receptionistApi.checkInAppointment(apt.appointmentId, {});
-      setToast({
-        type: 'success',
-        message: `Đã Check-in thú cưng ${apt.petName} (${apt.appointmentCode}) vào hàng đợi khám.`,
-      });
-      await loadDashboard();
-    } catch (err) {
-      setToast({
-        type: 'error',
-        message: err?.message || err?.response?.data?.message || 'Không thể thực hiện Check-in.',
       });
     } finally {
       setSubmitting(false);

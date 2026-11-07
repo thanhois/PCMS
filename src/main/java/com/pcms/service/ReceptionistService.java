@@ -52,4 +52,12 @@ public interface ReceptionistService {
     Map<String, Object> confirmInvoicePayment(Integer invoiceId, Map<String, Object> payload, String actorUsername);
 
     Map<String, Object> voidInvoice(Integer invoiceId, String reason, String actorUsername);
+
+    List<Map<String, Object>> getDoctorScheduleSlots(String fromDate, String toDate, Integer veterinarianId);
+
+    Map<String, Object> createDoctorScheduleSlot(Map<String, Object> payload, String actorUsername);
+
+    Map<String, Object> updateDoctorScheduleSlot(Integer slotId, Map<String, Object> payload, String actorUsername);
+
+    void deleteDoctorScheduleSlot(Integer slotId, String actorUsername);
 }

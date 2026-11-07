@@ -1,10 +1,12 @@
 package com.pcms.controller;
 
 import com.pcms.config.security.UserPrincipal;
+import com.pcms.dto.request.ChangePasswordRequest;
 import com.pcms.dto.request.ForgotPasswordRequest;
 import com.pcms.dto.request.LoginRequest;
 import com.pcms.dto.request.RegisterRequest;
 import com.pcms.dto.request.ResetPasswordRequest;
+import com.pcms.dto.request.UpdateProfileRequest;
 import com.pcms.dto.response.ApiResponse;
 import com.pcms.dto.response.AuthResponse;
 import com.pcms.dto.response.UserInfoResponse;
@@ -37,7 +39,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Login successful", authService.login(request)));
     }
 
-    /** Quên mật khẩu - gửi link reset qua email. Luôn trả 200 để chống dò email. */
+    /** UC03 - Quên mật khẩu - gửi link reset qua email. */
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         authService.forgotPassword(request);
@@ -45,11 +47,33 @@ public class AuthController {
                 "If an account with that email exists, a password reset link has been sent"));
     }
 
-    /** Đặt lại mật khẩu bằng token trong link email. */
+    /** UC03 - Đặt lại mật khẩu bằng token trong link email. */
     @PostMapping("/reset-password")
     public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request);
         return ResponseEntity.ok(ApiResponse.success("Password has been reset successfully"));
+    }
+
+    /** UC04 - Đổi mật khẩu cá nhân (yêu cầu Bearer token). */
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody ChangePasswordRequest request
+    ) {
+        authService.changePassword(principal.getUsername(), request);
+        return ResponseEntity.ok(ApiResponse.success("Đổi mật khẩu thành công"));
+    }
+
+    /** UC05 - Cập nhật thông tin cá nhân (yêu cầu Bearer token). */
+    @PutMapping("/profile")
+    public ResponseEntity<ApiResponse<UserInfoResponse>> updateProfile(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody UpdateProfileRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Cập nhật thông tin cá nhân thành công",
+                authService.updateProfile(principal.getUsername(), request)
+        ));
     }
 
     /** Thông tin user hiện tại (yêu cầu Bearer token). */

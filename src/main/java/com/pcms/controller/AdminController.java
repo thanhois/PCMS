@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -78,6 +79,24 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getRolesAndPermissions());
     }
 
+    @PutMapping("/roles/{roleId}/permissions")
+    public ResponseEntity<Map<String, Object>> updateRolePermissions(
+            @PathVariable Integer roleId,
+            @RequestBody Map<String, Object> payload,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        String actor = principal != null ? principal.getUsername() : "admin";
+        List<Integer> permissionIds = new ArrayList<>();
+        Object rawIds = payload.get("permissionIds");
+        if (rawIds instanceof List<?> list) {
+            for (Object item : list) {
+                if (item != null) {
+                    permissionIds.add(Integer.parseInt(String.valueOf(item)));
+                }
+            }
+        }
+        return ResponseEntity.ok(adminService.updateRolePermissions(roleId, permissionIds, actor));
+    }
+
     @PatchMapping("/accounts/{userId}/role")
     public ResponseEntity<Map<String, Object>> assignAccountRole(
             @PathVariable Integer userId,
@@ -86,6 +105,18 @@ public class AdminController {
         String actor = principal != null ? principal.getUsername() : "admin";
         String roleName = String.valueOf(payload.getOrDefault("roleName", ""));
         return ResponseEntity.ok(adminService.assignAccountRole(userId, roleName, actor));
+    }
+
+    // 3B. DATA MIGRATION
+    @PostMapping("/migration/import-customers")
+    public ResponseEntity<Map<String, Object>> importHistoricalCustomers(
+            @RequestBody Map<String, Object> payload,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        String actor = principal != null ? principal.getUsername() : "admin";
+        String csvContent = payload != null && payload.get("csvContent") != null
+                ? String.valueOf(payload.get("csvContent"))
+                : "";
+        return ResponseEntity.ok(adminService.importHistoricalCustomers(csvContent, actor));
     }
 
     // 4. SERVICES CATALOG
@@ -173,7 +204,7 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getReports(fromDate, toDate));
     }
 
-    //7. AUDIT LOGS
+    // 7. AUDIT LOGS
     @GetMapping("/audit-logs")
     public ResponseEntity<List<Map<String, Object>>> getAuditLogs(
             @RequestParam(required = false, defaultValue = "") String fromDate,

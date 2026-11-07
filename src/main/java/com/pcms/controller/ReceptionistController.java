@@ -5,6 +5,7 @@ import com.pcms.service.ReceptionistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -189,7 +190,7 @@ public class ReceptionistController {
         return ResponseEntity.ok(receptionistService.getPetHistory(petId));
     }
 
-    // 6. INVOICE MANAGEMENT & AUDIT (Section 4.1.6)
+    // 6. INVOICE MANAGEMENT & AUDIT (Delegated to BillingService FEFO — UC23..UC26)
     @GetMapping("/invoices")
     public ResponseEntity<List<Map<String, Object>>> getInvoices(
             @RequestParam(required = false, defaultValue = "ALL") String status,
@@ -210,6 +211,7 @@ public class ReceptionistController {
         return ResponseEntity.ok(receptionistService.confirmInvoicePayment(invoiceId, payload, resolveActor(principal)));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/invoices/{invoiceId}/void")
     public ResponseEntity<Map<String, Object>> voidInvoice(
             @PathVariable Integer invoiceId,
@@ -218,5 +220,38 @@ public class ReceptionistController {
         String reason = payload != null && payload.get("reason") != null
                 ? String.valueOf(payload.get("reason")) : "";
         return ResponseEntity.ok(receptionistService.voidInvoice(invoiceId, reason, resolveActor(principal)));
+    }
+
+    // 7. DOCTOR SCHEDULE & SLOTS (SRS 4.1.25)
+    @GetMapping("/doctor-slots")
+    public ResponseEntity<List<Map<String, Object>>> getDoctorSlots(
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate,
+            @RequestParam(required = false) Integer veterinarianId) {
+        return ResponseEntity.ok(receptionistService.getDoctorScheduleSlots(fromDate, toDate, veterinarianId));
+    }
+
+    @PostMapping("/doctor-slots")
+    public ResponseEntity<Map<String, Object>> createDoctorSlot(
+            @RequestBody Map<String, Object> payload,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(receptionistService.createDoctorScheduleSlot(payload, resolveActor(principal)));
+    }
+
+    @PutMapping("/doctor-slots/{slotId}")
+    public ResponseEntity<Map<String, Object>> updateDoctorSlot(
+            @PathVariable Integer slotId,
+            @RequestBody Map<String, Object> payload,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(receptionistService.updateDoctorScheduleSlot(slotId, payload, resolveActor(principal)));
+    }
+
+    @DeleteMapping("/doctor-slots/{slotId}")
+    public ResponseEntity<Void> deleteDoctorSlot(
+            @PathVariable Integer slotId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        receptionistService.deleteDoctorScheduleSlot(slotId, resolveActor(principal));
+        return ResponseEntity.noContent().build();
     }
 }
