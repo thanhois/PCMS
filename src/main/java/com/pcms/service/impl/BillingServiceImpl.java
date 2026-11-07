@@ -23,6 +23,7 @@ import com.pcms.repository.PrescriptionDetailRepository;
 import com.pcms.repository.PrescriptionRepository;
 import com.pcms.repository.UserAccountRepository;
 import com.pcms.service.BillingService;
+import com.pcms.service.MockPaymentGatewayService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -51,6 +52,7 @@ public class BillingServiceImpl implements BillingService {
     private final PrescriptionRepository prescriptionRepository;
     private final PrescriptionDetailRepository prescriptionDetailRepository;
     private final InventoryBatchRepository inventoryBatchRepository;
+    private final MockPaymentGatewayService mockPaymentGatewayService;
 
     @Override
     @Transactional(readOnly = true)
@@ -63,6 +65,22 @@ public class BillingServiceImpl implements BillingService {
     }
 
     private InvoiceResponse mapToInvoiceResponse(Invoice invoice) {
+        List<PaymentResponse> payments = paymentRepository
+                .findByInvoice_InvoiceId(invoice.getInvoiceId())
+                .stream()
+                .sorted(Comparator.comparing(
+                        Payment::getPaymentDate,
+                        Comparator.nullsLast(Comparator.reverseOrder())
+                ))
+                .map(payment -> new PaymentResponse(
+                        payment.getPaymentId(),
+                        invoice.getInvoiceId(),
+                        payment.getPaymentDate(),
+                        payment.getPaymentMethod(),
+                        payment.getAmountPaid()
+                ))
+                .toList();
+
         return new InvoiceResponse(
                 invoice.getInvoiceId(),
                 invoice.getMedicalRecord().getRecordId(),
@@ -71,7 +89,8 @@ public class BillingServiceImpl implements BillingService {
                 invoice.getInvoiceDate(),
                 invoice.getTotalAmount(),
                 invoice.getDiscountAmount(),
-                invoice.getStatus()
+                invoice.getStatus(),
+                payments
         );
     }
 
@@ -215,21 +234,23 @@ public class BillingServiceImpl implements BillingService {
             );
         }
 
-        // 5. Kiem tra ket qua mock payment
-// 5. Kiem tra ket qua mock payment
-        String mockResult = request.mockResult();
+        // 5. Kiem tra ket qua mock payment cho CASH va BANK_TRANSFER
+// CARD se duoc xu ly boi Mock Payment Gateway rieng
+        if (!"CARD".equals(paymentMethod)) {
+            String mockResult = request.mockResult();
 
-        if (!"SUCCESS".equalsIgnoreCase(mockResult)
-                && !"FAILED".equalsIgnoreCase(mockResult)) {
-            throw new BadRequestException(
-                    "Invalid mock payment result. Supported values: SUCCESS, FAILED"
-            );
-        }
+            if (!"SUCCESS".equalsIgnoreCase(mockResult)
+                    && !"FAILED".equalsIgnoreCase(mockResult)) {
+                throw new BadRequestException(
+                        "Invalid mock payment result. Supported values: SUCCESS, FAILED"
+                );
+            }
 
-        if ("FAILED".equalsIgnoreCase(mockResult)) {
-            throw new BadRequestException(
-                    "Payment failed. Please try again"
-            );
+            if ("FAILED".equalsIgnoreCase(mockResult)) {
+                throw new BadRequestException(
+                        "Payment failed. Please try again"
+                );
+            }
         }
 
         // 6. Tinh so tien thuc te can thanh toan
@@ -244,6 +265,21 @@ public class BillingServiceImpl implements BillingService {
             throw new BadRequestException(
                     "Discount cannot exceed invoice total"
             );
+        }
+        // 6. Goi Mock Payment Gateway neu thanh toan bang the
+        if ("CARD".equals(paymentMethod)) {
+
+            MockPaymentGatewayService.GatewayResult gatewayResult =
+                    mockPaymentGatewayService.processCardPayment(
+                            invoiceId,
+                            amountDue
+                    );
+
+            if (!gatewayResult.success()) {
+                throw new BadRequestException(
+                        gatewayResult.message()
+                );
+            }
         }
 
         // 7. Lay danh sach thuoc can tru kho

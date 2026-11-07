@@ -77,8 +77,8 @@ public class BillingController {
         );
     }
 
-    // UC25: Huy hoa don
-    @PreAuthorize("hasRole('ADMIN')")
+    // UC31: Void Invoice - Receptionist huy hoa don
+    @PreAuthorize("hasRole('RECEPTIONIST')")
     @PatchMapping("/invoices/{invoiceId}/void")
     public ResponseEntity<ApiResponse<InvoiceResponse>> voidInvoice(
             @PathVariable Integer invoiceId,
