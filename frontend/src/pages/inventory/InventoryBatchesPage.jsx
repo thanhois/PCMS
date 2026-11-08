@@ -74,6 +74,8 @@ export default function InventoryBatchesPage() {
 
   const [receiveErrors, setReceiveErrors] = useState({});
   const [adjustErrors, setAdjustErrors] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expiryFilter, setExpiryFilter] = useState('ALL');
 
   const loadData = async () => {
     setLoading(true);
@@ -137,6 +139,39 @@ export default function InventoryBatchesPage() {
       return stock <= Number(medicine.minThreshold || 0);
     }).length;
   }, [batches, medicines]);
+    const filteredBatches = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+
+    return batches.filter((batch) => {
+      const matchesSearch =
+        !keyword ||
+        (batch.batchNumber || '').toLowerCase().includes(keyword) ||
+        (batch.medicineName || '').toLowerCase().includes(keyword);
+
+      const expiryInfo = getExpiryInfo(batch.expirationDate);
+
+      let matchesExpiry;
+
+      switch (expiryFilter) {
+        case 'VALID':
+          matchesExpiry = expiryInfo.variant === 'success';
+          break;
+        case 'EXPIRING':
+          matchesExpiry = expiryInfo.variant === 'warning';
+          break;
+        case 'EXPIRED':
+          matchesExpiry = expiryInfo.variant === 'danger';
+          break;
+        case 'UNKNOWN':
+          matchesExpiry = expiryInfo.variant === 'neutral';
+          break;
+        default:
+          matchesExpiry = true;
+      }
+
+      return matchesSearch && matchesExpiry;
+    });
+  }, [batches, searchTerm, expiryFilter]);
 
   const openReceiveModal = () => {
     setReceiveForm(EMPTY_RECEIVE_FORM);
@@ -416,17 +451,60 @@ export default function InventoryBatchesPage() {
           <div className="pcms-card-value">{expiredBatchCount}</div>
         </div>
       </div>
+            <div
+        className="pcms-card"
+        style={{
+          display: 'flex',
+          gap: 12,
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          marginBottom: 16,
+        }}
+      >
+        <input
+          type="text"
+          className="pcms-input"
+          style={{ flex: '1 1 260px' }}
+          placeholder="Tìm theo mã lô hoặc tên thuốc..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+
+        <select
+          className="pcms-select"
+          style={{ flex: '1 1 200px' }}
+          value={expiryFilter}
+          onChange={(e) => setExpiryFilter(e.target.value)}
+        >
+          <option value="ALL">Tất cả tình trạng</option>
+          <option value="VALID">Còn hạn</option>
+          <option value="EXPIRING">Sắp hết hạn (30 ngày)</option>
+          <option value="EXPIRED">Đã hết hạn</option>
+          <option value="UNKNOWN">Chưa có hạn / Không hợp lệ</option>
+        </select>
+
+        <button
+          type="button"
+          className="pcms-btn pcms-btn-secondary"
+          onClick={() => {
+            setSearchTerm('');
+            setExpiryFilter('ALL');
+          }}
+        >
+          Xóa bộ lọc
+        </button>
+      </div>
 
       <DataTable
         title="Danh sách lô thuốc"
         subtitle="Dữ liệu được lấy từ các lô thuốc hiện có trong kho."
         columns={columns}
-        data={batches}
+        data={filteredBatches}
         rowKey="batchId"
         loading={loading}
         error=""
         emptyTitle="Chưa có lô thuốc"
-        emptyMessage="Hãy nhập lô thuốc đầu tiên để bắt đầu quản lý kho."
+        emptyMessage="Không tìm thấy lô thuốc phù hợp với điều kiện tìm kiếm hoặc lọc."
         onRetry={loadData}
       />
 

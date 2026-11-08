@@ -4,6 +4,7 @@ import billingApi from '../../api/billingApi';
 import { useAuth } from '../../context/AuthContext';
 import PageHeader from '../../components/admin/ui/PageHeader';
 import StatusBadge from '../../components/admin/ui/StatusBadge';
+import { QRCodeSVG } from 'qrcode.react';
 
 const formatVnd = (value) => {
   return Number(value || 0).toLocaleString('vi-VN', {
@@ -92,6 +93,8 @@ export default function InvoiceDetailPage() {
   const serviceItems = Array.isArray(invoice?.serviceItems) ? invoice.serviceItems : [];
   const medicineItems = Array.isArray(invoice?.medicineItems) ? invoice.medicineItems : [];
 
+  const demoQrValue =
+    `PCMS-DEMO|INVOICE=${invoiceId}|AMOUNT=${Math.round(amountDue)}|CURRENCY=VND`;
   const paymentHistory = useMemo(() => {
     return [...payments].sort((a, b) => {
       return new Date(b.paymentDate || 0) - new Date(a.paymentDate || 0);
@@ -140,9 +143,13 @@ export default function InvoiceDetailPage() {
   };
 
   const handleConfirmPayment = async () => {
-    if (!window.confirm(
-      `Xác nhận thanh toán hóa đơn HD-${invoiceId} với số tiền ${formatVnd(amountDue)}? Hệ thống sẽ tự động trừ tồn kho thuốc theo nguyên tắc FEFO.`
-    )) {
+    const isDemoBankTransfer = paymentMethod === 'BANK_TRANSFER';
+
+    const confirmationMessage = isDemoBankTransfer
+      ? `Xác nhận thanh toán CHUYỂN KHOẢN DEMO cho hóa đơn HD-${invoiceId} với số tiền ${formatVnd(amountDue)}?\n\nĐây chỉ là giao dịch mô phỏng, không có tiền thật được chuyển.`
+      : `Xác nhận thanh toán hóa đơn HD-${invoiceId} với số tiền ${formatVnd(amountDue)}? Hệ thống sẽ tự động trừ tồn kho thuốc theo nguyên tắc FEFO.`;
+
+    if (!window.confirm(confirmationMessage)) {
       return;
     }
 
@@ -151,12 +158,24 @@ export default function InvoiceDetailPage() {
     setSuccess('');
 
     try {
-      await billingApi.confirmPayment(invoiceId, {
-        paymentMethod,
-        mockResult,
-      });
+      const paymentPayload = { paymentMethod };
 
-      setSuccess('Thanh toán thành công. Đã ghi nhận giao dịch và trừ kho FEFO.');
+      if (paymentMethod === 'BANK_TRANSFER') {
+        paymentPayload.mockResult = 'SUCCESS';
+      } else if (paymentMethod !== 'CARD') {
+        paymentPayload.mockResult = mockResult;
+      }
+
+      await billingApi.confirmPayment(invoiceId, paymentPayload);
+
+      if (paymentMethod === 'CARD') {
+        setSuccess('Thanh toán thẻ thành công qua Mock Payment Gateway. Đã trừ kho FEFO.');
+      } else if (paymentMethod === 'BANK_TRANSFER') {
+        setSuccess('Thanh toán chuyển khoản DEMO thành công. Đã trừ kho FEFO.');
+      } else {
+        setSuccess('Thanh toán thành công. Đã ghi nhận giao dịch và trừ kho FEFO.');
+      }
+
       await loadInvoice();
     } catch (err) {
       setError(err?.message || 'Không thể thực hiện thanh toán.');
@@ -225,8 +244,8 @@ export default function InvoiceDetailPage() {
 
         <button
           type="button"
-          className="pcms-btn pcms-btn-outline"
-          onClick={() => navigate('/billing/queue')}
+          className="pcms-btn pcms-btn-secondary"
+          onClick={() => navigate('/billing/invoices')}
         >
           Quay lại danh sách
         </button>
@@ -251,10 +270,10 @@ export default function InvoiceDetailPage() {
               </button>
               <button
                 type="button"
-                className="pcms-btn pcms-btn-outline"
-                onClick={() => navigate('/billing/queue')}
+                className="pcms-btn pcms-btn-secondary"
+                onClick={() => navigate('/billing/invoices')}
               >
-                Danh sách hóa đơn
+                ← Quản lý hóa đơn
               </button>
             </div>
           }
@@ -517,7 +536,7 @@ export default function InvoiceDetailPage() {
                   type="number"
                   min="0"
                   max={totalAmount}
-                  step="1000"
+                  step="1"
                   className="pcms-input"
                   value={discountInput}
                   onChange={(e) => setDiscountInput(e.target.value)}
@@ -557,20 +576,93 @@ export default function InvoiceDetailPage() {
                 </select>
               </div>
 
-              <div className="pcms-field">
-                <label className="pcms-label">Kết quả giao dịch mô phỏng</label>
-                <select
-                  className="pcms-select"
-                  value={mockResult}
-                  onChange={(e) => setMockResult(e.target.value)}
+              {paymentMethod === 'CARD' ? (
+                <div className="pcms-field">
+                  <label className="pcms-label">Xử lý thanh toán thẻ</label>
+                  <small style={{ color: 'var(--pcms-text-muted)' }}>
+                    Giao dịch được xử lý tự động bởi Mock Payment Gateway. Kết quả thành công hoặc thất bại do Backend mô phỏng.
+                  </small>
+                </div>
+              ) : paymentMethod === 'BANK_TRANSFER' ? (
+                <div
+                  className="pcms-field"
+                  style={{
+                    gridColumn: '1 / -1',
+                    textAlign: 'center',
+                    padding: 20,
+                    border: '1px solid #f0ad4e',
+                    borderRadius: 8,
+                    background: '#fffdfa',
+                  }}
                 >
-                  <option value="SUCCESS">Thành công</option>
-                  <option value="FAILED">Thất bại</option>
-                </select>
-                <small style={{ color: 'var(--pcms-text-muted)' }}>
-                  Mô phỏng phản hồi cổng thanh toán.
-                </small>
-              </div>
+                  <div
+                    style={{
+                      fontWeight: 'bold',
+                      color: '#b45309',
+                      marginBottom: 12,
+                    }}
+                  >
+                    DEMO – NOT FOR REAL PAYMENT
+                  </div>
+
+                  <p style={{ margin: '0 0 12px 0', fontSize: 13, color: 'var(--pcms-text-muted)' }}>
+                    Mã QR dưới đây chỉ phục vụ trình diễn chức năng chuyển khoản của hệ thống PCMS.
+                  </p>
+
+                  <div style={{ margin: '16px auto', display: 'inline-block', padding: 12, background: '#fff', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <QRCodeSVG
+                      value={demoQrValue}
+                      size={200}
+                      level="M"
+                      includeMargin
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: 6, fontSize: 13 }}>
+                    <strong>Hóa đơn:</strong> HD-{invoiceId}
+                  </div>
+
+                  <div style={{ marginBottom: 6, fontSize: 13 }}>
+                    <strong>Số tiền:</strong> {formatVnd(amountDue)}
+                  </div>
+
+                  <div style={{ marginBottom: 12, fontSize: 12 }}>
+                    <strong>Nội dung thanh toán:</strong>
+                    <div
+                      style={{
+                        marginTop: 6,
+                        padding: 8,
+                        background: '#f8fafc',
+                        borderRadius: 6,
+                        wordBreak: 'break-all',
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                      }}
+                    >
+                      {demoQrValue}
+                    </div>
+                  </div>
+
+                  <small style={{ color: '#b45309', display: 'block' }}>
+                    QR này không liên kết ngân hàng thật, không tạo giao dịch và không thể dùng để chuyển tiền thật.
+                  </small>
+                </div>
+              ) : (
+                <div className="pcms-field">
+                  <label className="pcms-label">Kết quả giao dịch mô phỏng</label>
+                  <select
+                    className="pcms-select"
+                    value={mockResult}
+                    onChange={(e) => setMockResult(e.target.value)}
+                  >
+                    <option value="SUCCESS">Thành công</option>
+                    <option value="FAILED">Thất bại</option>
+                  </select>
+                  <small style={{ color: 'var(--pcms-text-muted)' }}>
+                    Mô phỏng phản hồi từ cổng thanh toán tiền mặt.
+                  </small>
+                </div>
+              )}
             </div>
 
             <div
@@ -596,9 +688,13 @@ export default function InvoiceDetailPage() {
                 type="button"
                 className="pcms-btn pcms-btn-primary"
                 onClick={handleConfirmPayment}
-                disabled={submitting}
+                disabled={submitting || amountDue <= 0}
               >
-                {submitting ? 'Đang xử lý...' : 'Xác nhận thanh toán'}
+                {submitting
+                  ? 'Đang xử lý...'
+                  : paymentMethod === 'BANK_TRANSFER'
+                    ? 'Xác nhận đã chuyển khoản (DEMO)'
+                    : 'Xác nhận thanh toán'}
               </button>
             </div>
           </div>

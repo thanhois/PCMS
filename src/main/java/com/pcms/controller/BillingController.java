@@ -14,6 +14,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import com.pcms.dto.response.billing.CompletedMedicalRecordResponse;
+import com.pcms.dto.response.billing.CreateInvoicePreviewResponse;
 
 @RestController
 @RequestMapping("/api/v1/billing")
@@ -59,8 +61,8 @@ public class BillingController {
         );
     }
 
-    // UC25: Huy hoa don (Void Invoice — chi ADMIN theo SRS 4.2 & Bang 5.2)
-    @PreAuthorize("hasRole('ADMIN')")
+    // UC25/UC31: Huy hoa don (Void Invoice - ho tro ca Admin va Receptionist)
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     @PatchMapping("/invoices/{invoiceId}/void")
     public ResponseEntity<ApiResponse<InvoiceResponse>> voidInvoice(
             @PathVariable Integer invoiceId,
@@ -69,6 +71,19 @@ public class BillingController {
         InvoiceResponse invoice = billingService.voidInvoice(invoiceId, request);
         return ResponseEntity.ok(
                 ApiResponse.success("Invoice voided successfully", invoice)
+        );
+    }
+
+    // Lay tat ca hoa don cho Receptionist Invoice Management
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
+    @GetMapping("/invoices")
+    public ResponseEntity<ApiResponse<List<InvoiceResponse>>> getAllInvoices() {
+        List<InvoiceResponse> invoices = billingService.getAllInvoices();
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "All invoices retrieved successfully",
+                        invoices
+                )
         );
     }
 
@@ -82,6 +97,33 @@ public class BillingController {
         PaymentResponse payment = billingService.confirmPayment(invoiceId, request);
         return ResponseEntity.ok(
                 ApiResponse.success("Payment completed successfully", payment)
+        );
+    }
+    // UC24: Lay danh sach benh an da hoan tat
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
+    @GetMapping("/records/completed")
+    public ResponseEntity<ApiResponse<List<CompletedMedicalRecordResponse>>>
+    getCompletedMedicalRecords() {
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Completed medical records retrieved successfully",
+                        billingService.getCompletedMedicalRecords()
+                )
+        );
+    }
+
+    // UC24: Xem truoc va tao hoa don PENDING neu chua ton tai
+    @PreAuthorize("hasRole('RECEPTIONIST')")
+    @PostMapping("/records/{recordId}/invoice-preview")
+    public ResponseEntity<ApiResponse<CreateInvoicePreviewResponse>>
+    createInvoicePreview(@PathVariable Integer recordId) {
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Invoice preview retrieved successfully",
+                        billingService.createInvoicePreview(recordId)
+                )
         );
     }
 }

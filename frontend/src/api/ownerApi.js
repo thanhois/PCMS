@@ -54,7 +54,11 @@ const ownerApi = {
   },
 
   getMyInvoices() {
-    return axiosClient.get('/api/owner/invoices');
+    return axiosClient.get('/api/owner/my-invoices');
+  },
+
+  getMyInvoiceById(invoiceId) {
+    return axiosClient.get(`/api/owner/my-invoices/${invoiceId}`);
   },
 };
 

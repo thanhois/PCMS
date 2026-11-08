@@ -1,172 +1,166 @@
-import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import {
+  FileText,
+  Home,
+  LayoutDashboard,
+  LogOut,
+  Receipt,
+  Search,
+  User,
+  Users,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import '../../styles/adminTheme.css';
+import '../../styles/billingTheme.css';
 
-const MAIN_NAV_ITEMS = [
-  { to: '/billing/queue', label: 'Hàng chờ thanh toán' },
+const NAV_ITEMS = [
+  {
+    to: '/billing',
+    label: 'Dashboard',
+    icon: <LayoutDashboard size={18} />,
+    end: true,
+  },
+  {
+    to: '/billing/create',
+    label: 'Tạo hóa đơn',
+    icon: <FileText size={18} />,
+  },
+  {
+    to: '/billing/queue',
+    label: 'Hàng chờ thanh toán',
+    icon: <Receipt size={18} />,
+  },
+  {
+    to: '/billing/invoices',
+    label: 'Quản lý hóa đơn',
+    icon: <Search size={18} />,
+  },
 ];
 
 export default function BillingLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [collapsed, setCollapsed] = useState(false);
-  const [globalSearch, setGlobalSearch] = useState('');
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-
-  const searchInputRef = useRef(null);
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setUserMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  const handleGlobalSearchSubmit = (e) => {
-    e.preventDefault();
-    navigate('/billing/queue');
-  };
-
-  const displayName = user?.fullName || user?.username || 'Thu ngân';
-  const avatarChar = displayName.charAt(0).toUpperCase();
-
   return (
-    <div className="pcms-admin-shell">
-      <header className="pcms-topbar">
-        <div className="pcms-topbar-left">
-          <button
-            type="button"
-            className="pcms-sidebar-toggle"
-            onClick={() => setCollapsed((prev) => !prev)}
-            title={collapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
-          >
-            Menu
-          </button>
-
-          <Link to="/billing/queue" className="pcms-brand-link">
-            <div>
-              <span className="pcms-brand-title">PCMS</span>
-              <span className="pcms-brand-subtitle">Thu ngân & Thanh toán Hóa đơn</span>
+    <div className="billing-shell">
+      <aside className="billing-sidebar">
+        <div>
+          <div className="billing-brand">
+            <div className="billing-brand-icon">
+              <Receipt size={22} color="#ffffff" />
             </div>
-          </Link>
-        </div>
 
-        <form className="pcms-topbar-center" onSubmit={handleGlobalSearchSubmit}>
-          <div className="pcms-search-box">
-            <input
-              ref={searchInputRef}
-              type="search"
-              className="pcms-search-input"
-              placeholder="Tìm mã hóa đơn, tên thú cưng, chủ nuôi..."
-              value={globalSearch}
-              onChange={(e) => setGlobalSearch(e.target.value)}
-            />
-            <kbd className="pcms-search-kbd">Ctrl+K</kbd>
+            <div className="billing-brand-text">
+              <h1>PCMS</h1>
+              <p>RECEPTION & BILLING</p>
+            </div>
           </div>
-        </form>
 
-        <div className="pcms-topbar-right" ref={dropdownRef}>
-          <div className="pcms-user-menu-wrap">
-            <button
-              type="button"
-              className="pcms-user-trigger"
-              onClick={() => setUserMenuOpen((prev) => !prev)}
-            >
-              <span className="pcms-user-avatar">{avatarChar}</span>
-              <span>{displayName}</span>
-            </button>
-
-            {userMenuOpen ? (
-              <div className="pcms-dropdown-menu">
-                <div className="pcms-dropdown-header">
-                  <strong>{displayName}</strong>
-                  <span>{user?.email || 'billing@pcms.vn'} • {user?.role}</span>
-                </div>
-                <Link to="/profile" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
-                  <span>Hồ sơ & Đổi mật khẩu</span>
-                </Link>
-                <Link to="/" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
-                  <span>Về Trang chủ phòng khám</span>
-                </Link>
-                {user?.role === 'RECEPTIONIST' ? (
-                  <Link to="/receptionist/dashboard" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
-                    <span>Chuyển sang Quầy Lễ tân</span>
-                  </Link>
-                ) : null}
-                {user?.role === 'ADMIN' ? (
-                  <Link to="/admin/overview" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
-                    <span>Chuyển sang Cổng Quản trị (Admin)</span>
-                  </Link>
-                ) : null}
-                <button type="button" className="pcms-dropdown-item danger" onClick={handleLogout}>
-                  <span>Đăng xuất</span>
-                </button>
-              </div>
-            ) : null}
+          <div className="billing-sidebar-status">
+            <span className="billing-sidebar-status-dot" />
+            <span>Phân hệ tiếp nhận và thanh toán</span>
           </div>
-        </div>
-      </header>
 
-      <div className="pcms-admin-body">
-        <aside className={`pcms-sidebar ${collapsed ? 'collapsed' : ''}`}>
-          <nav className="pcms-sidebar-nav" aria-label="Menu thanh toán">
-            <div className="pcms-sidebar-section-label">Quản lý Thanh toán</div>
-            {MAIN_NAV_ITEMS.map((item) => (
+          <nav className="billing-nav">
+            <div className="billing-nav-heading">
+              RECEPTION & BILLING
+            </div>
+
+            {NAV_ITEMS.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={({ isActive }) => `pcms-nav-item ${isActive ? 'active' : ''}`}
+                end={item.end}
+                className={({ isActive }) =>
+                  `billing-nav-item ${isActive ? 'active' : ''}`
+                }
               >
-                <span className="pcms-nav-label">{item.label}</span>
+                {item.icon}
+                <span>{item.label}</span>
               </NavLink>
             ))}
           </nav>
+        </div>
 
-          <div className="pcms-sidebar-bottom">
-            {user?.role === 'RECEPTIONIST' ? (
-              <Link to="/receptionist/dashboard" className="pcms-nav-item">
-                <span className="pcms-nav-label">Quầy Lễ tân</span>
-              </Link>
-            ) : null}
-            {user?.role === 'ADMIN' ? (
-              <Link to="/admin/overview" className="pcms-nav-item">
-                <span className="pcms-nav-label">Cổng Quản trị Admin</span>
-              </Link>
-            ) : null}
-            <Link to="/" className="pcms-nav-item">
-              <span className="pcms-nav-label">Trang chủ phòng khám</span>
+        <div>
+          <div className="billing-nav-footer">
+            <div className="billing-nav-heading">
+              ĐIỀU HƯỚNG HỆ THỐNG
+            </div>
+
+            <Link to="/" className="billing-nav-item">
+              <Home size={18} />
+              <span>Trang chủ</span>
             </Link>
 
-            <div className="pcms-sidebar-meta">
-              <span>PCMS Billing</span>
-              <span>v1.0</span>
-            </div>
-          </div>
-        </aside>
+            <Link to="/profile" className="billing-nav-item">
+              <User size={18} />
+              <span>Hồ sơ cá nhân</span>
+            </Link>
 
-        <main className="pcms-main-content">
+            {(user?.role === 'ADMIN' || user?.role === 'RECEPTIONIST') && (
+              <Link to="/receptionist" className="billing-nav-item">
+                <Users size={18} />
+                <span>Bàn Lễ tân</span>
+              </Link>
+            )}
+
+            {user?.role === 'ADMIN' && (
+              <Link to="/admin" className="billing-nav-item">
+                <LayoutDashboard size={18} />
+                <span>Quản trị hệ thống</span>
+              </Link>
+            )}
+          </div>
+
+          <div className="billing-user-box">
+            <div className="billing-avatar">
+              {user?.fullName?.charAt(0) || 'U'}
+            </div>
+
+            <div className="billing-user-info">
+              <strong>{user?.fullName || 'Người dùng'}</strong>
+              <small>{user?.role || 'BILLING'}</small>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              title="Đăng xuất"
+              className="billing-logout-button"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <div className="billing-main">
+        <header className="billing-topbar">
+          <div className="billing-page-title">
+            <h2>
+              <Receipt size={20} />
+              Reception & Billing
+            </h2>
+
+            <p>
+              Quản lý tiếp nhận thanh toán và thông tin hóa đơn
+            </p>
+          </div>
+
+          <div className="billing-topbar-date">
+            Ngày:{' '}
+            <strong>
+              {new Date().toLocaleDateString('vi-VN')}
+            </strong>
+          </div>
+        </header>
+
+        <main className="billing-content">
           <Outlet />
         </main>
       </div>

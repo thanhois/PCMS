@@ -12,4 +12,10 @@ import java.util.Optional;
 public interface InvoiceRepository extends JpaRepository<Invoice, Integer> {
     List<Invoice> findByInvoiceDateBetween(LocalDateTime start, LocalDateTime end);
     Optional<Invoice> findByMedicalRecord_RecordId(Integer recordId);
+    List<Invoice> findByMedicalRecord_Pet_PetOwner_UserAccount_UserId(Integer userId);
+
+    Optional<Invoice> findByInvoiceIdAndMedicalRecord_Pet_PetOwner_UserAccount_UserId(
+            Integer invoiceId,
+            Integer userId
+    );
 }

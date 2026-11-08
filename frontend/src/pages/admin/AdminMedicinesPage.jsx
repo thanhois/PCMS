@@ -61,7 +61,7 @@ function validateMedicineForm(form, existingMedicines = []) {
   return errs;
 }
 
-export default function AdminMedicinesPage() {
+export default function AdminMedicinesPage({ api = adminApi } = {}) {
   const [medicines, setMedicines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -89,7 +89,7 @@ export default function AdminMedicinesPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await adminApi.getMedicines();
+      const res = await api.getMedicines();
       setMedicines(res || []);
     } catch (err) {
       setError(err?.message || 'Đã có lỗi khi tải danh mục thuốc.');
@@ -152,7 +152,7 @@ export default function AdminMedicinesPage() {
 
     setSaving(true);
     try {
-      const saved = await adminApi.saveMedicine(formData);
+      const saved = await api.saveMedicine(formData);
       setBanner({
         type: 'success',
         text: formData.medicineId
@@ -190,7 +190,7 @@ export default function AdminMedicinesPage() {
 
     setConfirmState((prev) => ({ ...prev, loading: true }));
     try {
-      await adminApi.toggleMedicineStatus(medicine.medicineId, nextStatus);
+      await api.toggleMedicineStatus(medicine.medicineId, nextStatus);
       setBanner({
         type: 'success',
         text:

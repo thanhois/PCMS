@@ -27,9 +27,9 @@ import java.util.List;
 public class InventoryController {
 
     private final InventoryService inventoryService;
-
     // 1. SERVICE CATALOG
 
+    // Lay danh sach dich vu
     @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @GetMapping("/services")
     public ResponseEntity<ApiResponse<List<ServiceResponse>>> getAllServices() {
@@ -40,6 +40,7 @@ public class InventoryController {
         );
     }
 
+    // Them dich vu moi
     @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @PostMapping("/services")
     public ResponseEntity<ApiResponse<ServiceResponse>> createService(
@@ -52,6 +53,7 @@ public class InventoryController {
         );
     }
 
+    // Cap nhat thong tin dich vu
     @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @PutMapping("/services/{serviceId}")
     public ResponseEntity<ApiResponse<ServiceResponse>> updateService(
@@ -65,6 +67,7 @@ public class InventoryController {
         );
     }
 
+    // Thay doi trang thai dich vu
     @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @PatchMapping("/services/{serviceId}/status")
     public ResponseEntity<ApiResponse<ServiceResponse>> updateServiceStatus(
@@ -80,6 +83,7 @@ public class InventoryController {
 
     // 2. MEDICINE CATALOG
 
+    // Lay danh sach thuoc
     @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @GetMapping("/medicines")
     public ResponseEntity<ApiResponse<List<MedicineResponse>>> getAllMedicines() {
@@ -90,6 +94,7 @@ public class InventoryController {
         );
     }
 
+    // Them thuoc moi
     @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @PostMapping("/medicines")
     public ResponseEntity<ApiResponse<MedicineResponse>> createMedicine(
@@ -102,6 +107,7 @@ public class InventoryController {
         );
     }
 
+    // Cap nhat thong tin thuoc
     @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @PutMapping("/medicines/{medicineId}")
     public ResponseEntity<ApiResponse<MedicineResponse>> updateMedicine(
@@ -115,6 +121,7 @@ public class InventoryController {
         );
     }
 
+    // Thay doi trang thai thuoc
     @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @PatchMapping("/medicines/{medicineId}/status")
     public ResponseEntity<ApiResponse<MedicineResponse>> updateMedicineStatus(
@@ -130,6 +137,7 @@ public class InventoryController {
 
     // 3. INVENTORY MANAGEMENT
 
+    // Lay toan bo danh sach ton kho
     @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @GetMapping("/batches")
     public ResponseEntity<ApiResponse<List<InventoryBatchResponse>>> getInventory() {
@@ -140,6 +148,7 @@ public class InventoryController {
         );
     }
 
+    // Lay danh sach lo thuoc theo ma thuoc
     @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @GetMapping("/medicines/{medicineId}/batches")
     public ResponseEntity<ApiResponse<List<InventoryBatchResponse>>> getInventoryByMedicine(
@@ -153,6 +162,7 @@ public class InventoryController {
         );
     }
 
+    // Nhap them lo thuoc moi
     @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @PostMapping("/batches/receive")
     public ResponseEntity<ApiResponse<InventoryBatchResponse>> receiveStock(
@@ -165,6 +175,7 @@ public class InventoryController {
         );
     }
 
+    // Dieu chinh so luong ton kho
     @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @PatchMapping("/batches/{batchId}/adjustment")
     public ResponseEntity<ApiResponse<InventoryBatchResponse>> adjustStock(

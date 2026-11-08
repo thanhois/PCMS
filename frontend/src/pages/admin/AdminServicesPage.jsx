@@ -47,7 +47,7 @@ function validateServiceForm(form, existingServices = []) {
   return errs;
 }
 
-export default function AdminServicesPage() {
+export default function AdminServicesPage({ api = adminApi } = {}) {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -75,7 +75,7 @@ export default function AdminServicesPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await adminApi.getServices();
+      const res = await api.getServices();
       setServices(res || []);
     } catch (err) {
       setError(err?.message || 'Đã có lỗi khi tải danh mục dịch vụ.');
@@ -134,7 +134,7 @@ export default function AdminServicesPage() {
 
     setSaving(true);
     try {
-      const saved = await adminApi.saveService(formData);
+      const saved = await api.saveService(formData)
       setBanner({
         type: 'success',
         text: formData.serviceId
@@ -172,7 +172,7 @@ export default function AdminServicesPage() {
 
     setConfirmState((prev) => ({ ...prev, loading: true }));
     try {
-      await adminApi.toggleServiceStatus(service.serviceId, nextStatus);
+      await api.toggleServiceStatus(service.serviceId, nextStatus);
       setBanner({
         type: 'success',
         text:

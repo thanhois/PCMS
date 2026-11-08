@@ -28,11 +28,19 @@ import com.pcms.repository.PrescriptionDetailRepository;
 import com.pcms.repository.PrescriptionRepository;
 import com.pcms.repository.UserAccountRepository;
 import com.pcms.service.BillingService;
+import com.pcms.service.MockPaymentGatewayService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.pcms.dto.response.billing.CompletedMedicalRecordResponse;
+import com.pcms.dto.response.billing.CreateInvoicePreviewResponse;
+import com.pcms.repository.MedicalRecordDetailRepository;
+import com.pcms.repository.MedicalRecordRepository;
+import com.pcms.entity.MedicalRecord;
+import com.pcms.entity.MedicalRecordDetail;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -56,7 +64,199 @@ public class BillingServiceImpl implements BillingService {
     private final PrescriptionRepository prescriptionRepository;
     private final PrescriptionDetailRepository prescriptionDetailRepository;
     private final InventoryBatchRepository inventoryBatchRepository;
+    private final MockPaymentGatewayService mockPaymentGatewayService;
+    private final MedicalRecordRepository medicalRecordRepository;
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<CompletedMedicalRecordResponse> getCompletedMedicalRecords() {
+        return medicalRecordRepository.findAll()
+                .stream()
+                .filter(record -> "COMPLETED".equalsIgnoreCase(record.getStatus()))
+                .filter(record -> record.getAppointment() == null
+                        || "COMPLETED".equalsIgnoreCase(
+                        record.getAppointment().getStatus()))
+                .filter(record -> {
+                    Invoice invoice = invoiceRepository
+                            .findByMedicalRecord_RecordId(record.getRecordId())
+                            .orElse(null);
+
+                    return invoice == null
+                            || "PENDING".equalsIgnoreCase(invoice.getStatus());
+                })
+                .sorted(Comparator.comparing(
+                        MedicalRecord::getVisitDate,
+                        Comparator.nullsLast(Comparator.reverseOrder())
+                ))
+                .map(record -> new CompletedMedicalRecordResponse(
+                        record.getRecordId(),
+                        record.getVisitDate(),
+                        record.getPet().getPetName(),
+                        record.getPet().getPetOwner().getFullName(),
+                        record.getPet().getPetOwner().getPhoneNumber(),
+                        record.getAppointment() == null
+                                ? null
+                                : record.getAppointment().getAppointmentId()
+                ))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public CreateInvoicePreviewResponse createInvoicePreview(Integer recordId) {
+
+        // 1. Tim benh an
+        MedicalRecord record = medicalRecordRepository.findById(recordId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Medical record not found: " + recordId
+                ));
+
+        // 2. Chi chap nhan benh an va lich hen da hoan tat
+        if (!"COMPLETED".equalsIgnoreCase(record.getStatus())
+                || (record.getAppointment() != null
+                && !"COMPLETED".equalsIgnoreCase(
+                record.getAppointment().getStatus()))) {
+            throw new BadRequestException(
+                    "Only COMPLETED medical records can be invoiced"
+            );
+        }
+
+        // 3. Kiem tra hoa don da ton tai
+        Invoice invoice = invoiceRepository
+                .findByMedicalRecord_RecordId(recordId)
+                .orElse(null);
+
+        boolean existingInvoice = invoice != null;
+
+        if (existingInvoice
+                && !"PENDING".equalsIgnoreCase(invoice.getStatus())) {
+            throw new BadRequestException(
+                    "This medical record already has a " + invoice.getStatus()
+                            + " invoice"
+            );
+        }
+
+        // 4. Tao danh sach dong dich vu
+        List<com.pcms.dto.response.billing.InvoiceLineResponse> items =
+                new java.util.ArrayList<>();
+
+        BigDecimal calculatedTotal = BigDecimal.ZERO;
+
+        List<MedicalRecordDetail> serviceDetails =
+                medicalRecordDetailRepository.findByMedicalRecord_RecordId(recordId);
+
+        for (MedicalRecordDetail detail : serviceDetails) {
+            BigDecimal unitPrice = detail.getService().getPrice();
+            Integer quantity = detail.getQuantity();
+
+            if (unitPrice == null || unitPrice.compareTo(BigDecimal.ZERO) <= 0
+                    || quantity == null || quantity <= 0) {
+                throw new BadRequestException(
+                        "Invalid service price or quantity"
+                );
+            }
+
+            BigDecimal lineTotal = unitPrice.multiply(
+                    BigDecimal.valueOf(quantity)
+            );
+
+            items.add(new com.pcms.dto.response.billing.InvoiceLineResponse(
+                    "SERVICE",
+                    detail.getService().getServiceName(),
+                    "Lần",
+                    null,
+                    quantity,
+                    unitPrice,
+                    lineTotal,
+                    detail.getNotes()
+            ));
+
+            calculatedTotal = calculatedTotal.add(lineTotal);
+        }
+
+        // 5. Tao danh sach dong thuoc
+        Prescription prescription = prescriptionRepository
+                .findByMedicalRecord_RecordId(recordId)
+                .orElse(null);
+
+        if (prescription != null) {
+            List<PrescriptionDetail> medicineDetails =
+                    prescriptionDetailRepository.findByPrescription_PrescriptionId(
+                            prescription.getPrescriptionId()
+                    );
+
+            for (PrescriptionDetail detail : medicineDetails) {
+                BigDecimal unitPrice = detail.getMedicine().getUnitPrice();
+                Integer quantity = detail.getQuantity();
+
+                if (unitPrice == null || unitPrice.compareTo(BigDecimal.ZERO) <= 0
+                        || quantity == null || quantity <= 0) {
+                    throw new BadRequestException(
+                            "Invalid medicine price or quantity"
+                    );
+                }
+
+                BigDecimal lineTotal = unitPrice.multiply(
+                        BigDecimal.valueOf(quantity)
+                );
+
+                items.add(new com.pcms.dto.response.billing.InvoiceLineResponse(
+                        "MEDICINE",
+                        detail.getMedicine().getMedicineName(),
+                        detail.getMedicine().getUnit(),
+                        detail.getDosage(),
+                        quantity,
+                        unitPrice,
+                        lineTotal,
+                        detail.getNotes()
+                ));
+
+                calculatedTotal = calculatedTotal.add(lineTotal);
+            }
+        }
+
+        // 6. Tao hoa don neu chua co
+        if (!existingInvoice) {
+            invoice = Invoice.builder()
+                    .medicalRecord(record)
+                    .invoiceDate(LocalDateTime.now())
+                    .totalAmount(calculatedTotal)
+                    .discountAmount(BigDecimal.ZERO)
+                    .status("PENDING")
+                    .build();
+
+            invoice = invoiceRepository.save(invoice);
+        }
+
+        // 7. Tinh so tien can thanh toan
+        BigDecimal discount = invoice.getDiscountAmount() == null
+                ? BigDecimal.ZERO
+                : invoice.getDiscountAmount();
+
+        BigDecimal amountDue = invoice.getTotalAmount().subtract(discount);
+
+        if (amountDue.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BadRequestException(
+                    "Invoice discount cannot exceed total amount"
+            );
+        }
+
+        // 8. Tra ve ban xem truoc
+        return new CreateInvoicePreviewResponse(
+                invoice.getInvoiceId(),
+                record.getRecordId(),
+                record.getPet().getPetName(),
+                record.getPet().getPetOwner().getFullName(),
+                record.getPet().getPetOwner().getPhoneNumber(),
+                record.getVisitDate(),
+                invoice.getStatus(),
+                items,
+                invoice.getTotalAmount(),
+                discount,
+                amountDue,
+                existingInvoice
+        );
+    }
     @Override
     @Transactional(readOnly = true)
     public List<InvoiceResponse> getPaymentQueue() {
@@ -78,11 +278,27 @@ public class BillingServiceImpl implements BillingService {
                 .map(inv -> mapToInvoiceResponse(inv, false))
                 .toList();
     }
+    @Override
+    @Transactional(readOnly = true)
+    public List<InvoiceResponse> getAllInvoices() {
+        return invoiceRepository.findAll()
+                .stream()
+                .sorted(Comparator.comparing(
+                        Invoice::getInvoiceDate,
+                        Comparator.nullsLast(Comparator.reverseOrder())
+                ))
+                .map(this::mapToInvoiceResponse)
+                .toList();
+    }
 
     private String normalizeStatus(String status) {
         if (status == null) return "PENDING";
         if ("VOIDED".equalsIgnoreCase(status)) return "VOID";
         return status.toUpperCase();
+    }
+
+    private InvoiceResponse mapToInvoiceResponse(Invoice invoice) {
+        return mapToInvoiceResponse(invoice, true);
     }
 
     private InvoiceResponse mapToInvoiceResponse(Invoice invoice, boolean includeDetails) {
@@ -141,6 +357,10 @@ public class BillingServiceImpl implements BillingService {
 
             payments = paymentRepository.findByInvoice_InvoiceId(invoice.getInvoiceId())
                     .stream()
+                    .sorted(Comparator.comparing(
+                            Payment::getPaymentDate,
+                            Comparator.nullsLast(Comparator.reverseOrder())
+                    ))
                     .map(p -> new PaymentResponse(
                             p.getPaymentId(),
                             invoice.getInvoiceId(),
@@ -180,6 +400,20 @@ public class BillingServiceImpl implements BillingService {
                 ));
 
         return mapToInvoiceResponse(invoice, true);
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public InvoiceResponse getMyInvoiceById(Integer invoiceId, Integer userId) {
+        Invoice invoice = invoiceRepository
+                .findByInvoiceIdAndMedicalRecord_Pet_PetOwner_UserAccount_UserId(
+                        invoiceId,
+                        userId
+                )
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Invoice not found with ID: " + invoiceId
+                ));
+
+        return mapToInvoiceResponse(invoice);
     }
 
     @Override
@@ -286,23 +520,26 @@ public class BillingServiceImpl implements BillingService {
             );
         }
 
-        String mockResult = request.mockResult() != null ? request.mockResult().trim().toUpperCase() : "SUCCESS";
-        if (!"SUCCESS".equals(mockResult) && !"FAILED".equals(mockResult)) {
-            throw new BadRequestException(
-                    "Kết quả mô phỏng thanh toán không hợp lệ (SUCCESS / FAILED)."
-            );
-        }
+        // Kiem tra ket qua mock payment cho CASH va BANK_TRANSFER (CARD xu ly qua Mock Payment Gateway rieng)
+        if (!"CARD".equals(paymentMethod)) {
+            String mockResult = request.mockResult() != null ? request.mockResult().trim().toUpperCase() : "SUCCESS";
+            if (!"SUCCESS".equalsIgnoreCase(mockResult) && !"FAILED".equalsIgnoreCase(mockResult)) {
+                throw new BadRequestException(
+                        "Kết quả mô phỏng thanh toán không hợp lệ (SUCCESS / FAILED)."
+                );
+            }
 
-        if ("FAILED".equals(mockResult)) {
-            recordBillingAudit(
-                    "INVOICE_PAYMENT",
-                    "Invoice #" + invoiceId,
-                    "FAILED",
-                    "Giao dịch thanh toán thất bại cho hóa đơn #" + invoiceId + " (" + paymentMethod + ")"
-            );
-            throw new BadRequestException(
-                    "Giao dịch thanh toán thất bại. Hóa đơn vẫn giữ trạng thái PENDING, vui lòng thử lại."
-            );
+            if ("FAILED".equalsIgnoreCase(mockResult)) {
+                recordBillingAudit(
+                        "INVOICE_PAYMENT",
+                        "Invoice #" + invoiceId,
+                        "FAILED",
+                        "Giao dịch thanh toán thất bại cho hóa đơn #" + invoiceId + " (" + paymentMethod + ")"
+                );
+                throw new BadRequestException(
+                        "Giao dịch thanh toán thất bại. Hóa đơn vẫn giữ trạng thái PENDING, vui lòng thử lại."
+                );
+            }
         }
 
         BigDecimal totalAmount = invoice.getTotalAmount() != null ? invoice.getTotalAmount() : BigDecimal.ZERO;
@@ -315,6 +552,21 @@ public class BillingServiceImpl implements BillingService {
             throw new BadRequestException(
                     "Số tiền giảm giá không được vượt quá tổng hóa đơn."
             );
+        }
+        // 6. Goi Mock Payment Gateway neu thanh toan bang the
+        if ("CARD".equals(paymentMethod)) {
+
+            MockPaymentGatewayService.GatewayResult gatewayResult =
+                    mockPaymentGatewayService.processCardPayment(
+                            invoiceId,
+                            amountDue
+                    );
+
+            if (!gatewayResult.success()) {
+                throw new BadRequestException(
+                        gatewayResult.message()
+                );
+            }
         }
 
         // FEFO stock deduction (BR-19)
@@ -462,4 +714,14 @@ public class BillingServiceImpl implements BillingService {
 
         return deductionPlan;
     }
+    @Override
+    @Transactional(readOnly = true)
+    public List<InvoiceResponse> getMyInvoices(Integer userId) {
+        return invoiceRepository
+                .findByMedicalRecord_Pet_PetOwner_UserAccount_UserId(userId)
+                .stream()
+                .map(this::mapToInvoiceResponse)
+                .toList();
+    }
+
 }

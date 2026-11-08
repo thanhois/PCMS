@@ -1,52 +1,47 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import './App.css';
 
 // Layouts & Route Guards
 import AdminLayout from './components/admin/AdminLayout';
 import AdminRouteGuard from './components/admin/AdminRouteGuard';
-
-import VetLayout from './components/vet/VetLayout';
-import VetRouteGuard from './components/vet/VetRouteGuard';
-
 import ReceptionistLayout from './components/receptionist/ReceptionistLayout';
 import ReceptionistRouteGuard from './components/receptionist/ReceptionistRouteGuard';
-
+import VetLayout from './components/vet/VetLayout';
+import VetRouteGuard from './components/vet/VetRouteGuard';
 import InventoryLayout from './components/inventory/InventoryLayout';
 import InventoryRouteGuard from './components/inventory/InventoryRouteGuard';
-
 import BillingLayout from './components/billing/BillingLayout';
 import BillingRouteGuard from './components/billing/BillingRouteGuard';
+import PetOwnerLayout from './components/owner/PetOwnerLayout';
+import PetOwnerRouteGuard from './components/owner/PetOwnerRouteGuard';
 
-import OwnerLayout from './components/owner/OwnerLayout';
-
-// Authentication
+// Context
 import { AuthProvider } from './context/AuthContext';
 
 // Public Pages
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProfilePage from './pages/ProfilePage';
 
 // Admin Pages
-import AdminAccountsPage from './pages/admin/AdminAccountsPage';
-import AdminAuditLogsPage from './pages/admin/AdminAuditLogsPage';
-import AdminMedicinesPage from './pages/admin/AdminMedicinesPage';
 import AdminOverviewPage from './pages/admin/AdminOverviewPage';
-import AdminReportsPage from './pages/admin/AdminReportsPage';
+import AdminAccountsPage from './pages/admin/AdminAccountsPage';
 import AdminRolesPage from './pages/admin/AdminRolesPage';
+import AdminAuditLogsPage from './pages/admin/AdminAuditLogsPage';
+import AdminReportsPage from './pages/admin/AdminReportsPage';
 import AdminServicesPage from './pages/admin/AdminServicesPage';
+import AdminMedicinesPage from './pages/admin/AdminMedicinesPage';
 
 // Receptionist Pages
+import ReceptionistDashboardPage from './pages/receptionist/ReceptionistDashboardPage';
 import ReceptionistAppointmentsPage from './pages/receptionist/ReceptionistAppointmentsPage';
 import ReceptionistCheckInPage from './pages/receptionist/ReceptionistCheckInPage';
 import ReceptionistCustomersPage from './pages/receptionist/ReceptionistCustomersPage';
-import ReceptionistDashboardPage from './pages/receptionist/ReceptionistDashboardPage';
 import ReceptionistServicesPage from './pages/receptionist/ReceptionistServicesPage';
 
-// Veterinarian Pages
+// Vet Pages
 import VetWorkbenchPage from './pages/vet/VetWorkbenchPage';
 import VetExaminationPage from './pages/vet/VetExaminationPage';
 import VetRecordsPage from './pages/vet/VetRecordsPage';
@@ -54,16 +49,22 @@ import VetPetsPage from './pages/vet/VetPetsPage';
 
 // Pet Owner Pages
 import BookingPage from './pages/owner/BookingPage';
+import PetOwnerHomePage from './pages/owner/PetOwnerHomePage';
 import PetOwnerMedicalPage from './pages/owner/PetOwnerMedicalPage';
+import PetOwnerInvoicesPage from './pages/owner/PetOwnerInvoicesPage';
+import PetOwnerInvoiceDetailPage from './pages/owner/PetOwnerInvoiceDetailPage';
 
 // Inventory Pages
 import InventoryBatchesPage from './pages/inventory/InventoryBatchesPage';
 import InventoryMedicinesPage from './pages/inventory/InventoryMedicinesPage';
-import InventoryReportsPage from './pages/inventory/InventoryReportsPage';
 import InventoryServicesPage from './pages/inventory/InventoryServicesPage';
+import InventoryReportsPage from './pages/inventory/InventoryReportsPage';
 
 // Billing Pages
+import BillingDashboardPage from './pages/billing/BillingDashboardPage';
 import BillingQueuePage from './pages/billing/BillingQueuePage';
+import CreateInvoicePage from './pages/billing/CreateInvoicePage';
+import InvoiceManagementPage from './pages/billing/InvoiceManagementPage';
 import InvoiceDetailPage from './pages/billing/InvoiceDetailPage';
 
 export default function App() {
@@ -71,13 +72,14 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* ================= PUBLIC & AUTH ROUTES ================= */}
+          {/* ================= PUBLIC ROUTES ================= */}
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/booking" element={<BookingPage />} />
 
           {/* ================= ADMIN ROUTES ================= */}
           <Route path="/admin" element={<AdminRouteGuard />}>
@@ -88,6 +90,8 @@ export default function App() {
               <Route path="roles" element={<AdminRolesPage />} />
               <Route path="services" element={<AdminServicesPage />} />
               <Route path="medicines" element={<AdminMedicinesPage />} />
+              <Route path="billing" element={<BillingQueuePage />} />
+              <Route path="billing/invoices/:invoiceId" element={<InvoiceDetailPage />} />
               <Route path="reports" element={<AdminReportsPage />} />
               <Route path="audit-logs" element={<AdminAuditLogsPage />} />
             </Route>
@@ -99,13 +103,13 @@ export default function App() {
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<ReceptionistDashboardPage />} />
               <Route path="appointments" element={<ReceptionistAppointmentsPage />} />
-              <Route path="check-in" element={<ReceptionistCheckInPage />} />
+              <Route path="checkin" element={<ReceptionistCheckInPage />} />
               <Route path="customers" element={<ReceptionistCustomersPage />} />
               <Route path="services" element={<ReceptionistServicesPage />} />
             </Route>
           </Route>
 
-          {/* ================= VETERINARIAN ROUTES ================= */}
+          {/* ================= VET ROUTES ================= */}
           <Route path="/vet" element={<VetRouteGuard />}>
             <Route element={<VetLayout />}>
               <Route index element={<Navigate to="workbench" replace />} />
@@ -130,17 +134,23 @@ export default function App() {
           {/* ================= BILLING ROUTES ================= */}
           <Route path="/billing" element={<BillingRouteGuard />}>
             <Route element={<BillingLayout />}>
-              <Route index element={<Navigate to="queue" replace />} />
+              <Route index element={<BillingDashboardPage />} />
               <Route path="queue" element={<BillingQueuePage />} />
+              <Route path="create" element={<CreateInvoicePage />} />
+              <Route path="invoices" element={<InvoiceManagementPage />} />
               <Route path="invoices/:invoiceId" element={<InvoiceDetailPage />} />
             </Route>
           </Route>
 
-          {/* ================= PET OWNER & BOOKING ROUTES ================= */}
-          <Route element={<OwnerLayout />}>
-            <Route path="/booking" element={<BookingPage />} />
-            <Route path="/owner/booking" element={<BookingPage />} />
-            <Route path="/owner/medical-history" element={<PetOwnerMedicalPage />} />
+          {/* ================= PET OWNER ROUTES ================= */}
+          <Route path="/owner" element={<PetOwnerRouteGuard />}>
+            <Route element={<PetOwnerLayout />}>
+              <Route index element={<PetOwnerHomePage />} />
+              <Route path="booking" element={<BookingPage />} />
+              <Route path="medical-history" element={<PetOwnerMedicalPage />} />
+              <Route path="invoices" element={<PetOwnerInvoicesPage />} />
+              <Route path="invoices/:invoiceId" element={<PetOwnerInvoiceDetailPage />} />
+            </Route>
           </Route>
 
           {/* ================= NOT FOUND ================= */}

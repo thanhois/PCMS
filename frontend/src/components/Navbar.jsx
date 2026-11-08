@@ -110,6 +110,19 @@ export default function Navbar() {
                   </Link>
                 </>
               )}
+                            {user.role === 'RECEPTIONIST' && (
+                <Link
+                  to="/billing"
+                  className="vtn-btn-yellow"
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: 12.5,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Trang Lễ tân
+                </Link>
+              )}
               {user.role === 'VETERINARIAN' && (
                 <Link to="/vet/workbench" style={portalBtnStyle}>
                   Ca khám Bác sĩ

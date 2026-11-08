@@ -1,0 +1,631 @@
+
+/* =========================================================
+   PET OWNER - INVOICE PAGE
+   PCMS Design System
+   ========================================================= */
+
+.owner-invoices-page {
+  min-height: 100vh;
+  padding: 32px;
+  background: #f5f7fb;
+  color: #1e293b;
+}
+
+.owner-invoices-container {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* ===== PAGE HEADER ===== */
+
+.owner-invoices-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.owner-invoices-title {
+  margin: 0;
+  color: #172554;
+  font-size: 26px;
+  font-weight: 750;
+  letter-spacing: -0.5px;
+}
+
+.owner-invoices-subtitle {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.owner-invoices-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.owner-invoices-refresh:hover {
+  border-color: #0d9488;
+  color: #0d9488;
+  background: #f0fdfa;
+}
+
+.owner-invoices-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== SUMMARY CARDS ===== */
+
+.owner-invoices-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 26px;
+}
+
+.owner-invoices-stat {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #e8edf4;
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
+}
+
+.owner-invoices-stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  font-size: 21px;
+}
+
+.owner-invoices-stat-icon.total {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.owner-invoices-stat-icon.paid {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.owner-invoices-stat-icon.pending {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.owner-invoices-stat-icon.void {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.owner-invoices-stat-info {
+  min-width: 0;
+}
+
+.owner-invoices-stat-label {
+  display: block;
+  margin-bottom: 4px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.owner-invoices-stat-value {
+  display: block;
+  color: #172554;
+  font-size: 25px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+/* ===== MAIN CARD ===== */
+
+.owner-invoices-card {
+  overflow: hidden;
+  border: 1px solid #e8edf4;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 3px 14px rgba(15, 23, 42, 0.035);
+}
+
+.owner-invoices-card-heading {
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.owner-invoices-card-title {
+  margin: 0;
+  color: #1e293b;
+  font-size: 17px;
+  font-weight: 750;
+}
+
+.owner-invoices-card-description {
+  margin: 5px 0 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* ===== SEARCH & FILTER ===== */
+
+.owner-invoices-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 24px;
+}
+
+.owner-invoices-search {
+  position: relative;
+  flex: 1;
+  max-width: 420px;
+}
+
+.owner-invoices-search input {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px 0 40px;
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  outline: none;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  transition: 0.2s ease;
+}
+
+.owner-invoices-search input:focus {
+  border-color: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+}
+
+.owner-invoices-search input::placeholder {
+  color: #94a3b8;
+}
+
+.owner-invoices-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.owner-invoices-filter {
+  height: 42px;
+  min-width: 170px;
+  padding: 0 34px 0 12px;
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  outline: none;
+  background: #ffffff;
+  color: #475569;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.owner-invoices-filter:focus {
+  border-color: #0d9488;
+}
+
+/* ===== RESULT COUNT ===== */
+
+.owner-invoices-result {
+  padding: 0 24px 14px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* ===== TABLE ===== */
+
+.owner-invoices-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.owner-invoices-table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+.owner-invoices-table thead {
+  background: #f8fafc;
+}
+
+.owner-invoices-table th {
+  padding: 14px 18px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 750;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.035em;
+}
+
+.owner-invoices-table td {
+  padding: 17px 18px;
+  border-top: 1px solid #f0f3f7;
+  color: #475569;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.owner-invoices-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.owner-invoices-table tbody tr:hover {
+  background: #f8fbff;
+}
+
+.owner-invoices-id {
+  color: #0d9488;
+  font-weight: 750;
+}
+
+.owner-invoices-pet {
+  color: #1e293b;
+  font-weight: 650;
+}
+
+.owner-invoices-money {
+  color: #1e293b;
+  font-weight: 700;
+  text-align: right;
+}
+
+.owner-invoices-date {
+  color: #64748b;
+}
+
+/* ===== STATUS BADGES ===== */
+
+.owner-invoices-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.owner-invoices-status.paid {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.owner-invoices-status.pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.owner-invoices-status.void {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* ===== DETAIL ACTION ===== */
+
+.owner-invoices-detail-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid #ccfbf1;
+  border-radius: 8px;
+  background: #f0fdfa;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.owner-invoices-detail-btn:hover {
+  border-color: #0d9488;
+  background: #0d9488;
+  color: #ffffff;
+}
+
+/* ===== LOADING / ERROR / EMPTY ===== */
+
+.owner-invoices-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 260px;
+  padding: 32px;
+  text-align: center;
+}
+
+.owner-invoices-state-icon {
+  font-size: 36px;
+}
+
+.owner-invoices-state-title {
+  margin: 0;
+  color: #334155;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.owner-invoices-state-description {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.owner-invoices-error {
+  color: #dc2626;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 1024px) {
+  .owner-invoices-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .owner-invoices-page {
+    padding: 20px 14px;
+  }
+
+  .owner-invoices-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .owner-invoices-title {
+    font-size: 22px;
+  }
+
+  .owner-invoices-refresh {
+    align-self: flex-start;
+  }
+
+  .owner-invoices-stats {
+    gap: 10px;
+  }
+
+  .owner-invoices-stat {
+    gap: 10px;
+    padding: 14px 12px;
+  }
+
+  .owner-invoices-stat-icon {
+    width: 38px;
+    height: 38px;
+    font-size: 17px;
+  }
+
+  .owner-invoices-stat-value {
+    font-size: 21px;
+  }
+
+  .owner-invoices-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+
+  .owner-invoices-search {
+    max-width: none;
+  }
+
+  .owner-invoices-filter {
+    width: 100%;
+  }
+
+  .owner-invoices-card-heading {
+    padding: 18px 16px;
+  }
+
+  .owner-invoices-result {
+    padding: 0 16px 12px;
+  }
+  
+/* =========================================================
+   COMPATIBILITY WITH PET OWNER INVOICE JSX
+   ========================================================= */
+
+/* ===== STATISTICS CARDS ===== */
+
+.owner-invoices-stat-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #e8edf4;
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
+}
+
+.owner-invoices-stat-card p {
+  margin: 0 0 5px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.owner-invoices-stat-card h3 {
+  margin: 0;
+  color: #172554;
+  font-size: 25px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+/* ===== CARD HEADER ===== */
+
+.owner-invoices-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.owner-invoices-card-header h2 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 17px;
+  font-weight: 750;
+}
+
+.owner-invoices-card-header p {
+  margin: 5px 0 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* ===== RESULT COUNT ===== */
+
+.owner-invoices-result-count {
+  flex-shrink: 0;
+  padding: 6px 11px;
+  border-radius: 8px;
+  background: #f0fdfa;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ===== SEARCH ICON ===== */
+
+.owner-invoices-search span {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 20px;
+  pointer-events: none;
+}
+
+/* ===== TABLE WRAPPER ===== */
+
+.owner-invoices-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* ===== EMPTY ROW ===== */
+
+.owner-invoices-empty-row {
+  height: 120px;
+  color: #94a3b8 !important;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* ===== LOADING / EMPTY / ERROR ===== */
+
+.owner-invoices-loading,
+.owner-invoices-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  padding: 30px;
+  color: #64748b;
+  font-size: 14px;
+  text-align: center;
+}
+
+.owner-invoices-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 15px 18px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.owner-invoices-error p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.owner-invoices-error button {
+  padding: 7px 13px;
+  border: 1px solid #fecaca;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #b91c1c;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.owner-invoices-status.unknown {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* ===== RESPONSIVE ADDITIONS ===== */
+
+@media (max-width: 640px) {
+  .owner-invoices-stat-card {
+    gap: 10px;
+    padding: 14px 12px;
+  }
+
+  .owner-invoices-stat-card h3 {
+    font-size: 21px;
+  }
+
+  .owner-invoices-card-header {
+    align-items: flex-start;
+    padding: 18px 16px;
+  }
+
+  .owner-invoices-result-count {
+    font-size: 11px;
+  }
+
+  .owner-invoices-error {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+}

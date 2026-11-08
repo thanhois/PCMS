@@ -3,6 +3,8 @@ package com.pcms.service;
 import com.pcms.dto.request.billing.ConfirmPaymentRequest;
 import com.pcms.dto.request.billing.InvoiceUpdateRequest;
 import com.pcms.dto.request.billing.VoidInvoiceRequest;
+import com.pcms.dto.response.billing.CompletedMedicalRecordResponse;
+import com.pcms.dto.response.billing.CreateInvoicePreviewResponse;
 import com.pcms.dto.response.billing.InvoiceResponse;
 import com.pcms.dto.response.billing.PaymentResponse;
 
@@ -30,4 +32,15 @@ public interface BillingService {
             Integer invoiceId,
             ConfirmPaymentRequest request
     );
+
+    List<InvoiceResponse> getAllInvoices();
+
+
+    List<InvoiceResponse> getMyInvoices(Integer userId);
+
+    InvoiceResponse getMyInvoiceById(Integer invoiceId, Integer userId);
+
+    List<CompletedMedicalRecordResponse> getCompletedMedicalRecords();
+
+    CreateInvoicePreviewResponse createInvoicePreview(Integer recordId);
 }
