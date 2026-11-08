@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import './App.css';
 
 // Layouts & Route Guards
 import AdminLayout from './components/admin/AdminLayout';
