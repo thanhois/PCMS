@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import vetApi from '../../api/vetApi';
 import { useAuth } from '../../context/AuthContext';
+import { useDialog } from '../../context/DialogContext';
 import KpiCard from '../../components/admin/ui/KpiCard';
 import PageHeader from '../../components/admin/ui/PageHeader';
 import PetHistoryModal from '../../components/vet/PetHistoryModal';
@@ -10,6 +11,7 @@ import '../../styles/vetTheme.css';
 export default function VetWorkbenchPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const dialog = useDialog();
   const isVet = user?.role === 'VETERINARIAN';
 
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -67,7 +69,11 @@ export default function VetWorkbenchPage() {
         loadData();
       }
     } catch (err) {
-      alert(err?.message || err?.response?.data?.message || 'Không thể bắt đầu ca khám');
+      dialog.alert({
+        title: 'Lỗi bắt đầu ca khám',
+        message: err?.message || err?.response?.data?.message || 'Không thể bắt đầu ca khám',
+        type: 'error',
+      });
     } finally {
       setActionLoading(false);
     }
@@ -85,7 +91,11 @@ export default function VetWorkbenchPage() {
       setCancelReason('');
       loadData();
     } catch (err) {
-      alert(err?.message || err?.response?.data?.message || 'Lỗi khi hủy ca khám');
+      dialog.alert({
+        title: 'Lỗi hủy ca khám',
+        message: err?.message || err?.response?.data?.message || 'Lỗi khi hủy ca khám',
+        type: 'error',
+      });
     } finally {
       setActionLoading(false);
     }

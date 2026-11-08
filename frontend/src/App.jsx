@@ -17,6 +17,7 @@ import PetOwnerRouteGuard from './components/owner/PetOwnerRouteGuard';
 
 // Context
 import { AuthProvider } from './context/AuthContext';
+import { DialogProvider } from './context/DialogContext';
 
 // Public Pages
 import HomePage from './pages/HomePage';
@@ -71,7 +72,8 @@ import InvoiceDetailPage from './pages/billing/InvoiceDetailPage';
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <DialogProvider>
+        <BrowserRouter>
         <Routes>
           {/* ================= PUBLIC ROUTES ================= */}
           <Route path="/" element={<HomePage />} />
@@ -171,6 +173,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      </DialogProvider>
     </AuthProvider>
   );
 }

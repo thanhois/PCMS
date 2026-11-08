@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import ownerApi from '../../api/ownerApi';
+import { useDialog } from '../../context/DialogContext';
 import '../../styles/petOwnerInvoice.css';
 
 export default function PetOwnerInvoicesPage() {
   const navigate = useNavigate();
+  const dialog = useDialog();
 
   // =========================
   // 1. STATE
@@ -146,7 +148,11 @@ export default function PetOwnerInvoicesPage() {
       await loadInvoices();
     } catch (err) {
       console.error('Lỗi thanh toán:', err);
-      alert(err.response?.data?.message || err.message || 'Thanh toán thất bại, vui lòng thử lại.');
+      dialog.alert({
+        title: 'Thanh toán thất bại',
+        message: err.response?.data?.message || err.message || 'Thanh toán thất bại, vui lòng thử lại.',
+        type: 'error',
+      });
     } finally {
       setPaymentLoading(false);
     }

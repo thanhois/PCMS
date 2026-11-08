@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import billingApi from '../../api/billingApi';
 import { useAuth } from '../../context/AuthContext';
+import { useDialog } from '../../context/DialogContext';
 import PageHeader from '../../components/admin/ui/PageHeader';
 import StatusBadge from '../../components/admin/ui/StatusBadge';
 import { QRCodeSVG } from 'qrcode.react';
@@ -38,6 +39,7 @@ export default function InvoiceDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const dialog = useDialog();
   const isAdmin = user?.role === 'ADMIN';
   const billingPrefix = location.pathname.startsWith('/admin')
     ? '/admin/billing'
@@ -155,7 +157,13 @@ export default function InvoiceDetailPage() {
       ? `Xác nhận thanh toán CHUYỂN KHOẢN DEMO cho hóa đơn HD-${invoiceId} với số tiền ${formatVnd(amountDue)}?\n\nĐây chỉ là giao dịch mô phỏng, không có tiền thật được chuyển.`
       : `Xác nhận thanh toán hóa đơn HD-${invoiceId} với số tiền ${formatVnd(amountDue)}? Hệ thống sẽ tự động trừ tồn kho thuốc theo nguyên tắc FEFO.`;
 
-    if (!window.confirm(confirmationMessage)) {
+    const confirmed = await dialog.confirm({
+      title: 'Xác nhận thanh toán hóa đơn',
+      message: confirmationMessage,
+      confirmLabel: 'Xác nhận thanh toán',
+      variant: 'primary',
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -198,9 +206,13 @@ export default function InvoiceDetailPage() {
       return;
     }
 
-    if (!window.confirm(
-      `Bạn có chắc chắn muốn hủy hóa đơn HD-${invoiceId}? Thao tác này không thể hoàn tác.`
-    )) {
+    const confirmed = await dialog.confirm({
+      title: 'Hủy hóa đơn (VOID)',
+      message: `Bạn có chắc chắn muốn hủy hóa đơn HD-${invoiceId}?\nLý do: ${reason}\n\nThao tác này sẽ hoàn trả trạng thái hồ sơ bệnh án và không thể hoàn tác.`,
+      confirmLabel: 'Hủy hóa đơn',
+      variant: 'danger',
+    });
+    if (!confirmed) {
       return;
     }
 

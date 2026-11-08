@@ -12,3 +12,4 @@ public record NotificationResponse(
         LocalDateTime createdAt,
         String timeAgo
 ) {}
+

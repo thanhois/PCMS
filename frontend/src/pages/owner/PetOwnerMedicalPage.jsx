@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ownerApi from '../../api/ownerApi';
+import { useDialog } from '../../context/DialogContext';
 import PageHeader from '../../components/admin/ui/PageHeader';
 import StatusBadge from '../../components/admin/ui/StatusBadge';
 import PrintableMedicalDocument from '../../components/common/PrintableMedicalDocument';
@@ -22,6 +23,7 @@ const formatPaymentMethod = (method) => {
 };
 
 export default function PetOwnerMedicalPage() {
+  const dialog = useDialog();
   const [pets, setPets] = useState([]);
   const [selectedPet, setSelectedPet] = useState(null);
   const [historyData, setHistoryData] = useState(null);
@@ -67,7 +69,11 @@ export default function PetOwnerMedicalPage() {
       const fullRecord = await ownerApi.getMyMedicalRecordPrintView(recordId);
       setPrintRecord(fullRecord);
     } catch {
-      alert('Không thể tải chi tiết phiếu khám & biên lai để in');
+      dialog.alert({
+        title: 'Lỗi in ấn',
+        message: 'Không thể tải chi tiết phiếu khám & biên lai để in',
+        type: 'error',
+      });
     }
   };
 

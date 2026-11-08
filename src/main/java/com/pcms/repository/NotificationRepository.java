@@ -16,3 +16,4 @@ public interface NotificationRepository extends JpaRepository<AppNotification, I
 
     Optional<AppNotification> findByNotificationIdAndRecipient_UserId(Integer notificationId, Integer userId);
 }
+

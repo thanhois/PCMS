@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import vetApi from '../../api/vetApi';
+import { useDialog } from '../../context/DialogContext';
 import PageHeader from '../../components/admin/ui/PageHeader';
 import PetHistoryModal from '../../components/vet/PetHistoryModal';
 import '../../styles/vetTheme.css';
 
 export default function VetPetsPage() {
   const navigate = useNavigate();
+  const dialog = useDialog();
 
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,11 @@ export default function VetPetsPage() {
 
   const handleStartExamForPet = async (pet) => {
     if (!pet.hasTodayAppointment || !pet.todayAppointmentId) {
-      alert(`Thú cưng ${pet.petName} hiện chưa có ca hẹn hoặc chưa được quầy Lễ tân check-in tiếp nhận hôm nay.`);
+      dialog.alert({
+        title: 'Chưa đủ điều kiện khám',
+        message: `Thú cưng ${pet.petName} hiện chưa có ca hẹn hoặc chưa được quầy Lễ tân check-in tiếp nhận hôm nay.`,
+        type: 'warning',
+      });
       return;
     }
     try {
@@ -47,7 +53,11 @@ export default function VetPetsPage() {
         navigate('/vet/workbench');
       }
     } catch (err) {
-      alert(err?.response?.data?.message || err?.message || 'Không thể bắt đầu ca khám');
+      dialog.alert({
+        title: 'Lỗi bắt đầu ca khám',
+        message: err?.response?.data?.message || err?.message || 'Không thể bắt đầu ca khám',
+        type: 'error',
+      });
     }
   };
 

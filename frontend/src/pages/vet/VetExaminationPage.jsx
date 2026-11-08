@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import vetApi from '../../api/vetApi';
 import { useAuth } from '../../context/AuthContext';
+import { useDialog } from '../../context/DialogContext';
 import PetHistoryModal from '../../components/vet/PetHistoryModal';
 import PrintableMedicalDocument from '../../components/common/PrintableMedicalDocument';
 import '../../styles/vetTheme.css';
@@ -10,6 +11,7 @@ export default function VetExaminationPage() {
   const { recordId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const dialog = useDialog();
 
   const [loading, setLoading] = useState(true);
   const [record, setRecord] = useState(null);
@@ -130,7 +132,7 @@ export default function VetExaminationPage() {
       setRecord(updated);
       showToast('Đã lưu thông tin bệnh án thành công!');
     } catch (err) {
-      alert(extractErr(err, 'Lỗi khi lưu bệnh án'));
+      dialog.alert({ title: 'Lỗi', message: extractErr(err, 'Lỗi khi lưu bệnh án'), type: 'error' });
     } finally {
       setSaving(false);
     }
@@ -143,7 +145,7 @@ export default function VetExaminationPage() {
       await vetApi.updatePetVitals(record.pet.petId, { weight: petWeight });
       showToast(`Đã cập nhật cân nặng của bé: ${petWeight} kg`);
     } catch (err) {
-      alert(extractErr(err, 'Lỗi cập nhật cân nặng'));
+      dialog.alert({ title: 'Lỗi', message: extractErr(err, 'Lỗi cập nhật cân nặng'), type: 'error' });
     }
   };
 
@@ -163,7 +165,7 @@ export default function VetExaminationPage() {
       setServiceQuantity(1);
       showToast('Đã thêm y lệnh dịch vụ vào bệnh án!');
     } catch (err) {
-      alert(extractErr(err, 'Lỗi khi thêm dịch vụ'));
+      dialog.alert({ title: 'Lỗi', message: extractErr(err, 'Lỗi khi thêm dịch vụ'), type: 'error' });
     }
   };
 
@@ -180,19 +182,25 @@ export default function VetExaminationPage() {
       setEditingService(null);
       showToast('Đã cập nhật kết quả dịch vụ!');
     } catch (err) {
-      alert(extractErr(err, 'Lỗi cập nhật dịch vụ'));
+      dialog.alert({ title: 'Lỗi', message: extractErr(err, 'Lỗi cập nhật dịch vụ'), type: 'error' });
     }
   };
 
   // Xóa dịch vụ khỏi y lệnh
   const handleDeleteService = async (detailId) => {
-    if (!window.confirm('Bạn có chắc muốn hủy dịch vụ này khỏi y lệnh?')) return;
+    const confirmed = await dialog.confirm({
+      title: 'Hủy dịch vụ khỏi y lệnh',
+      message: 'Bạn có chắc muốn hủy dịch vụ này khỏi y lệnh?',
+      confirmLabel: 'Hủy dịch vụ',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     try {
       const updated = await vetApi.deleteServiceOrder(recordId, detailId);
       setRecord(updated);
       showToast('Đã hủy dịch vụ khỏi y lệnh');
     } catch (err) {
-      alert(extractErr(err, 'Lỗi xóa dịch vụ'));
+      dialog.alert({ title: 'Lỗi', message: extractErr(err, 'Lỗi xóa dịch vụ'), type: 'error' });
     }
   };
 
@@ -200,7 +208,7 @@ export default function VetExaminationPage() {
   const handleAddMedicine = async (e) => {
     e.preventDefault();
     if (!selectedMedicineId) {
-      alert('Vui lòng chọn thuốc còn tồn kho khả dụng.');
+      dialog.alert({ title: 'Chưa chọn thuốc', message: 'Vui lòng chọn thuốc còn tồn kho khả dụng.', type: 'warning' });
       return;
     }
     try {
@@ -212,13 +220,19 @@ export default function VetExaminationPage() {
         .reduce((sum, m) => sum + Number(m.quantity || 0), 0);
 
       if (available <= 0) {
-        alert(`Thuốc "${medItem?.medicineName || ''}" hiện có tồn kho khả dụng bằng 0, không thể kê đơn.`);
+        dialog.alert({
+          title: 'Hết hàng khả dụng',
+          message: `Thuốc "${medItem?.medicineName || ''}" hiện có tồn kho khả dụng bằng 0, không thể kê đơn.`,
+          type: 'warning',
+        });
         return;
       }
       if (alreadyPrescribedQty + Number(medicineQuantity) > available) {
-        alert(
-          `Tổng số lượng kê (${alreadyPrescribedQty + Number(medicineQuantity)}) vượt quá tồn kho khả dụng (${available} ${medItem?.unit || ''}).`
-        );
+        dialog.alert({
+          title: 'Vượt tồn kho khả dụng',
+          message: `Tổng số lượng kê (${alreadyPrescribedQty + Number(medicineQuantity)}) vượt quá tồn kho khả dụng (${available} ${medItem?.unit || ''}).`,
+          type: 'warning',
+        });
         return;
       }
 
@@ -248,13 +262,19 @@ export default function VetExaminationPage() {
       loadCatalogs();
       showToast(`Đã thêm thuốc ${medItem?.medicineName || ''} vào đơn`);
     } catch (err) {
-      alert(extractErr(err, 'Lỗi khi kê thuốc'));
+      dialog.alert({ title: 'Lỗi', message: extractErr(err, 'Lỗi khi kê thuốc'), type: 'error' });
     }
   };
 
   // Xóa một dòng thuốc khỏi đơn
   const handleDeleteMedicine = async (detailId) => {
-    if (!window.confirm('Bạn có chắc muốn xóa loại thuốc này khỏi đơn?')) return;
+    const confirmed = await dialog.confirm({
+      title: 'Xóa thuốc khỏi đơn',
+      message: 'Bạn có chắc muốn xóa loại thuốc này khỏi đơn?',
+      confirmLabel: 'Xóa thuốc',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     try {
       const currentMeds = record?.prescription?.medicines || [];
       const updatedItems = currentMeds
@@ -274,7 +294,7 @@ export default function VetExaminationPage() {
       loadCatalogs();
       showToast('Đã xóa thuốc khỏi đơn');
     } catch (err) {
-      alert(extractErr(err, 'Lỗi khi xóa thuốc'));
+      dialog.alert({ title: 'Lỗi', message: extractErr(err, 'Lỗi khi xóa thuốc'), type: 'error' });
     }
   };
 
@@ -296,7 +316,7 @@ export default function VetExaminationPage() {
       setRecord(updated);
       showToast('Đã lưu lời dặn đơn thuốc!');
     } catch (err) {
-      alert(extractErr(err, 'Lỗi lưu đơn thuốc'));
+      dialog.alert({ title: 'Lỗi', message: extractErr(err, 'Lỗi lưu đơn thuốc'), type: 'error' });
     }
   };
 
@@ -315,30 +335,46 @@ export default function VetExaminationPage() {
       setFollowUpNotes('');
       showToast('Đã lên lịch hẹn tái khám thành công!');
     } catch (err) {
-      alert(extractErr(err, 'Lỗi tạo lịch tái khám'));
+      dialog.alert({ title: 'Lỗi', message: extractErr(err, 'Lỗi tạo lịch tái khám'), type: 'error' });
     }
   };
 
   // Xóa lịch tái khám
   const handleDeleteFollowUp = async (fId) => {
-    if (!window.confirm('Bạn có muốn hủy lịch tái khám này?')) return;
+    const confirmed = await dialog.confirm({
+      title: 'Hủy lịch tái khám',
+      message: 'Bạn có muốn hủy lịch tái khám này?',
+      confirmLabel: 'Hủy lịch',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     try {
       const updated = await vetApi.deleteFollowUp(fId);
       setRecord(updated);
       showToast('Đã hủy lịch tái khám');
     } catch (err) {
-      alert(extractErr(err, 'Lỗi xóa lịch tái khám'));
+      dialog.alert({ title: 'Lỗi', message: extractErr(err, 'Lỗi xóa lịch tái khám'), type: 'error' });
     }
   };
 
   // Hoàn thành ca khám & Chốt bệnh án
   const handleCompleteRecord = async () => {
     if (!diagnosis || diagnosis.trim().length < 3) {
-      alert('Vui lòng nhập chẩn đoán xác định trước khi hoàn tất ca khám.');
+      dialog.alert({
+        title: 'Thiếu thông tin chẩn đoán',
+        message: 'Vui lòng nhập chẩn đoán xác định trước khi hoàn tất ca khám.',
+        type: 'warning',
+      });
       return;
     }
 
-    if (!window.confirm('Xác nhận HOÀN THÀNH ca khám & chốt bệnh án? Sau khi hoàn tất, bệnh án sẽ khóa chỉ đọc và chuyển sang bộ phận thu ngân.')) {
+    const confirmed = await dialog.confirm({
+      title: 'Hoàn tất ca khám',
+      message: 'Xác nhận HOÀN THÀNH ca khám & chốt bệnh án? Sau khi hoàn tất, bệnh án sẽ khóa chỉ đọc và chuyển sang bộ phận thu ngân.',
+      confirmLabel: 'Hoàn tất & Chốt bệnh án',
+      variant: 'primary',
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -351,7 +387,7 @@ export default function VetExaminationPage() {
       setRecord(updated);
       showToast('Đã hoàn tất ca khám & chốt bệnh án thành công!');
     } catch (err) {
-      alert(extractErr(err, 'Lỗi khi hoàn tất ca khám'));
+      dialog.alert({ title: 'Lỗi', message: extractErr(err, 'Lỗi khi hoàn tất ca khám'), type: 'error' });
     } finally {
       setSaving(false);
     }
@@ -360,7 +396,7 @@ export default function VetExaminationPage() {
   // Hủy ca bệnh án
   const handleConfirmCancelRecord = async () => {
     if (!cancelReason) {
-      alert('Vui lòng nhập lý do hủy ca khám');
+      dialog.alert({ title: 'Cảnh báo', message: 'Vui lòng nhập lý do hủy ca khám', type: 'warning' });
       return;
     }
     setSaving(true);
@@ -370,7 +406,7 @@ export default function VetExaminationPage() {
       setShowCancelModal(false);
       showToast('Đã hủy ca khám thành công');
     } catch (err) {
-      alert(extractErr(err, 'Lỗi khi hủy ca khám'));
+      dialog.alert({ title: 'Lỗi', message: extractErr(err, 'Lỗi khi hủy ca khám'), type: 'error' });
     } finally {
       setSaving(false);
     }

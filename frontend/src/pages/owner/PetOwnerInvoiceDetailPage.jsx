@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import ownerApi from '../../api/ownerApi';
+import { useDialog } from '../../context/DialogContext';
 import '../../styles/petOwnerInvoice.css';
 
 export default function PetOwnerInvoiceDetailPage() {
   const { invoiceId } = useParams();
   const navigate = useNavigate();
+  const dialog = useDialog();
 
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -74,7 +76,11 @@ export default function PetOwnerInvoiceDetailPage() {
       await loadInvoice();
     } catch (err) {
       console.error('Lỗi thanh toán:', err);
-      alert(err.response?.data?.message || err.message || 'Thanh toán thất bại.');
+      dialog.alert({
+        title: 'Thanh toán thất bại',
+        message: err.response?.data?.message || err.message || 'Thanh toán thất bại.',
+        type: 'error',
+      });
     } finally {
       setPaymentLoading(false);
     }

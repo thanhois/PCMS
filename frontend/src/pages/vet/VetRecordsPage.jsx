@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import vetApi from '../../api/vetApi';
+import { useDialog } from '../../context/DialogContext';
 import PageHeader from '../../components/admin/ui/PageHeader';
 import PrintableMedicalDocument from '../../components/common/PrintableMedicalDocument';
 import '../../styles/vetTheme.css';
 
 export default function VetRecordsPage() {
   const navigate = useNavigate();
+  const dialog = useDialog();
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('ALL');
@@ -66,14 +68,14 @@ export default function VetRecordsPage() {
       if (petList?.length > 0) setSelectedPetId(petList[0].petId);
       setShowCreateModal(true);
     } catch {
-      alert('Không thể tải danh sách thú cưng');
+      dialog.alert({ title: 'Lỗi tải dữ liệu', message: 'Không thể tải danh sách thú cưng', type: 'error' });
     }
   };
 
   const handleCreateRecord = async (e) => {
     e.preventDefault();
     if (!selectedPetId) {
-      alert('Vui lòng chọn thú cưng');
+      dialog.alert({ title: 'Thiếu thông tin', message: 'Vui lòng chọn thú cưng', type: 'warning' });
       return;
     }
     setCreating(true);
@@ -88,7 +90,7 @@ export default function VetRecordsPage() {
       setShowCreateModal(false);
       navigate(`/vet/examination/${created.recordId}`);
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi khi tạo bệnh án');
+      dialog.alert({ title: 'Lỗi tạo bệnh án', message: err?.response?.data?.message || 'Lỗi khi tạo bệnh án', type: 'error' });
     } finally {
       setCreating(false);
     }
@@ -99,7 +101,7 @@ export default function VetRecordsPage() {
       const fullRecord = await vetApi.getMedicalRecordDetail(rId);
       setPrintRecord(fullRecord);
     } catch {
-      alert('Không thể tải chi tiết bệnh án để in');
+      dialog.alert({ title: 'Lỗi in ấn', message: 'Không thể tải chi tiết bệnh án để in', type: 'error' });
     }
   };
 
