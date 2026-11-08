@@ -990,7 +990,7 @@ export default function VetExaminationPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
               {!isReadOnly && (
                 <button
                   type="button"
@@ -1010,7 +1010,7 @@ export default function VetExaminationPage() {
                 In Phiếu & Đơn
               </button>
 
-              {!isReadOnly && (
+              {!isReadOnly ? (
                 <button
                   type="button"
                   className="vet-btn vet-btn-success"
@@ -1020,6 +1020,27 @@ export default function VetExaminationPage() {
                 >
                   Hoàn tất Khám & Chốt Bệnh Án
                 </button>
+              ) : (
+                <div
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    background: isCompleted ? '#dcfce7' : '#e0e7ff',
+                    color: isCompleted ? '#166534' : '#3730a3',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    border: isCompleted ? '1px solid #bbf7d0' : '1px solid #c7d2fe',
+                  }}
+                >
+                  {isCompleted
+                    ? '✓ Bệnh án đã hoàn tất & đóng ca'
+                    : isInvoiceLocked
+                    ? `✓ Hóa đơn đã ${invoiceStatusUpper === 'PAID' ? 'thanh toán (PAID)' : invoiceStatusUpper} - Bệnh án đã khóa`
+                    : 'Chế độ chỉ đọc'}
+                </div>
               )}
             </div>
           </div>
