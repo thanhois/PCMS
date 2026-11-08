@@ -29,7 +29,7 @@ export default function PetOwnerLayout() {
             </NavLink>
 
             <NavLink
-              to="/booking"
+              to="/owner/booking"
               className={({ isActive }) =>
                 `pet-owner-nav-link ${isActive ? 'active' : ''}`
               }

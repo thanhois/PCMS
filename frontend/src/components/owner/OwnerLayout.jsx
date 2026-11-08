@@ -5,7 +5,7 @@ import '../../styles/adminTheme.css';
 import '../../styles/vetTheme.css';
 
 const MAIN_NAV_ITEMS = [
-  { to: '/booking', label: 'Đặt lịch khám trực tuyến' },
+  { to: '/owner/booking', label: 'Đặt lịch khám trực tuyến' },
   { to: '/owner/medical-history', label: 'Sổ khám bệnh điện tử' },
 ];
 
@@ -71,7 +71,7 @@ export default function OwnerLayout() {
     if (q.includes('sổ') || q.includes('bệnh') || q.includes('thuốc') || q.includes('khám cũ')) {
       navigate('/owner/medical-history');
     } else {
-      navigate('/booking');
+      navigate('/owner/booking');
     }
   };
 
@@ -91,7 +91,7 @@ export default function OwnerLayout() {
             Menu
           </button>
 
-          <Link to="/booking" className="pcms-brand-link">
+          <Link to="/owner/booking" className="pcms-brand-link">
             <div>
               <span className="pcms-brand-title">PCMS</span>
               <span className="pcms-brand-subtitle">Cổng Dịch vụ Chủ thú cưng</span>
@@ -133,7 +133,7 @@ export default function OwnerLayout() {
                 <Link to="/profile" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
                   <span>Hồ sơ & Đổi mật khẩu</span>
                 </Link>
-                <Link to="/booking" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
+                <Link to="/owner/booking" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
                   <span>Đặt lịch khám trực tuyến</span>
                 </Link>
                 <Link to="/owner/medical-history" className="pcms-dropdown-item" onClick={() => setUserMenuOpen(false)}>
@@ -157,7 +157,7 @@ export default function OwnerLayout() {
             <div className="pcms-sidebar-section-label">Dịch vụ Khách hàng</div>
             {MAIN_NAV_ITEMS.map((item) => {
               const isBookingAlias =
-                item.to === '/booking' &&
+                item.to === '/owner/booking' &&
                 (location.pathname === '/booking' || location.pathname === '/owner/booking');
               return (
                 <NavLink

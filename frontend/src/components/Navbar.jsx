@@ -60,7 +60,7 @@ export default function Navbar() {
           </Link>
 
           <nav className={`vtn-nav-menu ${menuOpen ? 'open' : ''}`}>
-            <Link to="/booking" onClick={() => setMenuOpen(false)} style={{ color: '#c4b5fd', fontWeight: 700 }}>
+            <Link to="/owner/booking" onClick={() => setMenuOpen(false)} style={{ color: '#c4b5fd', fontWeight: 700 }}>
               Đặt lịch khám
             </Link>
             <a href="#features" onClick={() => setMenuOpen(false)}>Tính năng</a>

@@ -79,7 +79,7 @@ export default function PetOwnerMedicalPage() {
         title="Sổ khám bệnh & Lịch sử Hóa đơn"
         subtitle="Hồ sơ y tế, kết quả chẩn đoán, đơn thuốc và biên lai viện phí của thú cưng dành cho chủ nuôi"
         actions={
-          <Link to="/booking" className="pcms-btn pcms-btn-primary">
+          <Link to="/owner/booking" className="pcms-btn pcms-btn-primary">
             Đặt lịch khám mới
           </Link>
         }

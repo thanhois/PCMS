@@ -80,7 +80,7 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/booking" element={<BookingPage />} />
+          <Route path="/booking" element={<Navigate to="/owner/booking" replace />} />
 
           {/* ================= ADMIN ROUTES ================= */}
           <Route path="/admin" element={<AdminRouteGuard />}>

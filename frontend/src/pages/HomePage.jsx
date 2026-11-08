@@ -88,14 +88,14 @@ export default function HomePage() {
     if (!isAuthenticated) {
       navigate('/login', {
         state: {
-          from: '/booking',
+          from: '/owner/booking',
           serviceName: serviceName || 'Khám bệnh & Tư vấn chuyên khoa',
           infoMessage: `Vui lòng đăng nhập để đặt lịch dịch vụ "${serviceName || 'Khám thú y'}".`,
         },
       });
       return;
     }
-    navigate('/booking', { state: { serviceName } });
+    navigate('/owner/booking', { state: { serviceName } });
   };
 
   return (
