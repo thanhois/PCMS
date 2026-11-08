@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import receptionistApi from '../../api/receptionistApi';
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/adminTheme.css';
@@ -10,12 +10,13 @@ const MAIN_NAV_ITEMS = [
   { to: '/receptionist/check-in', label: 'Check-in & Walk-in' },
   { to: '/receptionist/customers', label: 'Hồ sơ Chủ nuôi & Thú cưng' },
   { to: '/receptionist/services', label: 'Tra cứu bảng giá dịch vụ' },
-  { to: '/billing/queue', label: 'Thu ngân & Hóa đơn' },
+  { to: '/receptionist/billing', label: 'Thu ngân & Hóa đơn' },
 ];
 
 export default function ReceptionistLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [collapsed, setCollapsed] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
@@ -64,7 +65,8 @@ export default function ReceptionistLayout() {
     e.preventDefault();
     const q = globalSearch.trim().toLowerCase();
     if (!q) return;
-    if (q.includes('check') || q.includes('walk') || q.includes('vãng lai')) navigate('/receptionist/check-in');
+    if (q.includes('hóa đơn') || q.includes('thanh toán') || q.includes('billing') || q.includes('thu ngân')) navigate('/receptionist/billing');
+    else if (q.includes('check') || q.includes('walk') || q.includes('vãng lai')) navigate('/receptionist/check-in');
     else if (q.includes('dịch vụ') || q.includes('giá') || q.includes('service')) navigate('/receptionist/services');
     else if (q.includes('khách') || q.includes('chủ') || q.includes('thú') || q.includes('pet')) navigate('/receptionist/customers');
     else navigate('/receptionist/appointments');
@@ -72,6 +74,13 @@ export default function ReceptionistLayout() {
 
   const displayName = user?.fullName || user?.username || 'Lễ tân';
   const avatarChar = displayName.charAt(0).toUpperCase();
+
+  const isItemActive = (to) => {
+    if (to === '/receptionist/dashboard') {
+      return location.pathname === '/receptionist/dashboard' || location.pathname === '/receptionist' || location.pathname === '/receptionist/';
+    }
+    return location.pathname === to || location.pathname.startsWith(to + '/');
+  };
 
   return (
     <div className="pcms-admin-shell">
@@ -199,7 +208,7 @@ export default function ReceptionistLayout() {
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={({ isActive }) => `pcms-nav-item ${isActive ? 'active' : ''}`}
+                className={() => `pcms-nav-item ${isItemActive(item.to) ? 'active' : ''}`}
               >
                 <span className="pcms-nav-label">{item.label}</span>
               </NavLink>

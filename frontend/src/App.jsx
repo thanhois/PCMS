@@ -111,8 +111,15 @@ export default function App() {
               <Route path="dashboard" element={<ReceptionistDashboardPage />} />
               <Route path="appointments" element={<ReceptionistAppointmentsPage />} />
               <Route path="checkin" element={<ReceptionistCheckInPage />} />
+              <Route path="check-in" element={<ReceptionistCheckInPage />} />
               <Route path="customers" element={<ReceptionistCustomersPage />} />
               <Route path="services" element={<ReceptionistServicesPage />} />
+              <Route path="billing" element={<BillingQueuePage />} />
+              <Route path="billing/queue" element={<BillingQueuePage />} />
+              <Route path="billing/dashboard" element={<BillingDashboardPage />} />
+              <Route path="billing/create" element={<CreateInvoicePage />} />
+              <Route path="billing/invoices" element={<InvoiceManagementPage />} />
+              <Route path="billing/invoices/:invoiceId" element={<InvoiceDetailPage />} />
             </Route>
           </Route>
 

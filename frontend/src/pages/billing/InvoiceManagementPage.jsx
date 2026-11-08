@@ -24,7 +24,11 @@ const formatDate = (value) => {
 export default function InvoiceManagementPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const billingPrefix = location.pathname.startsWith('/admin') ? '/admin/billing' : '/billing';
+  const billingPrefix = location.pathname.startsWith('/admin')
+    ? '/admin/billing'
+    : location.pathname.startsWith('/receptionist')
+    ? '/receptionist/billing'
+    : '/billing';
 
   const [invoices, setInvoices] = useState([]);
   const [keyword, setKeyword] = useState('');
@@ -87,20 +91,29 @@ export default function InvoiceManagementPage() {
   }), [invoices]);
 
   return (
-    <div>
+    <div className="pcms-page">
       <PageHeader
         title="Quản lý hóa đơn"
         subtitle="Tra cứu và theo dõi toàn bộ hóa đơn trong hệ thống."
         actions={
-          <button
-            type="button"
-            className="pcms-btn pcms-btn-secondary"
-            onClick={loadInvoices}
-            disabled={loading}
-          >
-            <RefreshCw size={15} />
-            {loading ? 'Đang tải...' : 'Làm mới'}
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              className="pcms-btn pcms-btn-outline"
+              onClick={() => navigate(`${billingPrefix}/queue`)}
+            >
+              Hàng chờ thanh toán
+            </button>
+            <button
+              type="button"
+              className="pcms-btn pcms-btn-secondary"
+              onClick={loadInvoices}
+              disabled={loading}
+            >
+              <RefreshCw size={15} />
+              {loading ? 'Đang tải...' : 'Làm mới'}
+            </button>
+          </div>
         }
       />
 

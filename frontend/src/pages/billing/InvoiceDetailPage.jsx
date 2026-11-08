@@ -39,7 +39,11 @@ export default function InvoiceDetailPage() {
   const location = useLocation();
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
-  const billingPrefix = location.pathname.startsWith('/admin') ? '/admin/billing' : '/billing';
+  const billingPrefix = location.pathname.startsWith('/admin')
+    ? '/admin/billing'
+    : location.pathname.startsWith('/receptionist')
+    ? '/receptionist/billing'
+    : '/billing';
 
   const [invoice, setInvoice] = useState(null);
   const [payments, setPayments] = useState([]);

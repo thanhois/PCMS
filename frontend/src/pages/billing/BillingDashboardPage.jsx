@@ -44,7 +44,11 @@ const getLocalDateKey = (value) => {
 export default function BillingDashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const billingPrefix = location.pathname.startsWith('/admin') ? '/admin/billing' : '/billing';
+  const billingPrefix = location.pathname.startsWith('/admin')
+    ? '/admin/billing'
+    : location.pathname.startsWith('/receptionist')
+    ? '/receptionist/billing'
+    : '/billing';
 
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -24,7 +24,11 @@ const formatDate = (value) => {
 export default function CreateInvoicePage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const billingPrefix = location.pathname.startsWith('/admin') ? '/admin/billing' : '/billing';
+    const billingPrefix = location.pathname.startsWith('/admin')
+        ? '/admin/billing'
+        : location.pathname.startsWith('/receptionist')
+        ? '/receptionist/billing'
+        : '/billing';
 
     const [records, setRecords] = useState([]);
     const [selectedRecord, setSelectedRecord] = useState(null);

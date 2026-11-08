@@ -22,7 +22,11 @@ const formatDate = (value) => {
 export default function BillingQueuePage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const billingPrefix = location.pathname.startsWith('/admin') ? '/admin/billing' : '/billing';
+  const billingPrefix = location.pathname.startsWith('/admin')
+    ? '/admin/billing'
+    : location.pathname.startsWith('/receptionist')
+    ? '/receptionist/billing'
+    : '/billing';
 
   const [statusFilter, setStatusFilter] = useState('PENDING');
   const [invoices, setInvoices] = useState([]);
@@ -156,14 +160,23 @@ export default function BillingQueuePage() {
         title="Thanh toán & Hóa đơn"
         subtitle="Theo dõi hàng đợi thu ngân, xử lý thanh toán trừ kho FEFO và in biên lai điện tử."
         actions={
-          <button
-            type="button"
-            className="pcms-btn pcms-btn-outline"
-            onClick={() => loadInvoices(statusFilter)}
-            disabled={loading}
-          >
-            {loading ? 'Đang tải...' : 'Làm mới'}
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              className="pcms-btn pcms-btn-secondary"
+              onClick={() => navigate(`${billingPrefix}/invoices`)}
+            >
+              Quản lý hóa đơn
+            </button>
+            <button
+              type="button"
+              className="pcms-btn pcms-btn-outline"
+              onClick={() => loadInvoices(statusFilter)}
+              disabled={loading}
+            >
+              {loading ? 'Đang tải...' : 'Làm mới'}
+            </button>
+          </div>
         }
       />
 
