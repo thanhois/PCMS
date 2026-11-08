@@ -14,3 +14,4 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5173 ^| findstr LISTENING') 
 
 call npm run dev -- --host 127.0.0.1 --port 5173
 pause
+

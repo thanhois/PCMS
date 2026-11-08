@@ -42,6 +42,10 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Intege
     @EntityGraph(attributePaths = {"petOwner", "pet", "veterinarian", "service"})
     List<Appointment> findByPet_PetIdOrderByAppointmentDateDesc(Integer petId);
 
+    @EntityGraph(attributePaths = {"petOwner", "petOwner.userAccount", "pet", "veterinarian", "service"})
+    @Query("SELECT a FROM Appointment a WHERE a.appointmentId = :id")
+    java.util.Optional<Appointment> findByIdWithDetails(@Param("id") Integer id);
+
     @EntityGraph(attributePaths = {"petOwner", "pet", "veterinarian", "service"})
     List<Appointment> findAllByOrderByAppointmentDateDesc();
 }

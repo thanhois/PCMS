@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import adminApi from '../../api/adminApi';
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from '../common/NotificationBell';
 import '../../styles/adminTheme.css';
 
 const MAIN_NAV_ITEMS = [
@@ -27,18 +27,9 @@ export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [lowStockCount, setLowStockCount] = useState(0);
 
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    adminApi
-      .getOverviewSummary()
-      .then((res) => setLowStockCount(Number(res?.kpis?.lowStockMedicines || 0)))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -55,7 +46,6 @@ export default function AdminLayout() {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setUserMenuOpen(false);
-        setNotifOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -136,49 +126,8 @@ export default function AdminLayout() {
           </div>
         </form>
 
-        <div className="pcms-topbar-right" ref={dropdownRef}>
-          <div className="pcms-user-menu-wrap">
-            <button
-              type="button"
-              className="pcms-topbar-icon-btn"
-              onClick={() => {
-                setNotifOpen((prev) => !prev);
-                setUserMenuOpen(false);
-              }}
-            >
-              <span>Thông báo</span>
-              {lowStockCount > 0 ? <span className="pcms-notif-badge">{lowStockCount}</span> : null}
-            </button>
-
-            {notifOpen ? (
-              <div className="pcms-dropdown-menu" style={{ width: 300 }}>
-                <div className="pcms-dropdown-header">
-                  <strong>Thông báo quản trị ({lowStockCount})</strong>
-                  <span>Cảnh báo tồn kho & nhật ký thực tế</span>
-                </div>
-                {lowStockCount > 0 ? (
-                  <Link
-                    to="/admin/medicines"
-                    className="pcms-dropdown-item"
-                    onClick={() => setNotifOpen(false)}
-                  >
-                    <span>{lowStockCount} mặt hàng thuốc đang chạm/dưới ngưỡng tồn tối thiểu</span>
-                  </Link>
-                ) : (
-                  <div className="pcms-dropdown-item" style={{ color: 'var(--pcms-text-muted)' }}>
-                    <span>Hiện không có cảnh báo tồn kho nào</span>
-                  </div>
-                )}
-                <Link
-                  to="/admin/audit-logs"
-                  className="pcms-dropdown-item"
-                  onClick={() => setNotifOpen(false)}
-                >
-                  <span>Xem nhật ký hoạt động hệ thống</span>
-                </Link>
-              </div>
-            ) : null}
-          </div>
+        <div className="pcms-topbar-right" ref={dropdownRef} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <NotificationBell variant="purple" />
 
           <div className="pcms-user-menu-wrap">
             <button
@@ -186,7 +135,6 @@ export default function AdminLayout() {
               className="pcms-user-trigger"
               onClick={() => {
                 setUserMenuOpen((prev) => !prev);
-                setNotifOpen(false);
               }}
             >
               <span className="pcms-user-avatar">{avatarChar}</span>

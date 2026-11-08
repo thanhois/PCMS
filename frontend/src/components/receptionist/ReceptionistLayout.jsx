@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import receptionistApi from '../../api/receptionistApi';
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from '../common/NotificationBell';
 import '../../styles/adminTheme.css';
 
 const MAIN_NAV_ITEMS = [
@@ -21,18 +21,9 @@ export default function ReceptionistLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [pendingApprovalCount, setPendingApprovalCount] = useState(0);
 
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    receptionistApi
-      .getDashboardSummary()
-      .then((res) => setPendingApprovalCount(Number(res?.kpis?.pendingApprovalCount || 0)))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -49,7 +40,6 @@ export default function ReceptionistLayout() {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setUserMenuOpen(false);
-        setNotifOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -117,49 +107,8 @@ export default function ReceptionistLayout() {
           </div>
         </form>
 
-        <div className="pcms-topbar-right" ref={dropdownRef}>
-          <div className="pcms-user-menu-wrap">
-            <button
-              type="button"
-              className="pcms-topbar-icon-btn"
-              onClick={() => {
-                setNotifOpen((prev) => !prev);
-                setUserMenuOpen(false);
-              }}
-            >
-              <span>Thông báo</span>
-              {pendingApprovalCount > 0 ? <span className="pcms-notif-badge">{pendingApprovalCount}</span> : null}
-            </button>
-
-            {notifOpen ? (
-              <div className="pcms-dropdown-menu" style={{ width: 300 }}>
-                <div className="pcms-dropdown-header">
-                  <strong>Thông báo Lễ tân ({pendingApprovalCount})</strong>
-                  <span>Yêu cầu đặt lịch trực tuyến</span>
-                </div>
-                {pendingApprovalCount > 0 ? (
-                  <Link
-                    to="/receptionist/appointments"
-                    className="pcms-dropdown-item"
-                    onClick={() => setNotifOpen(false)}
-                  >
-                    <span>Có {pendingApprovalCount} yêu cầu đặt lịch đang chờ phê duyệt</span>
-                  </Link>
-                ) : (
-                  <div className="pcms-dropdown-item" style={{ color: 'var(--pcms-text-muted)' }}>
-                    <span>Tất cả yêu cầu đặt lịch đã được xử lý</span>
-                  </div>
-                )}
-                <Link
-                  to="/receptionist/check-in"
-                  className="pcms-dropdown-item"
-                  onClick={() => setNotifOpen(false)}
-                >
-                  <span>Mở màn hình Check-in & Tiếp nhận Walk-in</span>
-                </Link>
-              </div>
-            ) : null}
-          </div>
+        <div className="pcms-topbar-right" ref={dropdownRef} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <NotificationBell variant="purple" />
 
           <div className="pcms-user-menu-wrap">
             <button
@@ -167,7 +116,6 @@ export default function ReceptionistLayout() {
               className="pcms-user-trigger"
               onClick={() => {
                 setUserMenuOpen((prev) => !prev);
-                setNotifOpen(false);
               }}
             >
               <span className="pcms-user-avatar">{avatarChar}</span>

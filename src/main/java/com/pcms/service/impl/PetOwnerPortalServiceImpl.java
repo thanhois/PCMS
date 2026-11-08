@@ -584,21 +584,20 @@ public class PetOwnerPortalServiceImpl implements PetOwnerPortalService {
 
     private void publishBookingNotification(Appointment appt, String source) {
         try {
-            if (appt != null && appt.getPetOwner() != null && appt.getPetOwner().getEmail() != null) {
-                String email = appt.getPetOwner().getEmail().trim();
-                if (!email.isBlank()) {
-                    eventPublisher.publishEvent(new AppointmentBookedEvent(
-                            appt.getAppointmentId(),
-                            email,
-                            appt.getPetOwner().getFullName(),
-                            appt.getPet() != null ? appt.getPet().getPetName() : "Thú cưng",
-                            appt.getAppointmentDate(),
-                            appt.getShift(),
-                            appt.getService() != null ? appt.getService().getServiceName() : "Khám tổng quát",
-                            appt.getVeterinarian() != null ? appt.getVeterinarian().getFullName() : "Phòng khám điều phối",
-                            source
-                    ));
-                }
+            if (appt != null) {
+                String email = (appt.getPetOwner() != null && appt.getPetOwner().getEmail() != null)
+                        ? appt.getPetOwner().getEmail().trim() : "";
+                eventPublisher.publishEvent(new AppointmentBookedEvent(
+                        appt.getAppointmentId(),
+                        email,
+                        appt.getPetOwner() != null ? appt.getPetOwner().getFullName() : "Khách hàng",
+                        appt.getPet() != null ? appt.getPet().getPetName() : "Thú cưng",
+                        appt.getAppointmentDate(),
+                        appt.getShift(),
+                        appt.getService() != null ? appt.getService().getServiceName() : "Khám tổng quát",
+                        appt.getVeterinarian() != null ? appt.getVeterinarian().getFullName() : "Phòng khám điều phối",
+                        source
+                ));
             }
         } catch (Exception ignored) {
         }

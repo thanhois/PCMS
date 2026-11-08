@@ -152,6 +152,7 @@ export default function BookingPage() {
         notes: formData.notes.trim() || undefined,
       });
       setBookedSuccess(res);
+      window.dispatchEvent(new CustomEvent('notification-refresh'));
       const updatedApps = await ownerApi.getMyAppointments();
       setMyAppointments(updatedApps || []);
       await loadSlots(formData.appointmentDate, formData.veterinarianId, setSlots, null);
@@ -321,24 +322,80 @@ export default function BookingPage() {
           Đang tải dữ liệu cổng chủ nuôi...
         </div>
       ) : bookedSuccess ? (
-        <div className="pcms-card" style={{ padding: 32, maxWidth: 620, margin: '12px auto' }}>
-          <h2 style={{ marginTop: 0, marginBottom: 8 }}>Đặt lịch khám thành công</h2>
-          <p style={{ color: 'var(--pcms-text-muted)', marginBottom: 20 }}>
-            Yêu cầu hẹn khám của bạn đã được ghi nhận và gửi thông báo xác nhận.
-          </p>
-          <div style={{ background: 'var(--pcms-bg-subtle, #f8fafc)', border: '1px solid var(--pcms-border, #e2e8f0)', borderRadius: 8, padding: 16, marginBottom: 20 }}>
-            <p style={{ margin: '4px 0' }}><strong>Mã lịch hẹn:</strong> {bookedSuccess.appointmentCode}</p>
-            <p style={{ margin: '4px 0' }}><strong>Thú cưng:</strong> {bookedSuccess.petName} ({bookedSuccess.species})</p>
-            <p style={{ margin: '4px 0' }}><strong>Thời gian hẹn:</strong> {bookedSuccess.appointmentDateTimeDisplay || `${bookedSuccess.appointmentDate} ${bookedSuccess.appointmentTime}`}</p>
-            <p style={{ margin: '4px 0' }}><strong>Bác sĩ:</strong> {bookedSuccess.veterinarianName}</p>
-            <p style={{ margin: '4px 0' }}><strong>Dịch vụ:</strong> {bookedSuccess.serviceName}</p>
-            <p style={{ margin: '4px 0' }}><strong>Trạng thái:</strong> {bookedSuccess.statusDisplay}</p>
+        <div className="pcms-card" style={{ padding: 32, maxWidth: 640, margin: '24px auto', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}>
+          <div style={{ textAlign: 'center', marginBottom: 20 }}>
+            <div style={{
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              background: '#ecfdf5',
+              color: '#059669',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 28,
+              marginBottom: 12
+            }}>
+              ✓
+            </div>
+            <h2 style={{ margin: 0, fontSize: 22, color: '#0f172a' }}>Đặt lịch khám thành công!</h2>
+            <p style={{ color: '#64748b', marginTop: 6, fontSize: 14 }}>
+              Lịch khám của bé <strong>{bookedSuccess.petName}</strong> đã được lưu thành công trên hệ thống PCMS.
+            </p>
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button type="button" className="pcms-btn pcms-btn-outline" onClick={() => setBookedSuccess(null)}>
-              Đặt thêm lịch khác
+
+          {/* Chi tiết ca khám */}
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 18, marginBottom: 18 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 14 }}>
+              <div>
+                <span style={{ color: '#64748b', fontSize: 12, display: 'block' }}>Mã lịch hẹn</span>
+                <strong style={{ color: '#6320ee' }}>#{bookedSuccess.appointmentCode || bookedSuccess.appointmentId}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748b', fontSize: 12, display: 'block' }}>Thú cưng</span>
+                <strong>{bookedSuccess.petName} ({bookedSuccess.species})</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748b', fontSize: 12, display: 'block' }}>Thời gian hẹn</span>
+                <strong>{bookedSuccess.appointmentDateTimeDisplay || `${bookedSuccess.appointmentDate} ${bookedSuccess.appointmentTime}`}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748b', fontSize: 12, display: 'block' }}>Bác sĩ phụ trách</span>
+                <strong>{bookedSuccess.veterinarianName || 'Phòng khám phân công'}</strong>
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <span style={{ color: '#64748b', fontSize: 12, display: 'block' }}>Dịch vụ khám</span>
+                <strong>{bookedSuccess.serviceName}</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Thông báo Web & Webhook thông báo đa kênh */}
+          <div style={{
+            background: '#f5f3ff',
+            border: '1px solid #ddd6fe',
+            borderRadius: 10,
+            padding: 16,
+            marginBottom: 24,
+            fontSize: 13.5,
+            color: '#4c1d95',
+            lineHeight: 1.6
+          }}>
+            <strong style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, color: '#6d28d9', fontSize: 14 }}>
+              🔔 Thông báo hệ thống đã được gửi tự động:
+            </strong>
+            <ul style={{ margin: 0, paddingLeft: 20 }}>
+              <li><strong>Chủ nuôi:</strong> Đã gửi xác nhận vào <strong>Quả chuông Thông báo</strong> và lưu vào Sổ khám bệnh.</li>
+              <li><strong>Bác sĩ phụ trách ({bookedSuccess.veterinarianName}):</strong> Đã phân công ca khám trực tiếp vào trang làm việc của Bác sĩ.</li>
+              <li><strong>Bộ phận Lễ tân & Webhook:</strong> Đồng bộ dữ liệu khám và phát hành webhook sự kiện thời gian thực.</li>
+            </ul>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <button type="button" className="pcms-btn pcms-btn-outline" onClick={() => setBookedSuccess(null)} style={{ padding: '10px 20px' }}>
+              + Đặt thêm lịch khác
             </button>
-            <Link to="/owner/medical-history" className="pcms-btn pcms-btn-primary">
+            <Link to="/owner/medical-history" className="pcms-btn pcms-btn-primary" style={{ padding: '10px 20px', textDecoration: 'none' }}>
               Xem Sổ bệnh án điện tử
             </Link>
           </div>

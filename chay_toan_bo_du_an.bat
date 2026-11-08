@@ -19,3 +19,4 @@ echo ========================================================
 echo HOAN TAT! Cua so Backend va Frontend da duoc khoi dong.
 echo Ban co the trai nghiem he thong tai: http://localhost:5173
 echo ========================================================
+

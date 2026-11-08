@@ -1301,21 +1301,20 @@ public class ReceptionistServiceImpl implements ReceptionistService {
 
     private void publishBookingNotification(Appointment appt, String source) {
         try {
-            if (appt != null && appt.getPetOwner() != null && appt.getPetOwner().getEmail() != null) {
-                String email = appt.getPetOwner().getEmail().trim();
-                if (!email.isBlank()) {
-                    eventPublisher.publishEvent(new com.pcms.event.AppointmentBookedEvent(
-                            appt.getAppointmentId(),
-                            email,
-                            appt.getPetOwner().getFullName(),
-                            appt.getPet() != null ? appt.getPet().getPetName() : "Thú cưng",
-                            appt.getAppointmentDate(),
-                            appt.getShift(),
-                            appt.getService() != null ? appt.getService().getServiceName() : "Khám dịch vụ chung",
-                            appt.getVeterinarian() != null ? appt.getVeterinarian().getFullName() : "Bác sĩ trực phụ trách",
-                            source
-                    ));
-                }
+            if (appt != null) {
+                String email = (appt.getPetOwner() != null && appt.getPetOwner().getEmail() != null)
+                        ? appt.getPetOwner().getEmail().trim() : "";
+                eventPublisher.publishEvent(new com.pcms.event.AppointmentBookedEvent(
+                        appt.getAppointmentId(),
+                        email,
+                        appt.getPetOwner() != null ? appt.getPetOwner().getFullName() : "Khách hàng",
+                        appt.getPet() != null ? appt.getPet().getPetName() : "Thú cưng",
+                        appt.getAppointmentDate(),
+                        appt.getShift(),
+                        appt.getService() != null ? appt.getService().getServiceName() : "Khám dịch vụ chung",
+                        appt.getVeterinarian() != null ? appt.getVeterinarian().getFullName() : "Bác sĩ trực phụ trách",
+                        source
+                ));
             }
         } catch (Exception ex) {
             // Section 4.1.6: Notification failure must not roll back a successfully saved appointment

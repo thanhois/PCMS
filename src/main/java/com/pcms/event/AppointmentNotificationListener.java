@@ -25,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AppointmentNotificationListener {
 
     private final EmailService emailService;
+    private final com.pcms.service.NotificationService notificationService;
+    private final com.pcms.repository.AppointmentRepository appointmentRepository;
     private static final DateTimeFormatter DT_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     // Bộ nhớ tạm lưu các key đã xử lý để chống trùng lặp (Deduplication)
@@ -49,27 +51,39 @@ public class AppointmentNotificationListener {
         log.info("[{}] [ASYNC NOTIFICATION] Processing booking confirmation for appointment #{} (Pet: {}, Owner: {})",
                 correlationId, event.appointmentId(), event.petName(), event.ownerEmail());
 
-        // 2. Thực hiện gửi thông báo với cơ chế cô lập lỗi
+        // 2. Tạo thông báo trong hệ thống (In-App Notification) cho Chủ nuôi, Bác sĩ và Lễ tân + Webhook
         try {
-            String timeDisplay = event.appointmentDateTime() != null
-                    ? event.appointmentDateTime().format(DT_FORMATTER) + " (" + ("AFTERNOON".equalsIgnoreCase(event.shift()) ? "Buổi chiều" : "Buổi sáng") + ")"
-                    : "Giờ hẹn theo thỏa thuận";
-
-            emailService.sendBookingConfirmationEmail(
-                    event.ownerEmail(),
-                    event.ownerFullName(),
-                    event.petName(),
-                    timeDisplay,
-                    event.serviceName(),
-                    event.vetName()
-            );
-
-            log.info("[{}] [ASYNC NOTIFICATION SUCCESS] Sent booking confirmation for appointment #{}",
+            notificationService.notifyAppointmentBooked(event.appointmentId());
+            log.info("[{}] [IN-APP NOTIFICATION & WEBHOOK SUCCESS] Dispatched booking notifications for appointment #{}",
                     correlationId, event.appointmentId());
         } catch (Exception ex) {
-            // Section 4.1.6: Notification failure must not roll back a successfully saved appointment
-            log.error("[{}] [ASYNC NOTIFICATION FAILURE] Could not send booking confirmation for appointment #{}: {}",
+            log.error("[{}] [IN-APP NOTIFICATION FAILURE] Could not create in-app notification for appointment #{}: {}",
                     correlationId, event.appointmentId(), ex.getMessage());
+        }
+
+        // 3. Thực hiện gửi email với cơ chế cô lập lỗi
+        if (event.ownerEmail() != null && !event.ownerEmail().isBlank()) {
+            try {
+                String timeDisplay = event.appointmentDateTime() != null
+                        ? event.appointmentDateTime().format(DT_FORMATTER) + " (" + ("AFTERNOON".equalsIgnoreCase(event.shift()) ? "Buổi chiều" : "Buổi sáng") + ")"
+                        : "Giờ hẹn theo thỏa thuận";
+
+                emailService.sendBookingConfirmationEmail(
+                        event.ownerEmail(),
+                        event.ownerFullName(),
+                        event.petName(),
+                        timeDisplay,
+                        event.serviceName(),
+                        event.vetName()
+                );
+
+                log.info("[{}] [ASYNC EMAIL SUCCESS] Sent booking confirmation email for appointment #{}",
+                        correlationId, event.appointmentId());
+            } catch (Exception ex) {
+                // Section 4.1.6: Notification failure must not roll back a successfully saved appointment
+                log.error("[{}] [ASYNC EMAIL FAILURE] Could not send booking confirmation email for appointment #{}: {}",
+                        correlationId, event.appointmentId(), ex.getMessage());
+            }
         }
     }
 }

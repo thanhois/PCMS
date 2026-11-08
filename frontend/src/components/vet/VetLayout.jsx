@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import vetApi from '../../api/vetApi';
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from '../common/NotificationBell';
 import '../../styles/adminTheme.css';
 import '../../styles/vetTheme.css';
 
@@ -116,7 +117,9 @@ export default function VetLayout() {
           </div>
         </form>
 
-        <div className="pcms-topbar-right" ref={dropdownRef}>
+        <div className="pcms-topbar-right" ref={dropdownRef} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <NotificationBell variant="purple" />
+
           <div className="pcms-user-menu-wrap">
             <button
               type="button"

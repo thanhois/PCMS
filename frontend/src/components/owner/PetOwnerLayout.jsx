@@ -1,6 +1,7 @@
 
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from '../common/NotificationBell';
 import '../../styles/petOwnerLayout.css';
 
 export default function PetOwnerLayout() {
@@ -58,7 +59,9 @@ export default function PetOwnerLayout() {
           </nav>
 
           {/* User information */}
-          <div className="pet-owner-user">
+          <div className="pet-owner-user" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <NotificationBell variant="light" />
+
             <span className="pet-owner-user-name">
               Xin chào, {user?.fullName || 'Chủ thú cưng'}
             </span>
