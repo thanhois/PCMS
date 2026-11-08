@@ -72,6 +72,12 @@
 .pet-owner-nav-link.active {
   background: #e3f4f1;
   color: #087f75;
+  font-weight: 700;
+}
+
+.pet-owner-nav-link:focus,
+.pet-owner-nav-link:focus-visible {
+  outline: none;
 }
 
 /* User actions */

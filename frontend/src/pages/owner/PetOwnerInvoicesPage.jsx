@@ -1,6 +1,6 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import ownerApi from '../../api/ownerApi';
 import '../../styles/petOwnerInvoice.css';
 
@@ -16,6 +16,21 @@ export default function PetOwnerInvoicesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
+  // Payment Modal State
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('BANK_TRANSFER'); // 'BANK_TRANSFER' | 'CARD'
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [copiedField, setCopiedField] = useState('');
+
+  // Card form mock state
+  const [cardForm, setCardForm] = useState({
+    cardNumber: '4000 1234 5678 9010',
+    cardHolder: 'LE HOANG NAM',
+    expiry: '12/28',
+    cvv: '123',
+  });
+
   // =========================
   // 2. LOAD INVOICES
   // =========================
@@ -23,7 +38,6 @@ export default function PetOwnerInvoicesPage() {
     try {
       setLoading(true);
       setError('');
-
       const data = await ownerApi.getMyInvoices();
       setInvoices(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -39,26 +53,24 @@ export default function PetOwnerInvoicesPage() {
   }, []);
 
   // =========================
-  // 3. FORMAT DATA
+  // 3. FORMAT HELPERS
   // =========================
   const formatMoney = (amount) =>
     Number(amount || 0).toLocaleString('vi-VN') + ' ₫';
 
   const formatDate = (date) =>
-    date
-      ? new Date(date).toLocaleString('vi-VN')
-      : '—';
+    date ? new Date(date).toLocaleString('vi-VN') : '—';
 
   const getStatusLabel = (status) => {
     switch (status) {
       case 'PAID':
-        return 'Đã thanh toán';
+        return '✓ Đã thanh toán';
       case 'PENDING':
-        return 'Chờ thanh toán';
+        return '⏳ Chờ thanh toán';
       case 'VOID':
-        return 'Đã hủy';
+        return '✕ Đã hủy';
       default:
-        return 'Không xác định';
+        return status || 'Không xác định';
     }
   };
 
@@ -76,266 +88,530 @@ export default function PetOwnerInvoicesPage() {
   };
 
   // =========================
-  // 4. INVOICE STATISTICS
+  // 4. STATISTICS
   // =========================
   const totalInvoices = invoices.length;
-
-  const paidInvoices = invoices.filter(
-    (invoice) => invoice.status === 'PAID'
-  ).length;
-
-  const pendingInvoices = invoices.filter(
-    (invoice) => invoice.status === 'PENDING'
-  ).length;
-
-  const voidInvoices = invoices.filter(
-    (invoice) => invoice.status === 'VOID'
-  ).length;
+  const paidInvoices = invoices.filter((i) => i.status === 'PAID').length;
+  const pendingInvoices = invoices.filter((i) => i.status === 'PENDING').length;
+  const voidInvoices = invoices.filter((i) => i.status === 'VOID').length;
 
   // =========================
   // 5. SEARCH & FILTER
   // =========================
   const filteredInvoices = invoices.filter((invoice) => {
     const keyword = searchTerm.trim().toLowerCase();
-
-    const invoiceId = String(invoice.invoiceId ?? '').toLowerCase();
-    const petName = String(invoice.petName || '').toLowerCase();
-
-    const matchesSearch =
-      invoiceId.includes(keyword) ||
-      petName.includes(keyword);
+    const matchesKeyword =
+      !keyword ||
+      String(invoice.invoiceId).includes(keyword) ||
+      (invoice.petName || '').toLowerCase().includes(keyword);
 
     const matchesStatus =
-      statusFilter === 'ALL' ||
-      invoice.status === statusFilter;
+      statusFilter === 'ALL' || invoice.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
+    return matchesKeyword && matchesStatus;
   });
 
   // =========================
-  // 6. RENDER
+  // 6. PAYMENT HANDLERS
   // =========================
+  const handleOpenPayment = (invoice) => {
+    setSelectedInvoice(invoice);
+    setPaymentMethod('BANK_TRANSFER');
+  };
+
+  const handleCopy = (text, fieldName) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedField(fieldName);
+      setTimeout(() => setCopiedField(''), 2000);
+    }
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!selectedInvoice) return;
+    try {
+      setPaymentLoading(true);
+      const payload = {
+        paymentMethod: paymentMethod, // 'BANK_TRANSFER' or 'CARD'
+        mockResult: 'SUCCESS',
+      };
+
+      await ownerApi.payMyInvoice(selectedInvoice.invoiceId, payload);
+
+      setToastMessage({
+        type: 'success',
+        text: `Thanh toán thành công hóa đơn #${selectedInvoice.invoiceId} (${formatMoney(selectedInvoice.totalAmount)})!`,
+      });
+      setSelectedInvoice(null);
+      await loadInvoices();
+    } catch (err) {
+      console.error('Lỗi thanh toán:', err);
+      alert(err.response?.data?.message || err.message || 'Thanh toán thất bại, vui lòng thử lại.');
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  // Bank transfer info for VietQR
+  const bankInfo = {
+    bankName: 'MB Bank (Ngân hàng TMCP Quân Đội)',
+    accountNumber: '0912000001',
+    accountName: 'PHONG KHAM THU Y PCMS',
+    transferContent: selectedInvoice ? `PCMS INV-${selectedInvoice.invoiceId}` : '',
+  };
+
+  const qrPayload = selectedInvoice
+    ? `https://img.vietqr.io/image/MB-0912000001-compact.png?amount=${selectedInvoice.totalAmount}&addInfo=${encodeURIComponent(bankInfo.transferContent)}&accountName=${encodeURIComponent(bankInfo.accountName)}`
+    : '';
+
   return (
-    <div className="owner-invoices-page">
-      <div className="owner-invoices-container">
-
-        {/* PAGE HEADER */}
-        <div className="owner-invoices-header">
-          <div>
-            <h1 className="owner-invoices-title">
-              Hóa đơn của tôi
-            </h1>
-
-            <p className="owner-invoices-subtitle">
-              Theo dõi các khoản thanh toán và lịch sử hóa đơn dịch vụ thú cưng.
-            </p>
-          </div>
-
+    <div className="pet-owner-invoices">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 24,
+            right: 24,
+            zIndex: 99999,
+            background: 'linear-gradient(135deg, #087f75 0%, #0d9488 100%)',
+            color: '#ffffff',
+            padding: '14px 22px',
+            borderRadius: 12,
+            boxShadow: '0 10px 25px rgba(8, 127, 117, 0.35)',
+            fontWeight: 700,
+            fontSize: 14,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}
+        >
+          <span>✓</span>
+          <span>{toastMessage.text}</span>
           <button
             type="button"
-            className="owner-invoices-refresh"
-            onClick={loadInvoices}
-            disabled={loading}
+            onClick={() => setToastMessage(null)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#ffffff',
+              fontSize: 16,
+              cursor: 'pointer',
+              marginLeft: 10,
+            }}
           >
-            ↻ Làm mới
+            ✕
           </button>
         </div>
+      )}
 
-        {/* INVOICE STATISTICS */}
-        <div className="owner-invoices-stats">
-          <div className="owner-invoices-stat-card">
-            <div className="owner-invoices-stat-icon total">
-              ▤
-            </div>
-
-            <div>
-              <p>Tổng hóa đơn</p>
-              <h3>{totalInvoices}</h3>
-            </div>
-          </div>
-
-          <div className="owner-invoices-stat-card">
-            <div className="owner-invoices-stat-icon paid">
-              ✓
-            </div>
-
-            <div>
-              <p>Đã thanh toán</p>
-              <h3>{paidInvoices}</h3>
-            </div>
-          </div>
-
-          <div className="owner-invoices-stat-card">
-            <div className="owner-invoices-stat-icon pending">
-              ◷
-            </div>
-
-            <div>
-              <p>Chờ thanh toán</p>
-              <h3>{pendingInvoices}</h3>
-            </div>
-          </div>
-
-          <div className="owner-invoices-stat-card">
-            <div className="owner-invoices-stat-icon void">
-              ×
-            </div>
-
-            <div>
-              <p>Đã hủy</p>
-              <h3>{voidInvoices}</h3>
-            </div>
-          </div>
+      {/* Page Header */}
+      <div className="owner-invoices-header">
+        <div>
+          <h1 className="owner-invoices-title">Hóa đơn của tôi</h1>
+          <p className="owner-invoices-subtitle">
+            Theo dõi viện phí, lịch sử dịch vụ và tiến hành thanh toán trực tuyến nhanh chóng.
+          </p>
         </div>
 
-        {/* ERROR MESSAGE */}
-        {error && (
-          <div className="owner-invoices-error">
-            <p>{error}</p>
+        <button
+          type="button"
+          className="owner-invoices-refresh"
+          onClick={loadInvoices}
+          disabled={loading}
+        >
+          <span>🔄</span>
+          <span>{loading ? 'Đang tải...' : 'Làm mới'}</span>
+        </button>
+      </div>
 
+      {/* Statistics Cards (Harmonized with PetOwnerHomePage) */}
+      <div className="owner-invoices-stats">
+        <div className="owner-invoices-stat-card">
+          <div className="owner-invoices-stat-icon">📋</div>
+          <p>Tổng số hóa đơn</p>
+          <h2>{totalInvoices}</h2>
+        </div>
+
+        <div className="owner-invoices-stat-card paid">
+          <div className="owner-invoices-stat-icon">✓</div>
+          <p>Đã thanh toán</p>
+          <h2>{paidInvoices}</h2>
+        </div>
+
+        <div className="owner-invoices-stat-card pending">
+          <div className="owner-invoices-stat-icon">⏳</div>
+          <p>Chờ thanh toán</p>
+          <h2>{pendingInvoices}</h2>
+        </div>
+
+        <div className="owner-invoices-stat-card void">
+          <div className="owner-invoices-stat-icon">✕</div>
+          <p>Đã hủy</p>
+          <h2>{voidInvoices}</h2>
+        </div>
+      </div>
+
+      {/* Main Invoices Card */}
+      <div className="owner-invoices-card">
+        {/* Card Heading */}
+        <div className="owner-invoices-card-header">
+          <div>
+            <h2>Danh sách hóa đơn</h2>
+            <p>Toàn bộ hóa đơn dịch vụ khám chữa bệnh của các bé thú cưng.</p>
+          </div>
+
+          <span className="owner-invoices-result-count">
+            {filteredInvoices.length} hóa đơn
+          </span>
+        </div>
+
+        {/* Search & Filter Toolbar */}
+        <div className="owner-invoices-toolbar">
+          <div className="owner-invoices-search">
+            <span className="owner-invoices-search-icon">🔍</span>
+            <input
+              type="text"
+              placeholder="Tìm theo mã hóa đơn hoặc tên thú cưng..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <select
+            className="owner-invoices-filter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="PENDING">⏳ Chờ thanh toán</option>
+            <option value="PAID">✓ Đã thanh toán</option>
+            <option value="VOID">✕ Đã hủy</option>
+          </select>
+        </div>
+
+        {/* Loading / Error States */}
+        {loading && (
+          <div className="owner-invoices-loading">
+            Đang tải danh sách hóa đơn từ hệ thống...
+          </div>
+        )}
+
+        {error && !loading && (
+          <div style={{ padding: 28, textAlign: 'center', color: '#c0392b' }}>
+            <p style={{ fontWeight: 600 }}>{error}</p>
             <button
               type="button"
+              className="owner-invoices-refresh"
               onClick={loadInvoices}
-              disabled={loading}
+              style={{ marginTop: 10 }}
             >
               Thử lại
             </button>
           </div>
         )}
 
-        {/* EMPTY INVOICES */}
-        {!loading && !error && invoices.length === 0 && (
-          <div className="owner-invoices-empty">
-            <p>Bạn chưa có hóa đơn nào.</p>
-          </div>
-        )}
+        {/* Invoices Table */}
+        {!loading && !error && (
+          <div className="owner-invoices-table-wrapper">
+            <table className="owner-invoices-table">
+              <thead>
+                <tr>
+                  <th>Mã hóa đơn</th>
+                  <th>Thú cưng</th>
+                  <th>Ngày lập</th>
+                  <th>Tổng tiền</th>
+                  <th>Giảm giá</th>
+                  <th>Trạng thái</th>
+                  <th style={{ textAlign: 'center' }}>Thao tác</th>
+                </tr>
+              </thead>
 
-        {/* INVOICE LIST */}
-        {!error && invoices.length > 0 && (
-          <div className="owner-invoices-card">
+              <tbody>
+                {filteredInvoices.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="owner-invoices-empty-row">
+                      Không tìm thấy hóa đơn nào phù hợp với bộ lọc.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredInvoices.map((invoice) => {
+                    const isPending = invoice.status === 'PENDING';
+                    const isPaid = invoice.status === 'PAID';
 
-            {/* CARD HEADER */}
-            <div className="owner-invoices-card-header">
-              <div>
-                <h2>Danh sách hóa đơn</h2>
-                <p>
-                  Thông tin các hóa đơn dịch vụ của thú cưng.
-                </p>
-              </div>
+                    return (
+                      <tr key={invoice.invoiceId}>
+                        <td>
+                          <button
+                            type="button"
+                            className="owner-invoices-detail-btn"
+                            onClick={() => navigate(`/owner/invoices/${invoice.invoiceId}`)}
+                            title="Xem chi tiết hóa đơn"
+                          >
+                            #{invoice.invoiceId} ›
+                          </button>
+                        </td>
 
-              <span className="owner-invoices-result-count">
-                {filteredInvoices.length} kết quả
-              </span>
-            </div>
+                        <td>
+                          <strong style={{ color: '#1b3534' }}>
+                            {invoice.petName || '—'}
+                          </strong>
+                        </td>
 
-            {/* SEARCH & FILTER */}
-            <div className="owner-invoices-toolbar">
-              <div className="owner-invoices-search">
-                <span>⌕</span>
+                        <td>{formatDate(invoice.invoiceDate)}</td>
 
-                <input
-                  type="text"
-                  placeholder="Tìm theo mã hóa đơn hoặc tên thú cưng..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+                        <td>
+                          <strong style={{ color: '#087f75', fontSize: 14 }}>
+                            {formatMoney(invoice.totalAmount)}
+                          </strong>
+                        </td>
 
-              <select
-                className="owner-invoices-filter"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="ALL">Tất cả trạng thái</option>
-                <option value="PENDING">Chờ thanh toán</option>
-                <option value="PAID">Đã thanh toán</option>
-                <option value="VOID">Đã hủy</option>
-              </select>
-            </div>
+                        <td>{formatMoney(invoice.discountAmount)}</td>
 
-            {/* LOADING */}
-            {loading && (
-              <div className="owner-invoices-loading">
-                Đang tải danh sách hóa đơn...
-              </div>
-            )}
+                        <td>
+                          <span className={`owner-invoices-status ${getStatusClass(invoice.status)}`}>
+                            {getStatusLabel(invoice.status)}
+                          </span>
+                        </td>
 
-            {/* INVOICE TABLE */}
-            {!loading && (
-              <div className="owner-invoices-table-wrapper">
-                <table className="owner-invoices-table">
-                  <thead>
-                    <tr>
-                      <th>Mã hóa đơn</th>
-                      <th>Thú cưng</th>
-                      <th>Ngày lập</th>
-                      <th>Tổng tiền</th>
-                      <th>Giảm giá</th>
-                      <th>Trạng thái</th>
-                    </tr>
-                  </thead>
+                        <td style={{ textAlign: 'center' }}>
+                          <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+                            {isPending && (
+                              <button
+                                type="button"
+                                className="pet-owner-pay-btn"
+                                onClick={() => handleOpenPayment(invoice)}
+                              >
+                                <span>💳</span>
+                                <span>Thanh toán ngay</span>
+                              </button>
+                            )}
 
-                  <tbody>
-                    {filteredInvoices.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan="6"
-                          className="owner-invoices-empty-row"
-                        >
-                          Không tìm thấy hóa đơn phù hợp.
+                            {isPaid && (
+                              <button
+                                type="button"
+                                className="pet-owner-view-btn"
+                                onClick={() => navigate(`/owner/invoices/${invoice.invoiceId}`)}
+                              >
+                                <span>📄</span>
+                                <span>Xem biên lai</span>
+                              </button>
+                            )}
+
+                            {invoice.status === 'VOID' && (
+                              <span style={{ fontSize: 13, color: '#94a3b8' }}>Đã hủy</span>
+                            )}
+                          </div>
                         </td>
                       </tr>
-                    ) : (
-                      filteredInvoices.map((invoice) => (
-                        <tr key={invoice.invoiceId}>
-                          <td>
-                            <button
-                              type="button"
-                              className="owner-invoices-detail-btn"
-                              onClick={() =>
-                                navigate(
-                                  `/owner/invoices/${invoice.invoiceId}`
-                                )
-                              }
-                            >
-                              #{invoice.invoiceId}
-                              <span>›</span>
-                            </button>
-                          </td>
-
-                          <td>
-                            {invoice.petName || '—'}
-                          </td>
-
-                          <td>
-                            {formatDate(invoice.invoiceDate)}
-                          </td>
-
-                          <td>
-                            {formatMoney(invoice.totalAmount)}
-                          </td>
-
-                          <td>
-                            {formatMoney(invoice.discountAmount)}
-                          </td>
-
-                          <td>
-                            <span
-                              className={`owner-invoices-status ${getStatusClass(invoice.status)}`}
-                            >
-                              {getStatusLabel(invoice.status)}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
+
+      {/* =========================================================
+          PAYMENT MODAL (Online QR & Card Gateway)
+          ========================================================= */}
+      {selectedInvoice && (
+        <div className="pay-modal-overlay" onClick={() => setSelectedInvoice(null)}>
+          <div className="pay-modal-card" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="pay-modal-header">
+              <div>
+                <h3 className="pay-modal-title">
+                  Thanh toán Hóa đơn #{selectedInvoice.invoiceId}
+                </h3>
+                <p className="pay-modal-subtitle">
+                  Thú cưng: <strong>{selectedInvoice.petName || 'Bé cưng'}</strong> • Ngày lập: {formatDate(selectedInvoice.invoiceDate)}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="pay-modal-close"
+                onClick={() => setSelectedInvoice(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="pay-modal-body">
+              {/* Highlight Amount */}
+              <div className="pay-amount-box">
+                <span className="pay-amount-label">Tổng tiền cần thanh toán:</span>
+                <span className="pay-amount-value">{formatMoney(selectedInvoice.totalAmount)}</span>
+              </div>
+
+              {/* Payment Method Selector */}
+              <div className="pay-method-tabs">
+                <button
+                  type="button"
+                  className={`pay-method-tab ${paymentMethod === 'BANK_TRANSFER' ? 'active' : ''}`}
+                  onClick={() => setPaymentMethod('BANK_TRANSFER')}
+                >
+                  <span>📱</span>
+                  <span>Quét mã VietQR / Ngân hàng</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`pay-method-tab ${paymentMethod === 'CARD' ? 'active' : ''}`}
+                  onClick={() => setPaymentMethod('CARD')}
+                >
+                  <span>💳</span>
+                  <span>Thẻ Visa / Master / ATM</span>
+                </button>
+              </div>
+
+              {/* Tab 1: VietQR / Bank Transfer */}
+              {paymentMethod === 'BANK_TRANSFER' && (
+                <div className="pay-qr-container">
+                  <div className="pay-qr-box">
+                    <QRCodeSVG
+                      value={qrPayload || `https://pcms.vn/pay/${selectedInvoice.invoiceId}`}
+                      size={170}
+                      level="M"
+                      includeMargin
+                    />
+                  </div>
+                  <div style={{ fontSize: 12, color: '#087f75', fontWeight: 700, marginBottom: 14 }}>
+                    Quét mã QR bằng App Ngân hàng hoặc Ví MoMo / VNPay
+                  </div>
+
+                  <div className="pay-bank-details">
+                    <div className="pay-bank-row">
+                      <span className="pay-bank-label">Ngân hàng:</span>
+                      <span className="pay-bank-val">{bankInfo.bankName}</span>
+                    </div>
+
+                    <div className="pay-bank-row">
+                      <span className="pay-bank-label">Số tài khoản:</span>
+                      <span className="pay-bank-val">
+                        <code>{bankInfo.accountNumber}</code>
+                        <button
+                          type="button"
+                          className="pay-copy-btn"
+                          onClick={() => handleCopy(bankInfo.accountNumber, 'acc')}
+                        >
+                          {copiedField === 'acc' ? 'Đã sao chép!' : 'Sao chép'}
+                        </button>
+                      </span>
+                    </div>
+
+                    <div className="pay-bank-row">
+                      <span className="pay-bank-label">Chủ tài khoản:</span>
+                      <span className="pay-bank-val">{bankInfo.accountName}</span>
+                    </div>
+
+                    <div className="pay-bank-row">
+                      <span className="pay-bank-label">Số tiền:</span>
+                      <span className="pay-bank-val" style={{ color: '#087f75' }}>
+                        {formatMoney(selectedInvoice.totalAmount)}
+                      </span>
+                    </div>
+
+                    <div className="pay-bank-row">
+                      <span className="pay-bank-label">Nội dung chuyển khoản:</span>
+                      <span className="pay-bank-val">
+                        <code>{bankInfo.transferContent}</code>
+                        <button
+                          type="button"
+                          className="pay-copy-btn"
+                          onClick={() => handleCopy(bankInfo.transferContent, 'content')}
+                        >
+                          {copiedField === 'content' ? 'Đã sao chép!' : 'Sao chép'}
+                        </button>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 2: Online Card Gateway */}
+              {paymentMethod === 'CARD' && (
+                <div className="pay-card-form">
+                  <div className="pay-input-group">
+                    <label>Số thẻ thanh toán (Demo Mock Gateway):</label>
+                    <input
+                      type="text"
+                      value={cardForm.cardNumber}
+                      onChange={(e) => setCardForm({ ...cardForm, cardNumber: e.target.value })}
+                      placeholder="4000 1234 5678 9010"
+                    />
+                  </div>
+
+                  <div className="pay-input-group">
+                    <label>Tên in trên thẻ:</label>
+                    <input
+                      type="text"
+                      value={cardForm.cardHolder}
+                      onChange={(e) => setCardForm({ ...cardForm, cardHolder: e.target.value.toUpperCase() })}
+                      placeholder="LE HOANG NAM"
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div className="pay-input-group">
+                      <label>Ngày hết hạn (MM/YY):</label>
+                      <input
+                        type="text"
+                        value={cardForm.expiry}
+                        onChange={(e) => setCardForm({ ...cardForm, expiry: e.target.value })}
+                        placeholder="12/28"
+                      />
+                    </div>
+                    <div className="pay-input-group">
+                      <label>Mã bảo mật CVV:</label>
+                      <input
+                        type="password"
+                        maxLength={4}
+                        value={cardForm.cvv}
+                        onChange={(e) => setCardForm({ ...cardForm, cvv: e.target.value })}
+                        placeholder="123"
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: 12.5, color: '#64748b', background: '#f8fafc', padding: '10px 14px', borderRadius: 8 }}>
+                    💡 Cổng thanh toán thẻ kết nối Mock Payment Gateway an toàn. Giao dịch được tự động đối soát và trừ kho dược phẩm FEFO ngay lập tức.
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="pay-modal-footer">
+              <button
+                type="button"
+                className="pay-btn-cancel"
+                onClick={() => setSelectedInvoice(null)}
+                disabled={paymentLoading}
+              >
+                Hủy bỏ
+              </button>
+
+              <button
+                type="button"
+                className="pay-btn-submit"
+                onClick={handleConfirmPayment}
+                disabled={paymentLoading}
+              >
+                {paymentLoading ? (
+                  'Đang xử lý giao dịch...'
+                ) : paymentMethod === 'BANK_TRANSFER' ? (
+                  '✓ Tôi đã chuyển khoản thành công'
+                ) : (
+                  `🔒 Xác nhận thanh toán ${formatMoney(selectedInvoice.totalAmount)}`
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

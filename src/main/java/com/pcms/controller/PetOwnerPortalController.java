@@ -12,7 +12,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import com.pcms.service.BillingService;
+import com.pcms.dto.response.ApiResponse;
 import com.pcms.dto.response.billing.InvoiceResponse;
+import com.pcms.dto.response.billing.PaymentResponse;
+import com.pcms.dto.request.billing.ConfirmPaymentRequest;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/owner")
@@ -161,5 +165,18 @@ public class PetOwnerPortalController {
                         principal.getId()
                 )
         );
+    }
+
+    @PostMapping("/my-invoices/{invoiceId}/pay")
+    @PreAuthorize("hasRole('PET_OWNER')")
+    public ResponseEntity<ApiResponse<PaymentResponse>> payMyInvoice(
+            @PathVariable Integer invoiceId,
+            @Valid @RequestBody ConfirmPaymentRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        Integer ownerUserId = principal != null ? principal.getId() : null;
+        return ResponseEntity.ok(ApiResponse.success(
+                "Thanh toán hóa đơn thành công",
+                billingService.payMyInvoice(invoiceId, request, ownerUserId)
+        ));
     }
 }

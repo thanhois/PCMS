@@ -33,6 +33,12 @@ public interface BillingService {
             ConfirmPaymentRequest request
     );
 
+    PaymentResponse payMyInvoice(
+            Integer invoiceId,
+            ConfirmPaymentRequest request,
+            Integer ownerUserId
+    );
+
     List<InvoiceResponse> getAllInvoices();
 
 

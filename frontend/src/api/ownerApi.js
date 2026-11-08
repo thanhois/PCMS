@@ -60,6 +60,10 @@ const ownerApi = {
   getMyInvoiceById(invoiceId) {
     return axiosClient.get(`/api/owner/my-invoices/${invoiceId}`);
   },
+
+  payMyInvoice(invoiceId, payload) {
+    return axiosClient.post(`/api/owner/my-invoices/${invoiceId}/pay`, payload);
+  },
 };
 
 export default ownerApi;

@@ -626,6 +626,29 @@ public class BillingServiceImpl implements BillingService {
         );
     }
 
+    @Override
+    @Transactional
+    public PaymentResponse payMyInvoice(
+            Integer invoiceId,
+            ConfirmPaymentRequest request,
+            Integer ownerUserId
+    ) {
+        Invoice invoice = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy hóa đơn với mã: " + invoiceId
+                ));
+
+        if (invoice.getMedicalRecord() != null && invoice.getMedicalRecord().getPet() != null) {
+            PetOwner owner = invoice.getMedicalRecord().getPet().getPetOwner();
+            if (owner != null && owner.getUserAccount() != null
+                    && !owner.getUserAccount().getUserId().equals(ownerUserId)) {
+                throw new BadRequestException("Bạn không có quyền thanh toán hóa đơn của chủ nuôi khác.");
+            }
+        }
+
+        return confirmPayment(invoiceId, request);
+    }
+
     private void recordBillingAudit(String actionType, String affectedResource, String outcome, String details) {
         UserAccount actor = resolveCurrentUser();
         if (actor != null) {
