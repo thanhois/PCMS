@@ -1,13 +1,12 @@
-
 /* =========================================
    PET OWNER LAYOUT
-   Giao dien danh cho chu thu cung
+   Giao dien danh cho chu thu cung - PCMS Brand (#6320ee)
    ========================================= */
 
 .pet-owner-layout {
   min-height: 100vh;
-  background: #f5f8f8;
-  color: #263b3b;
+  background: #f8fafc;
+  color: #1e293b;
 }
 
 /* Header */
@@ -16,13 +15,13 @@
   top: 0;
   z-index: 1000;
   background: #ffffff;
-  border-bottom: 1px solid #e2ecea;
-  box-shadow: 0 2px 8px rgba(20, 70, 65, 0.06);
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 2px 10px rgba(99, 32, 238, 0.05);
 }
 
 .pet-owner-header-inner {
   max-width: 1440px;
-  min-height: 76px;
+  min-height: 74px;
   margin: 0 auto;
   padding: 0 32px;
   display: flex;
@@ -36,15 +35,16 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #087f75;
+  color: #6320ee;
   text-decoration: none;
-  font-size: 21px;
+  font-size: 22px;
   font-weight: 800;
+  letter-spacing: -0.5px;
   white-space: nowrap;
 }
 
 .pet-owner-brand:hover {
-  color: #06665f;
+  color: #4f17c5;
 }
 
 /* Navigation */
@@ -55,23 +55,23 @@
 }
 
 .pet-owner-nav-link {
-  padding: 10px 16px;
+  padding: 9px 16px;
   border-radius: 9px;
-  color: #526767;
+  color: #64748b;
   text-decoration: none;
   font-size: 14px;
   font-weight: 600;
-  transition: background 0.2s, color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .pet-owner-nav-link:hover {
-  background: #edf7f5;
-  color: #087f75;
+  background: #faf5ff;
+  color: #6320ee;
 }
 
 .pet-owner-nav-link.active {
-  background: #e3f4f1;
-  color: #087f75;
+  background: #f5f3ff;
+  color: #6320ee;
   font-weight: 700;
 }
 
@@ -88,27 +88,27 @@
 }
 
 .pet-owner-user-name {
-  color: #344d4b;
-  font-size: 14px;
+  color: #334155;
+  font-size: 13.5px;
   font-weight: 600;
 }
 
 .pet-owner-logout {
-  padding: 9px 15px;
-  border: 1px solid #d7e5e2;
+  padding: 8px 15px;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #ffffff;
-  color: #526767;
+  color: #64748b;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .pet-owner-logout:hover {
-  background: #fff1f0;
-  border-color: #f0c5c1;
-  color: #c0392b;
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
 }
 
 /* Main content */
@@ -146,7 +146,7 @@
   }
 
   .pet-owner-brand {
-    font-size: 18px;
+    font-size: 19px;
   }
 
   .pet-owner-user-name {

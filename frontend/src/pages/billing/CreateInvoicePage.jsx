@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
     Search,
     Eye,
@@ -23,6 +23,8 @@ const formatDate = (value) => {
 
 export default function CreateInvoicePage() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const billingPrefix = location.pathname.startsWith('/admin') ? '/admin/billing' : '/billing';
 
     const [records, setRecords] = useState([]);
     const [selectedRecord, setSelectedRecord] = useState(null);
@@ -101,7 +103,7 @@ export default function CreateInvoicePage() {
     const handleContinue = () => {
         if (!preview?.invoiceId) return;
 
-        navigate('/billing/queue');
+        navigate(`${billingPrefix}/queue`);
     };
 
     return (

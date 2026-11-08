@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ClipboardList,
   FileText,
@@ -43,6 +43,8 @@ const getLocalDateKey = (value) => {
 
 export default function BillingDashboardPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const billingPrefix = location.pathname.startsWith('/admin') ? '/admin/billing' : '/billing';
 
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -226,7 +228,7 @@ export default function BillingDashboardPage() {
             <button
               type="button"
               className="pcms-btn pcms-btn-outline"
-              onClick={() => navigate('/billing/queue')}
+              onClick={() => navigate(`${billingPrefix}/queue`)}
             >
               Xem hàng chờ
             </button>
@@ -279,7 +281,7 @@ export default function BillingDashboardPage() {
                             className="pcms-btn pcms-btn-primary pcms-btn-xs"
                             onClick={() =>
                               navigate(
-                                `/billing/invoices/${invoice.invoiceId}`
+                                `${billingPrefix}/invoices/${invoice.invoiceId}`
                               )
                             }
                           >
@@ -304,7 +306,7 @@ export default function BillingDashboardPage() {
           <button
             type="button"
             className="billing-quick-action"
-            onClick={() => navigate('/billing/queue')}
+            onClick={() => navigate(`${billingPrefix}/queue`)}
           >
             <span className="billing-quick-icon">
               <Receipt size={19} />
@@ -318,7 +320,7 @@ export default function BillingDashboardPage() {
           <button
             type="button"
             className="billing-quick-action"
-            onClick={() => navigate('/billing/invoices')}
+            onClick={() => navigate(`${billingPrefix}/invoices`)}
           >
             <span className="billing-quick-icon">
               <Search size={19} />
@@ -332,7 +334,7 @@ export default function BillingDashboardPage() {
           <button
             type="button"
             className="billing-quick-action"
-            onClick={() => navigate('/billing/invoices')}
+            onClick={() => navigate(`${billingPrefix}/invoices`)}
           >
             <span className="billing-quick-icon">
               <FileText size={19} />

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import billingApi from '../../api/billingApi';
 import PageHeader from '../../components/admin/ui/PageHeader';
 import DataTable from '../../components/admin/ui/DataTable';
@@ -21,6 +21,8 @@ const formatDate = (value) => {
 
 export default function BillingQueuePage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const billingPrefix = location.pathname.startsWith('/admin') ? '/admin/billing' : '/billing';
 
   const [statusFilter, setStatusFilter] = useState('PENDING');
   const [invoices, setInvoices] = useState([]);
@@ -140,7 +142,7 @@ export default function BillingQueuePage() {
         <button
           type="button"
           className="pcms-btn pcms-btn-primary pcms-btn-sm"
-          onClick={() => navigate(`/billing/invoices/${row.invoiceId}`)}
+          onClick={() => navigate(`${billingPrefix}/invoices/${row.invoiceId}`)}
         >
           {row.status === 'PAID' ? 'Xem & In biên lai' : 'Chi tiết'}
         </button>

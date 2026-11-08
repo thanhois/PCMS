@@ -1,11 +1,11 @@
 /* =========================================================
    PET OWNER - INVOICES & PAYMENT STYLING
-   Veterian Clinical Theme (#087f75 / #13a89b)
+   PCMS Brand Purple Theme (#6320ee / #7c3aed)
    ========================================================= */
 
 .pet-owner-invoices {
   width: 100%;
-  color: #263b3b;
+  color: #1e293b;
 }
 
 /* Page Header */
@@ -19,7 +19,7 @@
 
 .owner-invoices-title {
   margin: 0;
-  color: #1b3534;
+  color: #0f172a;
   font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.4px;
@@ -27,7 +27,7 @@
 
 .owner-invoices-subtitle {
   margin: 6px 0 0;
-  color: #718181;
+  color: #64748b;
   font-size: 14px;
 }
 
@@ -36,10 +36,10 @@
   align-items: center;
   gap: 8px;
   padding: 9px 16px;
-  border: 1px solid #d7e5e2;
+  border: 1px solid #e2e8f0;
   border-radius: 9px;
   background: #ffffff;
-  color: #344d4b;
+  color: #334155;
   font-size: 13.5px;
   font-weight: 650;
   cursor: pointer;
@@ -47,9 +47,9 @@
 }
 
 .owner-invoices-refresh:hover {
-  border-color: #087f75;
-  color: #087f75;
-  background: #edf7f5;
+  border-color: #6320ee;
+  color: #6320ee;
+  background: #f5f3ff;
 }
 
 /* Statistics Grid (Identical to PetOwnerHomePage) */
@@ -62,16 +62,16 @@
 
 .owner-invoices-stat-card {
   padding: 22px;
-  border: 1px solid #e5eeec;
+  border: 1px solid #ede9fe;
   border-radius: 14px;
   background: #ffffff;
-  box-shadow: 0 3px 12px rgba(20, 70, 65, 0.04);
+  box-shadow: 0 3px 12px rgba(99, 32, 238, 0.04);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .owner-invoices-stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(20, 70, 65, 0.08);
+  box-shadow: 0 6px 16px rgba(99, 32, 238, 0.08);
 }
 
 .owner-invoices-stat-icon {
@@ -82,14 +82,14 @@
 
 .owner-invoices-stat-card p {
   margin: 0 0 8px;
-  color: #718181;
+  color: #64748b;
   font-size: 13.5px;
   font-weight: 500;
 }
 
 .owner-invoices-stat-card h2 {
   margin: 0;
-  color: #087f75;
+  color: #6320ee;
   font-size: 30px;
   font-weight: 800;
   line-height: 1.1;
@@ -109,10 +109,10 @@
 
 /* Main Table Card */
 .owner-invoices-card {
-  border: 1px solid #e5eeec;
+  border: 1px solid #ede9fe;
   border-radius: 16px;
   background: #ffffff;
-  box-shadow: 0 3px 14px rgba(20, 70, 65, 0.04);
+  box-shadow: 0 3px 14px rgba(99, 32, 238, 0.04);
   overflow: hidden;
   margin-bottom: 32px;
 }
@@ -122,19 +122,19 @@
   justify-content: space-between;
   align-items: center;
   padding: 22px 26px 18px;
-  border-bottom: 1px solid #edf4f2;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .owner-invoices-card-header h2 {
   margin: 0 0 4px;
-  color: #1b3534;
+  color: #0f172a;
   font-size: 18px;
   font-weight: 800;
 }
 
 .owner-invoices-card-header p {
   margin: 0;
-  color: #718181;
+  color: #64748b;
   font-size: 13px;
 }
 
@@ -142,8 +142,8 @@
   display: inline-block;
   padding: 5px 12px;
   border-radius: 20px;
-  background: #edf7f5;
-  color: #087f75;
+  background: #f5f3ff;
+  color: #6320ee;
   font-size: 12.5px;
   font-weight: 700;
 }
@@ -155,8 +155,8 @@
   justify-content: space-between;
   gap: 16px;
   padding: 16px 26px;
-  background: #fbfdfc;
-  border-bottom: 1px solid #edf4f2;
+  background: #fafafa;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .owner-invoices-search {
@@ -170,7 +170,7 @@
   top: 50%;
   left: 14px;
   transform: translateY(-50%);
-  color: #8da19f;
+  color: #94a3b8;
   font-size: 16px;
   pointer-events: none;
 }
@@ -179,29 +179,29 @@
   width: 100%;
   height: 42px;
   padding: 0 14px 0 38px;
-  border: 1px solid #d7e5e2;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   outline: none;
   background: #ffffff;
-  color: #263b3b;
+  color: #1e293b;
   font-size: 13.5px;
   transition: all 0.2s ease;
 }
 
 .owner-invoices-search input:focus {
-  border-color: #087f75;
-  box-shadow: 0 0 0 3px rgba(8, 127, 117, 0.12);
+  border-color: #6320ee;
+  box-shadow: 0 0 0 3px rgba(99, 32, 238, 0.12);
 }
 
 .owner-invoices-filter {
   height: 42px;
   min-width: 180px;
   padding: 0 16px;
-  border: 1px solid #d7e5e2;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   outline: none;
   background: #ffffff;
-  color: #344d4b;
+  color: #334155;
   font-size: 13.5px;
   font-weight: 500;
   cursor: pointer;
@@ -209,8 +209,8 @@
 }
 
 .owner-invoices-filter:focus {
-  border-color: #087f75;
-  box-shadow: 0 0 0 3px rgba(8, 127, 117, 0.12);
+  border-color: #6320ee;
+  box-shadow: 0 0 0 3px rgba(99, 32, 238, 0.12);
 }
 
 /* Table */
@@ -226,30 +226,30 @@
 }
 
 .owner-invoices-table thead {
-  background: #f7faf9;
+  background: #f8fafc;
 }
 
 .owner-invoices-table th {
   padding: 14px 20px;
-  color: #526767;
+  color: #475569;
   font-size: 12px;
   font-weight: 750;
   text-align: left;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  border-bottom: 1px solid #e2ecea;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .owner-invoices-table td {
   padding: 16px 20px;
-  border-bottom: 1px solid #edf4f2;
-  color: #344d4b;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
   font-size: 13.5px;
   vertical-align: middle;
 }
 
 .owner-invoices-table tbody tr:hover {
-  background: #f8fbfa;
+  background: #faf5ff;
 }
 
 .owner-invoices-detail-btn {
@@ -260,7 +260,7 @@
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
-  color: #087f75;
+  color: #6320ee;
   font-weight: 750;
   font-size: 13.5px;
   cursor: pointer;
@@ -268,8 +268,8 @@
 }
 
 .owner-invoices-detail-btn:hover {
-  background: #e3f4f1;
-  color: #06665f;
+  background: #ede9fe;
+  color: #4f17c5;
 }
 
 /* Badges */
@@ -285,20 +285,20 @@
 }
 
 .owner-invoices-status.paid {
-  background: #e6f7f2;
-  color: #087f75;
-  border: 1px solid #b2e4d9;
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
 }
 
 .owner-invoices-status.pending {
-  background: #fff8e6;
-  color: #b45309;
+  background: #fffbeb;
+  color: #d97706;
   border: 1px solid #fde68a;
 }
 
 .owner-invoices-status.void {
   background: #fee2e2;
-  color: #b91c1c;
+  color: #dc2626;
   border: 1px solid #fca5a5;
 }
 
@@ -310,19 +310,19 @@
   padding: 8px 18px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #087f75 0%, #0d9488 100%);
+  background: linear-gradient(135deg, #6320ee 0%, #7c3aed 100%);
   color: #ffffff;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(8, 127, 117, 0.25);
+  box-shadow: 0 2px 8px rgba(99, 32, 238, 0.25);
   transition: all 0.2s ease;
 }
 
 .pet-owner-pay-btn:hover {
-  background: linear-gradient(135deg, #06665f 0%, #0a796f 100%);
+  background: linear-gradient(135deg, #4f17c5 0%, #6d28d9 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(8, 127, 117, 0.35);
+  box-shadow: 0 4px 12px rgba(99, 32, 238, 0.35);
 }
 
 .pet-owner-view-btn {
@@ -330,10 +330,10 @@
   align-items: center;
   gap: 6px;
   padding: 7px 15px;
-  border: 1px solid #d7e5e2;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #ffffff;
-  color: #087f75;
+  color: #6320ee;
   font-size: 13px;
   font-weight: 650;
   cursor: pointer;
@@ -341,8 +341,8 @@
 }
 
 .pet-owner-view-btn:hover {
-  background: #edf7f5;
-  border-color: #087f75;
+  background: #f5f3ff;
+  border-color: #6320ee;
 }
 
 /* Empty & Loading states */
@@ -350,14 +350,14 @@
 .owner-invoices-loading {
   padding: 48px;
   text-align: center;
-  color: #718181;
+  color: #64748b;
   font-size: 14.5px;
 }
 
 .owner-invoices-empty-row {
   text-align: center;
   padding: 40px !important;
-  color: #718181;
+  color: #64748b;
 }
 
 /* =========================================================
@@ -403,19 +403,19 @@
   align-items: center;
   justify-content: space-between;
   padding: 22px 26px;
-  border-bottom: 1px solid #edf4f2;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .pay-modal-title {
   margin: 0 0 4px;
-  color: #1b3534;
+  color: #0f172a;
   font-size: 20px;
   font-weight: 800;
 }
 
 .pay-modal-subtitle {
   margin: 0;
-  color: #718181;
+  color: #64748b;
   font-size: 13px;
 }
 
@@ -427,7 +427,7 @@
   height: 34px;
   border: none;
   border-radius: 50%;
-  background: #f1f6f5;
+  background: #f1f5f9;
   color: #64748b;
   font-size: 18px;
   cursor: pointer;
@@ -435,8 +435,8 @@
 }
 
 .pay-modal-close:hover {
-  background: #e2ecea;
-  color: #1e293b;
+  background: #e2e8f0;
+  color: #0f172a;
 }
 
 .pay-modal-body {
@@ -451,20 +451,20 @@
   padding: 18px 22px;
   margin-bottom: 22px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #edf7f5 0%, #e3f4f1 100%);
-  border: 1px solid #b2e4d9;
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  border: 1px solid #ddd6fe;
 }
 
 .pay-amount-label {
   font-size: 13.5px;
   font-weight: 600;
-  color: #344d4b;
+  color: #334155;
 }
 
 .pay-amount-value {
   font-size: 26px;
   font-weight: 800;
-  color: #087f75;
+  color: #6320ee;
 }
 
 /* Payment Method Tabs */
@@ -477,10 +477,10 @@
 .pay-method-tab {
   flex: 1;
   padding: 12px 14px;
-  border: 1.5px solid #d7e5e2;
+  border: 1.5px solid #e2e8f0;
   border-radius: 12px;
   background: #ffffff;
-  color: #526767;
+  color: #475569;
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
@@ -492,9 +492,9 @@
 }
 
 .pay-method-tab.active {
-  border-color: #087f75;
-  background: #edf7f5;
-  color: #087f75;
+  border-color: #6320ee;
+  background: #f5f3ff;
+  color: #6320ee;
 }
 
 /* VietQR View */
@@ -504,8 +504,8 @@
   align-items: center;
   padding: 20px;
   border-radius: 16px;
-  background: #fbfdfc;
-  border: 1px dashed #b2e4d9;
+  background: #fafafa;
+  border: 1px dashed #ddd6fe;
   margin-bottom: 22px;
 }
 
@@ -513,7 +513,7 @@
   padding: 14px;
   border-radius: 14px;
   background: #ffffff;
-  box-shadow: 0 4px 16px rgba(8, 127, 117, 0.08);
+  box-shadow: 0 4px 16px rgba(99, 32, 238, 0.08);
   margin-bottom: 16px;
 }
 
@@ -530,7 +530,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 6px 0;
-  border-bottom: 1px dashed #e5eeec;
+  border-bottom: 1px dashed #e2e8f0;
 }
 
 .pay-bank-row:last-child {
@@ -538,12 +538,12 @@
 }
 
 .pay-bank-label {
-  color: #718181;
+  color: #64748b;
 }
 
 .pay-bank-val {
   font-weight: 700;
-  color: #1b3534;
+  color: #0f172a;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -552,15 +552,15 @@
 .pay-copy-btn {
   padding: 2px 7px;
   font-size: 11px;
-  border: 1px solid #d7e5e2;
+  border: 1px solid #e2e8f0;
   border-radius: 5px;
   background: #ffffff;
-  color: #087f75;
+  color: #6320ee;
   cursor: pointer;
 }
 
 .pay-copy-btn:hover {
-  background: #edf7f5;
+  background: #f5f3ff;
 }
 
 /* Card Form View */
@@ -576,22 +576,22 @@
   margin-bottom: 6px;
   font-size: 13px;
   font-weight: 600;
-  color: #344d4b;
+  color: #334155;
 }
 
 .pay-input-group input {
   width: 100%;
   height: 42px;
   padding: 0 14px;
-  border: 1px solid #d7e5e2;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   font-size: 14px;
   outline: none;
 }
 
 .pay-input-group input:focus {
-  border-color: #087f75;
-  box-shadow: 0 0 0 3px rgba(8, 127, 117, 0.12);
+  border-color: #6320ee;
+  box-shadow: 0 0 0 3px rgba(99, 32, 238, 0.12);
 }
 
 .pay-modal-footer {
@@ -599,43 +599,43 @@
   gap: 12px;
   justify-content: flex-end;
   padding: 18px 26px;
-  border-top: 1px solid #edf4f2;
-  background: #fbfdfc;
+  border-top: 1px solid #f1f5f9;
+  background: #fafafa;
   border-radius: 0 0 20px 20px;
 }
 
 .pay-btn-cancel {
   padding: 10px 18px;
-  border: 1px solid #d7e5e2;
+  border: 1px solid #e2e8f0;
   border-radius: 9px;
   background: #ffffff;
-  color: #526767;
+  color: #475569;
   font-size: 13.5px;
   font-weight: 650;
   cursor: pointer;
 }
 
 .pay-btn-cancel:hover {
-  background: #f1f6f5;
+  background: #f1f5f9;
 }
 
 .pay-btn-submit {
   padding: 10px 24px;
   border: none;
   border-radius: 9px;
-  background: linear-gradient(135deg, #087f75 0%, #0d9488 100%);
+  background: linear-gradient(135deg, #6320ee 0%, #7c3aed 100%);
   color: #ffffff;
   font-size: 14px;
   font-weight: 750;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(8, 127, 117, 0.3);
+  box-shadow: 0 2px 8px rgba(99, 32, 238, 0.3);
   transition: all 0.2s ease;
 }
 
 .pay-btn-submit:hover:not(:disabled) {
-  background: linear-gradient(135deg, #06665f 0%, #0a796f 100%);
+  background: linear-gradient(135deg, #4f17c5 0%, #6d28d9 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(8, 127, 117, 0.4);
+  box-shadow: 0 4px 14px rgba(99, 32, 238, 0.4);
 }
 
 .pay-btn-submit:disabled {
@@ -645,10 +645,10 @@
 
 /* Detail Page specific */
 .owner-invoice-detail-card {
-  border: 1px solid #e5eeec;
+  border: 1px solid #ede9fe;
   border-radius: 16px;
   background: #ffffff;
-  box-shadow: 0 3px 14px rgba(20, 70, 65, 0.04);
+  box-shadow: 0 3px 14px rgba(99, 32, 238, 0.04);
   padding: 30px;
   margin-top: 20px;
 }
@@ -664,15 +664,15 @@
 }
 
 .owner-invoice-alert.pending {
-  background: #fff8e6;
+  background: #fffbeb;
   border: 1px solid #fde68a;
   color: #92400e;
 }
 
 .owner-invoice-alert.paid {
-  background: #e6f7f2;
-  border: 1px solid #b2e4d9;
-  color: #087f75;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #059669;
 }
 
 @media (max-width: 900px) {

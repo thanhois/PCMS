@@ -23,7 +23,11 @@ export default function InventoryRouteGuard() {
     );
   }
 
-  const allowedRoles = ['ADMIN', 'INVENTORY_MANAGER'];
+  if (user.role === 'ADMIN') {
+    return <Navigate to="/admin/batches" replace />;
+  }
+
+  const allowedRoles = ['INVENTORY_MANAGER'];
 
   if (!allowedRoles.includes(user.role)) {
     return (

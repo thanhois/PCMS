@@ -13,7 +13,8 @@ export default function PetOwnerLayout() {
         <div className="pet-owner-header-inner">
           {/* Brand */}
           <NavLink to="/owner" className="pet-owner-brand">
-            Veterian
+            <span style={{ color: '#6320ee', fontWeight: 900 }}>PCMS</span>
+            <span style={{ fontSize: '15px', color: '#64748b', fontWeight: 600 }}>• Dành cho Khách hàng</span>
           </NavLink>
 
           {/* Navigation */}

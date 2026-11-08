@@ -111,16 +111,15 @@ export default function PetOwnerHomePage() {
       {/* Welcome */}
       <section className="pet-owner-welcome">
         <p className="pet-owner-welcome-label">
-          VETERIAN CLINIC
+          HỆ THỐNG PHÒNG KHÁM THÚ Y • PCMS
         </p>
 
         <h1>
-          Chào mừng bạn đến với Veterian!
+          Chào mừng bạn đến với PCMS!
         </h1>
 
         <p className="pet-owner-welcome-description">
-          Theo dõi sức khỏe thú cưng và quản lý hóa đơn
-          của bạn tại đây.
+          Theo dõi hồ sơ sức khỏe thú cưng, tra cứu lịch khám và thanh toán hóa đơn dịch vụ trực tuyến.
         </p>
       </section>
 

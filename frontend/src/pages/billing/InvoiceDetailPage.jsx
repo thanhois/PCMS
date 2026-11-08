@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import billingApi from '../../api/billingApi';
 import { useAuth } from '../../context/AuthContext';
 import PageHeader from '../../components/admin/ui/PageHeader';
@@ -36,8 +36,10 @@ const formatPaymentMethod = (method) => {
 export default function InvoiceDetailPage() {
   const { invoiceId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
+  const billingPrefix = location.pathname.startsWith('/admin') ? '/admin/billing' : '/billing';
 
   const [invoice, setInvoice] = useState(null);
   const [payments, setPayments] = useState([]);
@@ -245,7 +247,7 @@ export default function InvoiceDetailPage() {
         <button
           type="button"
           className="pcms-btn pcms-btn-secondary"
-          onClick={() => navigate('/billing/invoices')}
+          onClick={() => navigate(`${billingPrefix}/invoices`)}
         >
           Quay lại danh sách
         </button>
@@ -271,7 +273,7 @@ export default function InvoiceDetailPage() {
               <button
                 type="button"
                 className="pcms-btn pcms-btn-secondary"
-                onClick={() => navigate('/billing/invoices')}
+                onClick={() => navigate(`${billingPrefix}/invoices`)}
               >
                 ← Quản lý hóa đơn
               </button>

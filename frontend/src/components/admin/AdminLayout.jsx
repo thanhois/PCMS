@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import adminApi from '../../api/adminApi';
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/adminTheme.css';
@@ -11,8 +11,8 @@ const MAIN_NAV_ITEMS = [
   { to: '/admin/services', label: 'Danh mục dịch vụ' },
   { to: '/admin/medicines', label: 'Danh mục thuốc' },
   { to: '/admin/reports', label: 'Báo cáo thống kê' },
-  { to: '/inventory/batches', label: 'Quản lý lô thuốc' },
-  { to: '/billing/queue', label: 'Thanh toán hóa đơn' },
+  { to: '/admin/batches', label: 'Quản lý lô thuốc' },
+  { to: '/admin/billing', label: 'Thanh toán hóa đơn' },
 ];
 
 const BOTTOM_NAV_ITEMS = [
@@ -22,6 +22,7 @@ const BOTTOM_NAV_ITEMS = [
 export default function AdminLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [collapsed, setCollapsed] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
@@ -72,9 +73,9 @@ export default function AdminLayout() {
     if (!q) return;
 
     if (q.includes('kho') || q.includes('lô thuốc') || q.includes('batch')) {
-      navigate('/inventory/batches');
+      navigate('/admin/batches');
     } else if (q.includes('hóa đơn') || q.includes('thanh toán') || q.includes('billing')) {
-      navigate('/billing/queue');
+      navigate('/admin/billing');
     } else if (q.includes('thuốc') || q.includes('med')) {
       navigate('/admin/medicines');
     } else if (q.includes('dịch vụ') || q.includes('service')) {
@@ -92,6 +93,13 @@ export default function AdminLayout() {
 
   const displayName = user?.fullName || user?.username || 'Admin';
   const avatarChar = displayName.charAt(0).toUpperCase();
+
+  const isItemActive = (to) => {
+    if (to === '/admin/overview') {
+      return location.pathname === '/admin/overview' || location.pathname === '/admin' || location.pathname === '/admin/';
+    }
+    return location.pathname === to || location.pathname.startsWith(to + '/');
+  };
 
   return (
     <div className="pcms-admin-shell">
@@ -221,7 +229,7 @@ export default function AdminLayout() {
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={({ isActive }) => `pcms-nav-item ${isActive ? 'active' : ''}`}
+                className={() => `pcms-nav-item ${isItemActive(item.to) ? 'active' : ''}`}
               >
                 <span className="pcms-nav-label">{item.label}</span>
               </NavLink>
@@ -233,7 +241,7 @@ export default function AdminLayout() {
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={({ isActive }) => `pcms-nav-item ${isActive ? 'active' : ''}`}
+                className={() => `pcms-nav-item ${isItemActive(item.to) ? 'active' : ''}`}
               >
                 <span className="pcms-nav-label">{item.label}</span>
               </NavLink>

@@ -24,7 +24,12 @@ export default function BillingRouteGuard() {
     );
   }
 
-  const allowedRoles = ['ADMIN', 'RECEPTIONIST'];
+  if (user.role === 'ADMIN') {
+    const adminPath = location.pathname.replace(/^\/billing/, '/admin/billing');
+    return <Navigate to={adminPath || '/admin/billing'} replace />;
+  }
+
+  const allowedRoles = ['RECEPTIONIST'];
 
   if (!allowedRoles.includes(user.role)) {
     const handleLogout = () => {

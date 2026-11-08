@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { RefreshCw, Search } from 'lucide-react';
 
 import billingApi from '../../api/billingApi';
@@ -23,6 +23,8 @@ const formatDate = (value) => {
 
 export default function InvoiceManagementPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const billingPrefix = location.pathname.startsWith('/admin') ? '/admin/billing' : '/billing';
 
   const [invoices, setInvoices] = useState([]);
   const [keyword, setKeyword] = useState('');
@@ -218,7 +220,7 @@ export default function InvoiceManagementPage() {
                           type="button"
                           className="pcms-btn pcms-btn-primary pcms-btn-xs"
                           onClick={() =>
-                            navigate(`/billing/invoices/${invoice.invoiceId}`)
+                            navigate(`${billingPrefix}/invoices/${invoice.invoiceId}`)
                           }
                         >
                           Chi tiết

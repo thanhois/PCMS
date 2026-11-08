@@ -91,7 +91,13 @@ export default function App() {
               <Route path="roles" element={<AdminRolesPage />} />
               <Route path="services" element={<AdminServicesPage />} />
               <Route path="medicines" element={<AdminMedicinesPage />} />
+              <Route path="batches" element={<InventoryBatchesPage />} />
+              <Route path="inventory" element={<Navigate to="batches" replace />} />
               <Route path="billing" element={<BillingQueuePage />} />
+              <Route path="billing/queue" element={<BillingQueuePage />} />
+              <Route path="billing/dashboard" element={<BillingDashboardPage />} />
+              <Route path="billing/create" element={<CreateInvoicePage />} />
+              <Route path="billing/invoices" element={<InvoiceManagementPage />} />
               <Route path="billing/invoices/:invoiceId" element={<InvoiceDetailPage />} />
               <Route path="reports" element={<AdminReportsPage />} />
               <Route path="audit-logs" element={<AdminAuditLogsPage />} />
