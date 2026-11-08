@@ -35,17 +35,19 @@ export default function VetPetsPage() {
   };
 
   const handleStartExamForPet = async (pet) => {
+    if (!pet.hasTodayAppointment || !pet.todayAppointmentId) {
+      alert(`Thú cưng ${pet.petName} hiện chưa có ca hẹn hoặc chưa được quầy Lễ tân check-in tiếp nhận hôm nay.`);
+      return;
+    }
     try {
-      const created = await vetApi.createMedicalRecord({
-        petId: pet.petId,
-        symptoms: 'Khám theo yêu cầu chủ nuôi',
-        diagnosis: 'Khám lâm sàng',
-        treatmentPlan: '',
-        status: 'IN_PROGRESS',
-      });
-      navigate(`/vet/examination/${created.recordId}`);
+      const record = await vetApi.startExamination(pet.todayAppointmentId);
+      if (record && record.recordId) {
+        navigate(`/vet/examination/${record.recordId}`);
+      } else {
+        navigate('/vet/workbench');
+      }
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi khi tạo ca khám');
+      alert(err?.response?.data?.message || err?.message || 'Không thể bắt đầu ca khám');
     }
   };
 
@@ -125,29 +127,43 @@ export default function VetPetsPage() {
                     <span style={{ color: '#64748b' }}>Chủ nuôi:</span>
                     <strong style={{ color: '#0f172a' }}>{p.ownerName}</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span style={{ color: '#64748b' }}>Số điện thoại:</span>
                     <span style={{ color: '#6320ee', fontWeight: 600 }}>{p.ownerPhone}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px dashed #e2e8f0', alignItems: 'center' }}>
+                    <span style={{ color: '#64748b', fontSize: 12 }}>Lịch hẹn hôm nay:</span>
+                    {p.hasTodayAppointment ? (
+                      <span style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: 12, fontSize: 11.5, fontWeight: 700 }}>
+                        ● Có hẹn ({p.todayAppointmentTime || 'Hôm nay'})
+                      </span>
+                    ) : (
+                      <span style={{ background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0', padding: '2px 8px', borderRadius: 12, fontSize: 11.5 }}>
+                        Chưa có lịch hẹn
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 <div style={{ marginTop: 'auto', display: 'flex', gap: 8 }}>
                   <button
                     type="button"
-                    className="vet-btn vet-btn-outline vet-btn-sm"
+                    className={`vet-btn ${p.hasTodayAppointment ? 'vet-btn-outline' : 'vet-btn-primary'} vet-btn-sm`}
                     style={{ flex: 1 }}
                     onClick={() => setSelectedPetHistory(p)}
                   >
                     Bệnh sử
                   </button>
-                  <button
-                    type="button"
-                    className="vet-btn vet-btn-primary vet-btn-sm"
-                    style={{ flex: 1 }}
-                    onClick={() => handleStartExamForPet(p)}
-                  >
-                    Khám ca này
-                  </button>
+                  {p.hasTodayAppointment ? (
+                    <button
+                      type="button"
+                      className="vet-btn vet-btn-primary vet-btn-sm"
+                      style={{ flex: 1 }}
+                      onClick={() => handleStartExamForPet(p)}
+                    >
+                      Khám ca này
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </div>

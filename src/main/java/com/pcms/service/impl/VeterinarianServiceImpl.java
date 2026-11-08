@@ -1269,6 +1269,32 @@ public class VeterinarianServiceImpl implements VeterinarianService {
             m.put("ownerName", pet.getPetOwner().getFullName());
             m.put("ownerPhone", pet.getPetOwner().getPhoneNumber());
         }
+
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
+
+        List<Appointment> petAppts = appointmentRepository.findAll().stream()
+                .filter(a -> a.getPet() != null && a.getPet().getPetId().equals(pet.getPetId()))
+                .filter(a -> a.getAppointmentDate() != null)
+                .filter(a -> !a.getAppointmentDate().isBefore(startOfDay) && !a.getAppointmentDate().isAfter(endOfDay))
+                .filter(a -> !Set.of("CANCELLED", "REJECTED", "COMPLETED").contains(a.getStatus() != null ? a.getStatus().toUpperCase() : ""))
+                .sorted(Comparator.comparing(Appointment::getAppointmentDate))
+                .toList();
+
+        if (!petAppts.isEmpty()) {
+            Appointment appt = petAppts.get(0);
+            m.put("hasTodayAppointment", true);
+            m.put("todayAppointmentId", appt.getAppointmentId());
+            m.put("todayAppointmentStatus", appt.getStatus());
+            m.put("todayAppointmentTime", appt.getAppointmentDate().toLocalTime().toString().substring(0, 5));
+        } else {
+            m.put("hasTodayAppointment", false);
+            m.put("todayAppointmentId", null);
+            m.put("todayAppointmentStatus", null);
+            m.put("todayAppointmentTime", null);
+        }
+
         return m;
     }
 
