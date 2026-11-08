@@ -7,7 +7,22 @@ const billingApi = {
     return axiosClient.get('/api/v1/billing/queue');
   },
 
-  // 2. INVOICE
+  getAllInvoices() {
+    return axiosClient.get('/api/v1/billing/invoices');
+  },
+
+  // 2. UC24 - CREATE INVOICE
+  getCompletedMedicalRecords() {
+    return axiosClient.get('/api/v1/billing/records/completed');
+  },
+
+  createInvoicePreview(recordId) {
+    return axiosClient.post(
+      `/api/v1/billing/records/${recordId}/invoice-preview`
+    );
+  },
+
+  // 3. INVOICE
   getInvoiceById(invoiceId) {
     return axiosClient.get(
       `/api/v1/billing/invoices/${invoiceId}`
@@ -28,7 +43,7 @@ const billingApi = {
     );
   },
 
-  // 3. PAYMENT
+  // 4. PAYMENT
   confirmPayment(invoiceId, payload) {
     return axiosClient.post(
       `/api/v1/billing/invoices/${invoiceId}/payments`,

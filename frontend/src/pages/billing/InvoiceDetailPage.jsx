@@ -227,7 +227,7 @@ const handleConfirmPayment = async () => {
         <button
           type="button"
           className="pcms-btn pcms-btn-secondary"
-          onClick={() => navigate('/admin/billing')}
+          onClick={() => navigate('/billing/invoices')}
         >
           ← Quay lại danh sách
         </button>
@@ -244,7 +244,7 @@ const handleConfirmPayment = async () => {
           <button
             type="button"
             className="pcms-btn pcms-btn-secondary"
-            onClick={() => navigate('/admin/billing')}
+            onClick={() => ('/billing/invoices')}
           >
             ← Danh sách hóa đơn
           </button>
@@ -551,7 +551,7 @@ const handleConfirmPayment = async () => {
 
         {paymentHistory.length === 0 ? (
           <p style={{ color: 'var(--pcms-text-muted)' }}>
-            Backend hiện chưa trả về danh sách giao dịch thanh toán cho hóa đơn này.
+           Chưa có giao dịch thanh toán cho hóa đơn này.
           </p>
         ) : (
           <div style={{ overflowX: 'auto' }}>

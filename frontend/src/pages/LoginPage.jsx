@@ -59,29 +59,46 @@ export default function LoginPage() {
         login: formData.login.trim(),
         password: formData.password,
       });
-      const loggedInRole = response?.data?.user?.role;
-      if (loggedInRole === 'ADMIN') {
-        const target = location.state?.from?.startsWith('/admin')
-          ? location.state.from
-          : '/admin/overview';
-        navigate(target, { replace: true });
-      } else if (loggedInRole === 'VETERINARIAN') {
-        const target = location.state?.from?.startsWith('/vet')
-          ? location.state.from
-          : '/vet/workbench';
-        navigate(target, { replace: true });
-      } else if (loggedInRole === 'PET_OWNER') {
-        const target = location.state?.from || '/owner/medical-history';
-        navigate(target, { replace: true });
-      } else if (loggedInRole === 'INVENTORY_MANAGER') {
-    const target = location.state?.from?.startsWith('/inventory')
-        ? location.state.from
-        : '/inventory/batches';
+      
+const loggedInRole = response?.data?.user?.role;
 
-    navigate(target, { replace: true });  
-      } else {
-        navigate('/', { replace: true });
-      }
+if (loggedInRole === 'ADMIN') {
+  const target = location.state?.from?.startsWith('/admin')
+    ? location.state.from
+    : '/admin/overview';
+
+  navigate(target, { replace: true });
+
+} else if (loggedInRole === 'VETERINARIAN') {
+  const target = location.state?.from?.startsWith('/vet')
+    ? location.state.from
+    : '/vet/workbench';
+
+  navigate(target, { replace: true });
+
+} else if (loggedInRole === 'INVENTORY_MANAGER') {
+  const target = location.state?.from?.startsWith('/inventory')
+    ? location.state.from
+    : '/inventory/batches';
+
+  navigate(target, { replace: true });
+
+} else if (loggedInRole === 'RECEPTIONIST') {
+  const target = location.state?.from?.startsWith('/billing')
+    ? location.state.from
+    : '/billing';
+
+  navigate(target, { replace: true });
+
+} else if (loggedInRole === 'PET_OWNER') {
+  const target = location.state?.from || '/owner/medical-history';
+
+  navigate(target, { replace: true });
+
+} else {
+  navigate('/', { replace: true });
+}
+
     } catch (err) {
       if (err.fieldErrors && Object.keys(err.fieldErrors).length > 0) {
         setErrors((prev) => ({ ...prev, ...err.fieldErrors }));

@@ -12,6 +12,14 @@ const ownerApi = {
   getMyMedicalRecordPrintView(recordId) {
     return axiosClient.get(`/api/owner/medical-records/${recordId}`);
   },
+
+  getMyInvoices() {
+    return axiosClient.get('/api/owner/my-invoices');
+  },
+
+  getMyInvoiceById(invoiceId) {
+    return axiosClient.get(`/api/owner/my-invoices/${invoiceId}`);
+  },
 };
 
 export default ownerApi;

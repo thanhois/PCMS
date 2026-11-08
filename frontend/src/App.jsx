@@ -15,6 +15,9 @@ import InventoryRouteGuard from './components/inventory/InventoryRouteGuard';
 import BillingLayout from './components/billing/BillingLayout';
 import BillingRouteGuard from './components/billing/BillingRouteGuard';
 
+import PetOwnerRouteGuard from './components/owner/PetOwnerRouteGuard';
+import PetOwnerLayout from './components/owner/PetOwnerLayout';
+
 // Authentication
 import { AuthProvider } from './context/AuthContext';
 
@@ -41,14 +44,22 @@ import VetRecordsPage from './pages/vet/VetRecordsPage';
 import VetPetsPage from './pages/vet/VetPetsPage';
 
 // Pet Owner Pages
+import PetOwnerHomePage from './pages/owner/PetOwnerHomePage';
 import PetOwnerMedicalPage from './pages/owner/PetOwnerMedicalPage';
+import PetOwnerInvoicesPage from './pages/owner/PetOwnerInvoicesPage';
+import PetOwnerInvoiceDetailPage from './pages/owner/PetOwnerInvoiceDetailPage';
 
 // Inventory Pages
 import InventoryBatchesPage from './pages/inventory/InventoryBatchesPage';
+import inventoryCatalogApi from './api/inventoryCatalogApi';
 
 // Billing Pages
+import BillingDashboardPage from './pages/billing/BillingDashboardPage';
 import BillingQueuePage from './pages/billing/BillingQueuePage';
+import InvoiceManagementPage from './pages/billing/InvoiceManagementPage';
 import InvoiceDetailPage from './pages/billing/InvoiceDetailPage';
+import CreateInvoicePage from './pages/billing/CreateInvoicePage';
+
 
 export default function App() {
   return (
@@ -95,34 +106,71 @@ export default function App() {
 
           {/* ================= INVENTORY ROUTES ================= */}
           <Route path="/inventory" element={<InventoryRouteGuard />}>
-            <Route element={<InventoryLayout />}>
-              <Route index element={<Navigate to="batches" replace />} />
+  <Route element={<InventoryLayout />}>
+    <Route index element={<Navigate to="batches" replace />} />
 
-              <Route
-                path="batches"
-                element={<InventoryBatchesPage />}
-              />
-            </Route>
-          </Route>
+    <Route
+      path="batches"
+      element={<InventoryBatchesPage />}
+    />
 
-          {/* ================= BILLING ROUTES ================= */}
-          <Route path="/billing" element={<BillingRouteGuard />}>
-            <Route element={<BillingLayout />}>
-              <Route index element={<Navigate to="queue" replace />} />
+    <Route
+      path="services"
+      element={<AdminServicesPage api={inventoryCatalogApi} />}
+    />
 
-              <Route path="queue" element={<BillingQueuePage />} />
-              <Route
-                path="invoices/:invoiceId"
-                element={<InvoiceDetailPage />}
-              />
-            </Route>
-          </Route>
+    <Route
+      path="medicines"
+      element={<AdminMedicinesPage api={inventoryCatalogApi} />}
+    />
+  </Route>
+</Route>
+
+{/* ================= BILLING ROUTES ================= */}
+<Route path="/billing" element={<BillingRouteGuard />}>
+  <Route element={<BillingLayout />}>
+    <Route index element={<BillingDashboardPage />} />
+
+    <Route path="queue" element={<BillingQueuePage />} />
+    <Route path="create" element={<CreateInvoicePage />} />
+    <Route path="invoices" element={<InvoiceManagementPage />} />
+
+    <Route
+      path="invoices/:invoiceId"
+      element={<InvoiceDetailPage />}
+    />
+  </Route>
+</Route>
+
 
           {/* ================= PET OWNER ROUTES ================= */}
-          <Route
-            path="/owner/medical-history"
-            element={<PetOwnerMedicalPage />}
-          />
+          <Route path="/owner" element={<PetOwnerRouteGuard />}>
+            <Route element={<PetOwnerLayout />}>
+              {/* Pet Owner Home */}
+              <Route
+                index
+                element={<PetOwnerHomePage />}
+              />
+
+              {/* Medical History */}
+              <Route
+                path="medical-history"
+                element={<PetOwnerMedicalPage />}
+              />
+
+              {/* Invoices */}
+              <Route
+                path="invoices"
+                element={<PetOwnerInvoicesPage />}
+              />
+
+              {/* Invoice Detail */}
+              <Route
+                path="invoices/:invoiceId"
+                element={<PetOwnerInvoiceDetailPage />}
+              />
+            </Route>
+          </Route>
 
           {/* ================= NOT FOUND ================= */}
           <Route path="*" element={<Navigate to="/" replace />} />

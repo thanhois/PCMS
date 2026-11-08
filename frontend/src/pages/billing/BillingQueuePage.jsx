@@ -142,7 +142,7 @@ export default function BillingQueuePage() {
           type="button"
           className="pcms-btn pcms-btn-primary"
           onClick={() =>
-            navigate(`/admin/billing/invoices/${row.invoiceId}`)
+            navigate(`/billing/invoices/${row.invoiceId}`)
           }
         >
           Chi tiết

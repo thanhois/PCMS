@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import com.pcms.service.BillingService;
+import com.pcms.dto.response.billing.InvoiceResponse;
 
 @RestController
 @RequestMapping("/api/owner")
@@ -18,6 +20,7 @@ import java.util.Map;
 public class PetOwnerPortalController {
 
     private final VeterinarianService veterinarianService;
+    private final BillingService billingService;
 
     @GetMapping("/my-pets")
     public ResponseEntity<List<Map<String, Object>>> getMyPets(
@@ -40,5 +43,26 @@ public class PetOwnerPortalController {
             @AuthenticationPrincipal UserPrincipal principal) {
         Integer ownerUserId = (principal != null && "PET_OWNER".equals(principal.getRole())) ? principal.getId() : null;
         return ResponseEntity.ok(veterinarianService.getMyMedicalRecordPrintView(recordId, ownerUserId));
+    }
+    @GetMapping("/my-invoices")
+    @PreAuthorize("hasRole('PET_OWNER')")
+    public ResponseEntity<List<InvoiceResponse>> getMyInvoices(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(
+                billingService.getMyInvoices(principal.getId())
+        );
+    }
+    @GetMapping("/my-invoices/{invoiceId}")
+    @PreAuthorize("hasRole('PET_OWNER')")
+    public ResponseEntity<InvoiceResponse> getMyInvoiceById(
+            @PathVariable Integer invoiceId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+
+        return ResponseEntity.ok(
+                billingService.getMyInvoiceById(
+                        invoiceId,
+                        principal.getId()
+                )
+        );
     }
 }

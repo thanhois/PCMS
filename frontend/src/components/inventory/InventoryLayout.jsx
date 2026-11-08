@@ -1,10 +1,13 @@
 
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-
+import AdminLayout from '../admin/AdminLayout';
 function InventoryLayout() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    if (user?.role === 'ADMIN') {
+        return <AdminLayout />;
+    }
 
     const handleLogout = () => {
         logout();
@@ -23,13 +26,27 @@ function InventoryLayout() {
                 </div>
 
                 <nav className="inventory-navigation">
-                    <NavLink
-                        to="/inventory/batches"
-                        className={navLinkClass}
-                    >
-                        <span>Quản lý lô thuốc</span>
-                    </NavLink>
-                </nav>
+    <NavLink
+        to="/inventory/services"
+        className={navLinkClass}
+    >
+        <span>Danh mục dịch vụ</span>
+    </NavLink>
+
+    <NavLink
+        to="/inventory/medicines"
+        className={navLinkClass}
+    >
+        <span>Danh mục thuốc / vật tư</span>
+    </NavLink>
+
+    <NavLink
+        to="/inventory/batches"
+        className={navLinkClass}
+    >
+        <span>Quản lý lô thuốc</span>
+    </NavLink>
+</nav>
 
                 <div className="inventory-sidebar-footer">
                     <button

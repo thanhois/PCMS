@@ -1,0 +1,371 @@
+
+/* =========================================
+   PET OWNER HOME PAGE
+   Trang chu danh cho chu thu cung
+   ========================================= */
+
+.pet-owner-home {
+  width: 100%;
+  color: #263b3b;
+}
+
+/* Welcome section */
+.pet-owner-welcome {
+  padding: 30px 32px;
+  margin-bottom: 28px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #087f75, #13a89b);
+  color: #ffffff;
+}
+
+.pet-owner-welcome-label {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  opacity: 0.9;
+}
+
+.pet-owner-welcome h1 {
+  margin: 0 0 10px;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.pet-owner-welcome-description {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  opacity: 0.95;
+}
+
+/* Loading and error */
+.pet-owner-loading {
+  padding: 40px;
+  text-align: center;
+  color: #64748b;
+}
+
+.pet-owner-error {
+  padding: 20px;
+  margin-bottom: 24px;
+  border-radius: 10px;
+  background: #fff1f0;
+  color: #c0392b;
+}
+
+.pet-owner-error p {
+  margin: 0;
+}
+
+.pet-owner-error button {
+  display: block;
+  margin-top: 12px;
+  padding: 9px 15px;
+  border: none;
+  border-radius: 7px;
+  background: #c0392b;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+/* Statistics */
+.pet-owner-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 32px;
+}
+
+.pet-owner-stat-card {
+  padding: 22px;
+  border: 1px solid #e5eeec;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(20, 70, 65, 0.04);
+}
+
+.pet-owner-stat-icon {
+  margin-bottom: 12px;
+  font-size: 25px;
+}
+
+.pet-owner-stat-card p {
+  margin: 0 0 8px;
+  color: #718181;
+  font-size: 14px;
+}
+
+.pet-owner-stat-card h2 {
+  margin: 0;
+  color: #087f75;
+  font-size: 29px;
+  font-weight: 800;
+}
+
+/* Common sections */
+.pet-owner-section {
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid #e5eeec;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(20, 70, 65, 0.04);
+}
+
+.pet-owner-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.pet-owner-section-header h2 {
+  margin: 0 0 6px;
+  color: #263b3b;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.pet-owner-section-header p {
+  margin: 0;
+  color: #82918f;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Buttons */
+.pet-owner-primary-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #087f75;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.pet-owner-primary-btn:hover {
+  background: #06665f;
+  transform: translateY(-1px);
+}
+
+.pet-owner-outline-btn {
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 16px;
+  border: 1px solid #b9dcd6;
+  border-radius: 8px;
+  background: #f0faf8;
+  color: #087f75;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.pet-owner-outline-btn:hover {
+  background: #e0f3ef;
+}
+
+/* Pet cards */
+.pet-owner-pet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.pet-owner-pet-card {
+  padding: 18px;
+  border: 1px solid #e5eeec;
+  border-radius: 12px;
+  background: #fbfdfd;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.pet-owner-pet-card:hover {
+  box-shadow: 0 5px 16px rgba(20, 70, 65, 0.08);
+  transform: translateY(-2px);
+}
+
+.pet-owner-pet-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.pet-owner-pet-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #e3f4f1;
+  font-size: 25px;
+}
+
+.pet-owner-pet-heading h3 {
+  margin: 0 0 5px;
+  color: #263b3b;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.pet-owner-pet-heading span {
+  color: #718181;
+  font-size: 13px;
+}
+
+.pet-owner-pet-info {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+  color: #718181;
+  font-size: 13px;
+}
+
+.pet-owner-pet-info strong {
+  color: #344d4b;
+  text-align: right;
+}
+
+/* Empty state */
+.pet-owner-empty {
+  padding: 28px;
+  border-radius: 10px;
+  background: #f8fbfa;
+  color: #82918f;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* Invoice table */
+.pet-owner-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.pet-owner-invoice-table {
+  width: 100%;
+  min-width: 580px;
+  border-collapse: collapse;
+}
+
+.pet-owner-invoice-table th {
+  padding: 13px 12px;
+  border-bottom: 1px solid #e5eeec;
+  background: #f4f8f7;
+  color: #526767;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pet-owner-invoice-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #edf2f1;
+  color: #526767;
+  font-size: 13px;
+}
+
+.pet-owner-invoice-table tbody tr:hover {
+  background: #f8fbfa;
+}
+
+.pet-owner-invoice-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #087f75;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pet-owner-invoice-link:hover {
+  text-decoration: underline;
+}
+
+/* Invoice status */
+.pet-owner-invoice-status {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pet-owner-invoice-status.paid {
+  background: #e6f7ed;
+  color: #218653;
+}
+
+.pet-owner-invoice-status.pending {
+  background: #fff5dc;
+  color: #a66b00;
+}
+
+.pet-owner-invoice-status.void {
+  background: #feeceb;
+  color: #c0392b;
+}
+
+.pet-owner-invoice-status.unknown {
+  background: #edf0f2;
+  color: #64748b;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .pet-owner-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 650px) {
+  .pet-owner-welcome {
+    padding: 24px 20px;
+  }
+
+  .pet-owner-welcome h1 {
+    font-size: 22px;
+  }
+
+  .pet-owner-welcome-description {
+    font-size: 13px;
+  }
+
+  .pet-owner-section {
+    padding: 18px;
+  }
+
+  .pet-owner-section-header {
+    align-items: flex-start;
+  }
+
+  .pet-owner-stats {
+    gap: 12px;
+  }
+
+  .pet-owner-stat-card {
+    padding: 16px;
+  }
+
+  .pet-owner-stat-card h2 {
+    font-size: 25px;
+  }
+}
+
+@media (max-width: 400px) {
+  .pet-owner-stats {
+    grid-template-columns: 1fr;
+  }
+}

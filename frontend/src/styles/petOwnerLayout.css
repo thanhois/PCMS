@@ -1,0 +1,153 @@
+
+/* =========================================
+   PET OWNER LAYOUT
+   Giao dien danh cho chu thu cung
+   ========================================= */
+
+.pet-owner-layout {
+  min-height: 100vh;
+  background: #f5f8f8;
+  color: #263b3b;
+}
+
+/* Header */
+.pet-owner-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #ffffff;
+  border-bottom: 1px solid #e2ecea;
+  box-shadow: 0 2px 8px rgba(20, 70, 65, 0.06);
+}
+
+.pet-owner-header-inner {
+  max-width: 1440px;
+  min-height: 76px;
+  margin: 0 auto;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+/* Brand */
+.pet-owner-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #087f75;
+  text-decoration: none;
+  font-size: 21px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.pet-owner-brand:hover {
+  color: #06665f;
+}
+
+/* Navigation */
+.pet-owner-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pet-owner-nav-link {
+  padding: 10px 16px;
+  border-radius: 9px;
+  color: #526767;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s, color 0.2s;
+}
+
+.pet-owner-nav-link:hover {
+  background: #edf7f5;
+  color: #087f75;
+}
+
+.pet-owner-nav-link.active {
+  background: #e3f4f1;
+  color: #087f75;
+}
+
+/* User actions */
+.pet-owner-user {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pet-owner-user-name {
+  color: #344d4b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pet-owner-logout {
+  padding: 9px 15px;
+  border: 1px solid #d7e5e2;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #526767;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.pet-owner-logout:hover {
+  background: #fff1f0;
+  border-color: #f0c5c1;
+  color: #c0392b;
+}
+
+/* Main content */
+.pet-owner-main {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .pet-owner-header-inner {
+    padding: 14px 20px;
+    flex-wrap: wrap;
+  }
+
+  .pet-owner-nav {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .pet-owner-nav-link {
+    white-space: nowrap;
+  }
+
+  .pet-owner-main {
+    padding: 24px 20px;
+  }
+}
+
+@media (max-width: 520px) {
+  .pet-owner-header-inner {
+    gap: 12px;
+  }
+
+  .pet-owner-brand {
+    font-size: 18px;
+  }
+
+  .pet-owner-user-name {
+    display: none;
+  }
+
+  .pet-owner-main {
+    padding: 18px 14px;
+  }
+}

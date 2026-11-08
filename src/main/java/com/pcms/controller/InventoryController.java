@@ -30,7 +30,7 @@ public class InventoryController {
     // 1. SERVICE CATALOG
 
     // Lay danh sach dich vu
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @GetMapping("/services")
     public ResponseEntity<ApiResponse<List<ServiceResponse>>> getAllServices() {
         List<ServiceResponse> services = inventoryService.getAllServices();
@@ -41,7 +41,7 @@ public class InventoryController {
     }
 
     // Them dich vu moi
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @PostMapping("/services")
     public ResponseEntity<ApiResponse<ServiceResponse>> createService(
             @Valid @RequestBody ServiceRequest request) {
@@ -54,7 +54,7 @@ public class InventoryController {
     }
 
     // Cap nhat thong tin dich vu
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @PutMapping("/services/{serviceId}")
     public ResponseEntity<ApiResponse<ServiceResponse>> updateService(
             @PathVariable Integer serviceId,
@@ -68,7 +68,7 @@ public class InventoryController {
     }
 
     // Thay doi trang thai dich vu
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @PatchMapping("/services/{serviceId}/status")
     public ResponseEntity<ApiResponse<ServiceResponse>> updateServiceStatus(
             @PathVariable Integer serviceId,
@@ -95,7 +95,7 @@ public class InventoryController {
     }
 
     // Them thuoc moi
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @PostMapping("/medicines")
     public ResponseEntity<ApiResponse<MedicineResponse>> createMedicine(
             @Valid @RequestBody MedicineRequest request) {
@@ -108,7 +108,7 @@ public class InventoryController {
     }
 
     // Cap nhat thong tin thuoc
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @PutMapping("/medicines/{medicineId}")
     public ResponseEntity<ApiResponse<MedicineResponse>> updateMedicine(
             @PathVariable Integer medicineId,
@@ -122,7 +122,7 @@ public class InventoryController {
     }
 
     // Thay doi trang thai thuoc
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
     @PatchMapping("/medicines/{medicineId}/status")
     public ResponseEntity<ApiResponse<MedicineResponse>> updateMedicineStatus(
             @PathVariable Integer medicineId,

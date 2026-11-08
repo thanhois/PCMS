@@ -1,0 +1,157 @@
+﻿diff --git a/src/main/java/com/pcms/controller/BillingController.java b/src/main/java/com/pcms/controller/BillingController.java
+index 3001a27..7d8bd61 100644
+--- a/src/main/java/com/pcms/controller/BillingController.java
++++ b/src/main/java/com/pcms/controller/BillingController.java
+@@ -97,6 +97,21 @@ public class BillingController {
+         );
+     }
+ 
++    // Lay tat ca hoa don cho Receptionist Invoice Management
++    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
++    @GetMapping("/invoices")
++    public ResponseEntity<ApiResponse<List<InvoiceResponse>>> getAllInvoices() {
++
++        List<InvoiceResponse> invoices = billingService.getAllInvoices();
++
++        return ResponseEntity.ok(
++                ApiResponse.success(
++                        "All invoices retrieved successfully",
++                        invoices
++                )
++        );
++    }
++
+     // UC26: Xac nhan thanh toan
+     @PreAuthorize("hasRole('RECEPTIONIST')")
+     @PostMapping("/invoices/{invoiceId}/payments")
+diff --git a/src/main/java/com/pcms/controller/InventoryController.java b/src/main/java/com/pcms/controller/InventoryController.java
+index d098294..cb9fbcc 100644
+--- a/src/main/java/com/pcms/controller/InventoryController.java
++++ b/src/main/java/com/pcms/controller/InventoryController.java
+@@ -30,7 +30,7 @@ public class InventoryController {
+     // 1. SERVICE CATALOG
+ 
+     // Lay danh sach dich vu
+-    @PreAuthorize("hasRole('ADMIN')")
++    @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
+     @GetMapping("/services")
+     public ResponseEntity<ApiResponse<List<ServiceResponse>>> getAllServices() {
+         List<ServiceResponse> services = inventoryService.getAllServices();
+@@ -41,7 +41,7 @@ public class InventoryController {
+     }
+ 
+     // Them dich vu moi
+-    @PreAuthorize("hasRole('ADMIN')")
++    @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
+     @PostMapping("/services")
+     public ResponseEntity<ApiResponse<ServiceResponse>> createService(
+             @Valid @RequestBody ServiceRequest request) {
+@@ -54,7 +54,7 @@ public class InventoryController {
+     }
+ 
+     // Cap nhat thong tin dich vu
+-    @PreAuthorize("hasRole('ADMIN')")
++    @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
+     @PutMapping("/services/{serviceId}")
+     public ResponseEntity<ApiResponse<ServiceResponse>> updateService(
+             @PathVariable Integer serviceId,
+@@ -68,7 +68,7 @@ public class InventoryController {
+     }
+ 
+     // Thay doi trang thai dich vu
+-    @PreAuthorize("hasRole('ADMIN')")
++    @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
+     @PatchMapping("/services/{serviceId}/status")
+     public ResponseEntity<ApiResponse<ServiceResponse>> updateServiceStatus(
+             @PathVariable Integer serviceId,
+@@ -95,7 +95,7 @@ public class InventoryController {
+     }
+ 
+     // Them thuoc moi
+-    @PreAuthorize("hasRole('ADMIN')")
++    @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
+     @PostMapping("/medicines")
+     public ResponseEntity<ApiResponse<MedicineResponse>> createMedicine(
+             @Valid @RequestBody MedicineRequest request) {
+@@ -108,7 +108,7 @@ public class InventoryController {
+     }
+ 
+     // Cap nhat thong tin thuoc
+-    @PreAuthorize("hasRole('ADMIN')")
++    @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
+     @PutMapping("/medicines/{medicineId}")
+     public ResponseEntity<ApiResponse<MedicineResponse>> updateMedicine(
+             @PathVariable Integer medicineId,
+@@ -122,7 +122,7 @@ public class InventoryController {
+     }
+ 
+     // Thay doi trang thai thuoc
+-    @PreAuthorize("hasRole('ADMIN')")
++    @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER')")
+     @PatchMapping("/medicines/{medicineId}/status")
+     public ResponseEntity<ApiResponse<MedicineResponse>> updateMedicineStatus(
+             @PathVariable Integer medicineId,
+diff --git a/src/main/java/com/pcms/repository/InventoryBatchRepository.java b/src/main/java/com/pcms/repository/InventoryBatchRepository.java
+index 85d5eea..afac4f8 100644
+--- a/src/main/java/com/pcms/repository/InventoryBatchRepository.java
++++ b/src/main/java/com/pcms/repository/InventoryBatchRepository.java
+@@ -1,6 +1,7 @@
+ package com.pcms.repository;
+ 
+ import com.pcms.entity.InventoryBatch;
++import org.springframework.data.jpa.repository.EntityGraph;
+ import org.springframework.data.jpa.repository.JpaRepository;
+ import org.springframework.stereotype.Repository;
+ 
+@@ -9,10 +10,15 @@ import java.util.List;
+ @Repository
+ public interface InventoryBatchRepository extends JpaRepository<InventoryBatch, Integer> {
+ 
++    @Override
++    @EntityGraph(attributePaths = {"medicine"})
++    List<InventoryBatch> findAll();
++
++    @EntityGraph(attributePaths = {"medicine"})
+     List<InventoryBatch> findByMedicine_MedicineId(Integer medicineId);
+ 
+     boolean existsByMedicine_MedicineIdAndBatchNumber(
+             Integer medicineId,
+             String batchNumber
+     );
+-}
+\ No newline at end of file
++}
+diff --git a/src/main/java/com/pcms/service/BillingService.java b/src/main/java/com/pcms/service/BillingService.java
+index 7eb198b..4e6435a 100644
+--- a/src/main/java/com/pcms/service/BillingService.java
++++ b/src/main/java/com/pcms/service/BillingService.java
+@@ -29,4 +29,6 @@ public interface BillingService {
+             Integer invoiceId,
+             ConfirmPaymentRequest request
+     );
++
++    List<InvoiceResponse> getAllInvoices();
+ }
+diff --git a/src/main/java/com/pcms/service/impl/BillingServiceImpl.java b/src/main/java/com/pcms/service/impl/BillingServiceImpl.java
+index 04c20c7..79a51c8 100644
+--- a/src/main/java/com/pcms/service/impl/BillingServiceImpl.java
++++ b/src/main/java/com/pcms/service/impl/BillingServiceImpl.java
+@@ -63,6 +63,18 @@ public class BillingServiceImpl implements BillingService {
+                 .map(this::mapToInvoiceResponse)
+                 .toList();
+     }
++    @Override
++    @Transactional(readOnly = true)
++    public List<InvoiceResponse> getAllInvoices() {
++        return invoiceRepository.findAll()
++                .stream()
++                .sorted(Comparator.comparing(
++                        Invoice::getInvoiceDate,
++                        Comparator.nullsLast(Comparator.reverseOrder())
++                ))
++                .map(this::mapToInvoiceResponse)
++                .toList();
++    }
+ 
+     private InvoiceResponse mapToInvoiceResponse(Invoice invoice) {
+         List<PaymentResponse> payments = paymentRepository

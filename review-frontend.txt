@@ -1,0 +1,424 @@
+﻿diff --git a/frontend/src/App.jsx b/frontend/src/App.jsx
+index 19fc733..bee8b44 100644
+--- a/frontend/src/App.jsx
++++ b/frontend/src/App.jsx
+@@ -45,11 +45,15 @@ import PetOwnerMedicalPage from './pages/owner/PetOwnerMedicalPage';
+ 
+ // Inventory Pages
+ import InventoryBatchesPage from './pages/inventory/InventoryBatchesPage';
++import inventoryCatalogApi from './api/inventoryCatalogApi';
+ 
+ // Billing Pages
++import BillingDashboardPage from './pages/billing/BillingDashboardPage';
+ import BillingQueuePage from './pages/billing/BillingQueuePage';
++import InvoiceManagementPage from './pages/billing/InvoiceManagementPage';
+ import InvoiceDetailPage from './pages/billing/InvoiceDetailPage';
+ 
++
+ export default function App() {
+   return (
+     <AuthProvider>
+@@ -95,28 +99,39 @@ export default function App() {
+ 
+           {/* ================= INVENTORY ROUTES ================= */}
+           <Route path="/inventory" element={<InventoryRouteGuard />}>
+-            <Route element={<InventoryLayout />}>
+-              <Route index element={<Navigate to="batches" replace />} />
+-
+-              <Route
+-                path="batches"
+-                element={<InventoryBatchesPage />}
+-              />
+-            </Route>
+-          </Route>
++  <Route element={<InventoryLayout />}>
++    <Route index element={<Navigate to="batches" replace />} />
++
++    <Route
++      path="batches"
++      element={<InventoryBatchesPage />}
++    />
++
++    <Route
++      path="services"
++      element={<AdminServicesPage api={inventoryCatalogApi} />}
++    />
++
++    <Route
++      path="medicines"
++      element={<AdminMedicinesPage api={inventoryCatalogApi} />}
++    />
++  </Route>
++</Route>
+ 
+           {/* ================= BILLING ROUTES ================= */}
+-          <Route path="/billing" element={<BillingRouteGuard />}>
+-            <Route element={<BillingLayout />}>
+-              <Route index element={<Navigate to="queue" replace />} />
+-
+-              <Route path="queue" element={<BillingQueuePage />} />
+-              <Route
+-                path="invoices/:invoiceId"
+-                element={<InvoiceDetailPage />}
+-              />
+-            </Route>
+-          </Route>
++<Route path="/billing" element={<BillingRouteGuard />}>
++  <Route element={<BillingLayout />}>
++    <Route index element={<BillingDashboardPage />} />
++
++    <Route path="queue" element={<BillingQueuePage />} />
++    <Route path="invoices" element={<InvoiceManagementPage />} />
++    <Route
++      path="invoices/:invoiceId"
++      element={<InvoiceDetailPage />}
++    />
++  </Route>
++</Route>
+ 
+           {/* ================= PET OWNER ROUTES ================= */}
+           <Route
+diff --git a/frontend/src/components/Navbar.jsx b/frontend/src/components/Navbar.jsx
+index 15cb07e..ebbf0a7 100644
+--- a/frontend/src/components/Navbar.jsx
++++ b/frontend/src/components/Navbar.jsx
+@@ -79,6 +79,19 @@ export default function Navbar() {
+                     B├íc s─⌐ th├║ y
+                   </Link>
+                 </>
++              )}
++                            {user.role === 'RECEPTIONIST' && (
++                <Link
++                  to="/billing"
++                  className="vtn-btn-yellow"
++                  style={{
++                    padding: '6px 12px',
++                    fontSize: 12.5,
++                    textDecoration: 'none',
++                  }}
++                >
++                  Trang Lß╗à t├ón
++                </Link>
+               )}
+               {user.role === 'VETERINARIAN' && (
+                 <Link
+diff --git a/frontend/src/components/billing/BillingLayout.jsx b/frontend/src/components/billing/BillingLayout.jsx
+index c961dca..79a8f0d 100644
+--- a/frontend/src/components/billing/BillingLayout.jsx
++++ b/frontend/src/components/billing/BillingLayout.jsx
+@@ -1,15 +1,33 @@
+-
+ import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+-import { FileText, Home, LogOut, Receipt } from 'lucide-react';
++import {
++    FileText,
++    Home,
++    LayoutDashboard,
++    LogOut,
++    Receipt,
++    Search,
++} from 'lucide-react';
++
+ import { useAuth } from '../../context/AuthContext';
+ import '../../styles/billingTheme.css';
+ 
+ const NAV_ITEMS = [
++    {
++        to: '/billing',
++        label: 'Dashboard',
++        icon: <LayoutDashboard size={18} />,
++        end: true,
++    },
+     {
+         to: '/billing/queue',
+         label: 'H├áng chß╗¥ thanh to├ín',
+         icon: <Receipt size={18} />,
+     },
++    {
++        to: '/billing/invoices',
++        label: 'Quß║ún l├╜ h├│a ─æ╞ín',
++        icon: <Search size={18} />,
++    },
+ ];
+ 
+ export default function BillingLayout() {
+@@ -24,35 +42,45 @@ export default function BillingLayout() {
+     return (
+         <div className="billing-shell">
+             <aside className="billing-sidebar">
+-                <div className="billing-brand">
+-                    <div className="billing-brand-icon">
+-                        <Receipt size={22} color="#ffffff" />
+-                    </div>
++                <div>
++                    <div className="billing-brand">
++                        <div className="billing-brand-icon">
++                            <Receipt size={22} color="#ffffff" />
++                        </div>
+ 
+-                    <div className="billing-brand-text">
+-                        <h1>Veterian Clinic</h1>
+-                        <p>BILLING MANAGEMENT</p>
++                        <div className="billing-brand-text">
++                            <h1>PCMS</h1>
++                            <p>RECEPTION & BILLING</p>
++                        </div>
+                     </div>
+-                </div>
+ 
+-                <nav className="billing-nav">
+-                    <div className="billing-nav-heading">
+-                        QUß║óN L├¥ THANH TO├üN
++                    <div className="billing-sidebar-status">
++                        <span className="billing-sidebar-status-dot" />
++                        <span>Ph├ón hß╗ç tiß║┐p nhß║¡n v├á thanh to├ín</span>
+                     </div>
+ 
+-                    {NAV_ITEMS.map((item) => (
+-                        <NavLink
+-                            key={item.to}
+-                            to={item.to}
+-                            className={({ isActive }) =>
+-                                `billing-nav-item ${isActive ? 'active' : ''}`
+-                            }
+-                        >
+-                            {item.icon}
+-                            <span>{item.label}</span>
+-                        </NavLink>
+-                    ))}
++                    <nav className="billing-nav">
++                        <div className="billing-nav-heading">
++                            RECEPTION & BILLING
++                        </div>
+ 
++                        {NAV_ITEMS.map((item) => (
++                            <NavLink
++                                key={item.to}
++                                to={item.to}
++                                end={item.end}
++                                className={({ isActive }) =>
++                                    `billing-nav-item ${isActive ? 'active' : ''}`
++                                }
++                            >
++                                {item.icon}
++                                <span>{item.label}</span>
++                            </NavLink>
++                        ))}
++                    </nav>
++                </div>
++
++                <div>
+                     <div className="billing-nav-footer">
+                         <div className="billing-nav-heading">
+                             ─ÉIß╗ÇU H╞»ß╗ÜNG Hß╗å THß╗ÉNG
+@@ -60,7 +88,7 @@ export default function BillingLayout() {
+ 
+                         <Link to="/" className="billing-nav-item">
+                             <Home size={18} />
+-                            <span>Vß╗ü trang chß╗º</span>
++                            <span>Vß╗ü trang chß╗º kh├ích h├áng</span>
+                         </Link>
+ 
+                         {user?.role === 'ADMIN' && (
+@@ -70,26 +98,26 @@ export default function BillingLayout() {
+                             </Link>
+                         )}
+                     </div>
+-                </nav>
+ 
+-                <div className="billing-user-box">
+-                    <div className="billing-avatar">
+-                        {user?.fullName?.charAt(0) || 'U'}
+-                    </div>
++                    <div className="billing-user-box">
++                        <div className="billing-avatar">
++                            {user?.fullName?.charAt(0) || 'U'}
++                        </div>
+ 
+-                    <div className="billing-user-info">
+-                        <strong>{user?.fullName || 'Ng╞░ß╗¥i d├╣ng'}</strong>
+-                        <small>{user?.role || 'BILLING'}</small>
+-                    </div>
++                        <div className="billing-user-info">
++                            <strong>{user?.fullName || 'Ng╞░ß╗¥i d├╣ng'}</strong>
++                            <small>{user?.role || 'BILLING'}</small>
++                        </div>
+ 
+-                    <button
+-                        type="button"
+-                        onClick={handleLogout}
+-                        title="─É─âng xuß║Ñt"
+-                        className="billing-logout-button"
+-                    >
+-                        <LogOut size={18} />
+-                    </button>
++                        <button
++                            type="button"
++                            onClick={handleLogout}
++                            title="─É─âng xuß║Ñt"
++                            className="billing-logout-button"
++                        >
++                            <LogOut size={18} />
++                        </button>
++                    </div>
+                 </div>
+             </aside>
+ 
+@@ -98,16 +126,19 @@ export default function BillingLayout() {
+                     <div className="billing-page-title">
+                         <h2>
+                             <Receipt size={20} />
+-                            Ph├ón hß╗ç Thanh to├ín
++                            Reception & Billing
+                         </h2>
+ 
+                         <p>
+-                            Quß║ún l├╜ h├│a ─æ╞ín, c├┤ng nß╗ú v├á giao dß╗ïch thanh to├ín
++                            Quß║ún l├╜ tiß║┐p nhß║¡n thanh to├ín v├á th├┤ng tin h├│a ─æ╞ín
+                         </p>
+                     </div>
+ 
+                     <div className="billing-topbar-date">
+-                        Ng├áy: <strong>{new Date().toLocaleDateString('vi-VN')}</strong>
++                        Ng├áy:{' '}
++                        <strong>
++                            {new Date().toLocaleDateString('vi-VN')}
++                        </strong>
+                     </div>
+                 </header>
+ 
+@@ -117,4 +148,4 @@ export default function BillingLayout() {
+             </div>
+         </div>
+     );
+-}
++}
+\ No newline at end of file
+diff --git a/frontend/src/components/inventory/InventoryLayout.jsx b/frontend/src/components/inventory/InventoryLayout.jsx
+index 81389af..6f2f5f4 100644
+--- a/frontend/src/components/inventory/InventoryLayout.jsx
++++ b/frontend/src/components/inventory/InventoryLayout.jsx
+@@ -1,10 +1,13 @@
+ 
+ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+ import { useAuth } from '../../context/AuthContext';
+-
++import AdminLayout from '../admin/AdminLayout';
+ function InventoryLayout() {
+     const { user, logout } = useAuth();
+     const navigate = useNavigate();
++    if (user?.role === 'ADMIN') {
++        return <AdminLayout />;
++    }
+ 
+     const handleLogout = () => {
+         logout();
+@@ -23,13 +26,27 @@ function InventoryLayout() {
+                 </div>
+ 
+                 <nav className="inventory-navigation">
+-                    <NavLink
+-                        to="/inventory/batches"
+-                        className={navLinkClass}
+-                    >
+-                        <span>Quß║ún l├╜ l├┤ thuß╗æc</span>
+-                    </NavLink>
+-                </nav>
++    <NavLink
++        to="/inventory/services"
++        className={navLinkClass}
++    >
++        <span>Danh mß╗Ñc dß╗ïch vß╗Ñ</span>
++    </NavLink>
++
++    <NavLink
++        to="/inventory/medicines"
++        className={navLinkClass}
++    >
++        <span>Danh mß╗Ñc thuß╗æc / vß║¡t t╞░</span>
++    </NavLink>
++
++    <NavLink
++        to="/inventory/batches"
++        className={navLinkClass}
++    >
++        <span>Quß║ún l├╜ l├┤ thuß╗æc</span>
++    </NavLink>
++</nav>
+ 
+                 <div className="inventory-sidebar-footer">
+                     <button
+diff --git a/frontend/src/pages/LoginPage.jsx b/frontend/src/pages/LoginPage.jsx
+index eef9a57..89e3c33 100644
+--- a/frontend/src/pages/LoginPage.jsx
++++ b/frontend/src/pages/LoginPage.jsx
+@@ -59,29 +59,46 @@ export default function LoginPage() {
+         login: formData.login.trim(),
+         password: formData.password,
+       });
+-      const loggedInRole = response?.data?.user?.role;
+-      if (loggedInRole === 'ADMIN') {
+-        const target = location.state?.from?.startsWith('/admin')
+-          ? location.state.from
+-          : '/admin/overview';
+-        navigate(target, { replace: true });
+-      } else if (loggedInRole === 'VETERINARIAN') {
+-        const target = location.state?.from?.startsWith('/vet')
+-          ? location.state.from
+-          : '/vet/workbench';
+-        navigate(target, { replace: true });
+-      } else if (loggedInRole === 'PET_OWNER') {
+-        const target = location.state?.from || '/owner/medical-history';
+-        navigate(target, { replace: true });
+-      } else if (loggedInRole === 'INVENTORY_MANAGER') {
+-    const target = location.state?.from?.startsWith('/inventory')
+-        ? location.state.from
+-        : '/inventory/batches';
+-
+-    navigate(target, { replace: true });  
+-      } else {
+-        navigate('/', { replace: true });
+-      }
++      
++const loggedInRole = response?.data?.user?.role;
++
++if (loggedInRole === 'ADMIN') {
++  const target = location.state?.from?.startsWith('/admin')
++    ? location.state.from
++    : '/admin/overview';
++
++  navigate(target, { replace: true });
++
++} else if (loggedInRole === 'VETERINARIAN') {
++  const target = location.state?.from?.startsWith('/vet')
++    ? location.state.from
++    : '/vet/workbench';
++
++  navigate(target, { replace: true });
++
++} else if (loggedInRole === 'INVENTORY_MANAGER') {
++  const target = location.state?.from?.startsWith('/inventory')
++    ? location.state.from
++    : '/inventory/batches';
++
++  navigate(target, { replace: true });
++
++} else if (loggedInRole === 'RECEPTIONIST') {
++  const target = location.state?.from?.startsWith('/billing')
++    ? location.state.from
++    : '/billing';
++
++  navigate(target, { replace: true });
++
++} else if (loggedInRole === 'PET_OWNER') {
++  const target = location.state?.from || '/owner/medical-history';
++
++  navigate(target, { replace: true });
++
++} else {
++  navigate('/', { replace: true });
++}
++
+     } catch (err) {
+       if (err.fieldErrors && Object.keys(err.fieldErrors).length > 0) {
+         setErrors((prev) => ({ ...prev, ...err.fieldErrors }));
