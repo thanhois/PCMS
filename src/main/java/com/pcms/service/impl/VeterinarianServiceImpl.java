@@ -431,6 +431,14 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         Map<String, Object> invoiceDto = null;
         if (invOpt.isPresent()) {
             Invoice inv = invOpt.get();
+            if ("PAID".equalsIgnoreCase(inv.getStatus()) && !"COMPLETED".equalsIgnoreCase(record.getStatus())) {
+                record.setStatus("COMPLETED");
+                medicalRecordRepository.save(record);
+                if (record.getAppointment() != null && !"COMPLETED".equalsIgnoreCase(record.getAppointment().getStatus())) {
+                    record.getAppointment().setStatus("COMPLETED");
+                    appointmentRepository.save(record.getAppointment());
+                }
+            }
             invoiceDto = new LinkedHashMap<>();
             invoiceDto.put("invoiceId", inv.getInvoiceId());
             invoiceDto.put("invoiceCode", "INV-" + String.format("%04d", inv.getInvoiceId()));
@@ -1201,7 +1209,6 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         m.put("appointmentId", a.getAppointmentId());
         m.put("appointmentDate", a.getAppointmentDate() != null ? a.getAppointmentDate().format(DATE_TIME_FORMATTER) : "");
         m.put("reason", a.getReason() != null ? a.getReason() : "");
-        m.put("status", a.getStatus());
         m.put("notes", a.getNotes() != null ? a.getNotes() : "");
         m.put("shift", a.getShift() != null ? a.getShift() : "");
 
@@ -1222,6 +1229,26 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         Optional<MedicalRecord> rec = medicalRecordRepository.findFirstByAppointment_AppointmentIdOrderByVisitDateDesc(a.getAppointmentId());
         m.put("hasMedicalRecord", rec.isPresent());
         m.put("recordId", rec.map(MedicalRecord::getRecordId).orElse(null));
+
+        String resolvedStatus = a.getStatus();
+        if (rec.isPresent()) {
+            MedicalRecord mr = rec.get();
+            if ("COMPLETED".equalsIgnoreCase(mr.getStatus())) {
+                resolvedStatus = "COMPLETED";
+            } else {
+                Optional<Invoice> inv = invoiceRepository.findByMedicalRecord_RecordId(mr.getRecordId());
+                if (inv.isPresent() && "PAID".equalsIgnoreCase(inv.get().getStatus())) {
+                    resolvedStatus = "COMPLETED";
+                    mr.setStatus("COMPLETED");
+                    medicalRecordRepository.save(mr);
+                    if (!"COMPLETED".equalsIgnoreCase(a.getStatus())) {
+                        a.setStatus("COMPLETED");
+                        appointmentRepository.save(a);
+                    }
+                }
+            }
+        }
+        m.put("status", resolvedStatus);
 
         return m;
     }

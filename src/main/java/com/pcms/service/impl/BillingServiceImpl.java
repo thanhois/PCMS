@@ -9,8 +9,10 @@ import com.pcms.dto.response.billing.PaymentResponse;
 import com.pcms.entity.AuditLog;
 import com.pcms.entity.InventoryBatch;
 import com.pcms.entity.Invoice;
+import com.pcms.entity.Appointment;
 import com.pcms.entity.MedicalRecord;
 import com.pcms.entity.MedicalRecordDetail;
+import com.pcms.repository.AppointmentRepository;
 import com.pcms.entity.Payment;
 import com.pcms.entity.Pet;
 import com.pcms.entity.PetOwner;
@@ -37,10 +39,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.pcms.dto.response.billing.CompletedMedicalRecordResponse;
 import com.pcms.dto.response.billing.CreateInvoicePreviewResponse;
-import com.pcms.repository.MedicalRecordDetailRepository;
 import com.pcms.repository.MedicalRecordRepository;
-import com.pcms.entity.MedicalRecord;
-import com.pcms.entity.MedicalRecordDetail;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -66,6 +65,7 @@ public class BillingServiceImpl implements BillingService {
     private final InventoryBatchRepository inventoryBatchRepository;
     private final MockPaymentGatewayService mockPaymentGatewayService;
     private final MedicalRecordRepository medicalRecordRepository;
+    private final AppointmentRepository appointmentRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -595,6 +595,19 @@ public class BillingServiceImpl implements BillingService {
 
         invoice.setStatus("PAID");
         invoiceRepository.save(invoice);
+
+        if (invoice.getMedicalRecord() != null) {
+            MedicalRecord record = invoice.getMedicalRecord();
+            if (!"COMPLETED".equalsIgnoreCase(record.getStatus())) {
+                record.setStatus("COMPLETED");
+                medicalRecordRepository.save(record);
+            }
+            if (record.getAppointment() != null && !"COMPLETED".equalsIgnoreCase(record.getAppointment().getStatus())) {
+                Appointment appt = record.getAppointment();
+                appt.setStatus("COMPLETED");
+                appointmentRepository.save(appt);
+            }
+        }
 
         recordBillingAudit(
                 "INVOICE_PAYMENT",
