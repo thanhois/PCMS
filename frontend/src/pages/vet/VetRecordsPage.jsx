@@ -63,9 +63,10 @@ export default function VetRecordsPage() {
 
   const openCreateModal = async () => {
     try {
-      const petList = await vetApi.searchPets('');
-      setPets(petList || []);
-      if (petList?.length > 0) setSelectedPetId(petList[0].petId);
+      const petList = (await vetApi.searchPets('')) || [];
+      const sortedPets = [...petList].sort((a, b) => Number(Boolean(b.hasTodayAppointment)) - Number(Boolean(a.hasTodayAppointment)));
+      setPets(sortedPets);
+      if (sortedPets.length > 0) setSelectedPetId(sortedPets[0].petId);
       setShowCreateModal(true);
     } catch {
       dialog.alert({ title: 'Lỗi tải dữ liệu', message: 'Không thể tải danh sách thú cưng', type: 'error' });
@@ -90,7 +91,7 @@ export default function VetRecordsPage() {
       setShowCreateModal(false);
       navigate(`/vet/examination/${created.recordId}`);
     } catch (err) {
-      dialog.alert({ title: 'Lỗi tạo bệnh án', message: err?.response?.data?.message || 'Lỗi khi tạo bệnh án', type: 'error' });
+      dialog.alert({ title: 'Lỗi tạo bệnh án', message: err?.message || err?.response?.data?.message || 'Lỗi khi tạo bệnh án', type: 'error' });
     } finally {
       setCreating(false);
     }
@@ -334,6 +335,7 @@ export default function VetRecordsPage() {
                   >
                     {pets.map((p) => (
                       <option key={p.petId} value={p.petId}>
+                        {p.hasTodayAppointment ? '✓ [Đã Check-in hôm nay] ' : '[Chưa Check-in] '}
                         {p.petName} ({p.species} - {p.breed}) • Chủ nuôi: {p.ownerName} ({p.ownerPhone})
                       </option>
                     ))}

@@ -138,6 +138,9 @@ export default function Navbar() {
                   Sổ khám Thú cưng
                 </Link>
               )}
+              <Link to="/profile" style={portalBtnStyle}>
+                Hồ sơ cá nhân
+              </Link>
               <button type="button" className="vtn-btn-logout" onClick={handleLogout}>
                 Đăng xuất
               </button>

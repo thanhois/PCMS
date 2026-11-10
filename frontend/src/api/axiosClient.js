@@ -3,17 +3,45 @@ import axios from 'axios';
 /**
  * Lưu trữ JWT accessToken trực tiếp trong bộ nhớ (in-memory).
  */
-let inMemoryAccessToken = null;
+const TOKEN_STORAGE_KEY = 'pcms_access_token';
+const USER_STORAGE_KEY = 'pcms_auth_user';
+
+let inMemoryAccessToken = (() => {
+  try {
+    return typeof window !== 'undefined' ? window.sessionStorage.getItem(TOKEN_STORAGE_KEY) : null;
+  } catch {
+    return null;
+  }
+})();
 let unauthorizedCallback = null;
 
 export const setAccessToken = (token) => {
   inMemoryAccessToken = token || null;
+  try {
+    if (typeof window !== 'undefined') {
+      if (token) {
+        window.sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
+      } else {
+        window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+      }
+    }
+  } catch {
+    // Ignore storage errors
+  }
 };
 
 export const getAccessToken = () => inMemoryAccessToken;
 
 export const clearAccessToken = () => {
   inMemoryAccessToken = null;
+  try {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+      window.sessionStorage.removeItem(USER_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore storage errors
+  }
 };
 
 export const onUnauthorized = (callback) => {

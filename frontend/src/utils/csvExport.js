@@ -1,35 +1,53 @@
+import * as XLSX from 'xlsx';
+
 /**
- * Xuất mảng dữ liệu ra file CSV có BOM UTF-8 (hiển thị đúng tiếng Việt trong Excel).
+ * Xuất mảng dữ liệu ra file Excel (.xlsx) chuẩn Microsoft Excel.
  *
- * @param {string} filename Tên file (ví dụ: 'bao-cao-doanh-thu.csv')
+ * @param {string} filename Tên file (ví dụ: 'bao-cao-doanh-thu.xlsx')
  * @param {Array<{ header: string, accessor: (row: any) => any }>} columns Định nghĩa cột xuất
  * @param {Array<any>} rows Dữ liệu dòng
+ * @param {string} [sheetName] Tên sheet trong file Excel
  */
-export function exportToCsv(filename, columns, rows) {
-  if (!Array.isArray(rows)) return;
+export function exportToExcel(filename, columns, rows, sheetName = 'Báo cáo') {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    alert('Không có dữ liệu để xuất file Excel.');
+    return;
+  }
 
-  const escapeCell = (val) => {
-    if (val === null || val === undefined) return '""';
-    const str = String(val).replace(/"/g, '""');
-    return `"${str}"`;
-  };
+  const data = rows.map((row) => {
+    const rowObj = {};
+    columns.forEach((col) => {
+      rowObj[col.header] = col.accessor(row);
+    });
+    return rowObj;
+  });
 
-  const headerLine = columns.map((col) => escapeCell(col.header)).join(',');
-  const dataLines = rows.map((row) =>
-    columns.map((col) => escapeCell(col.accessor(row))).join(',')
-  );
+  const worksheet = XLSX.utils.json_to_sheet(data);
 
-  const csvContent = '\uFEFF' + [headerLine, ...dataLines].join('\r\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
+  // Tự động căn chỉnh độ rộng cột tối ưu khi mở trong Excel
+  const colWidths = columns.map((col) => {
+    const headerLen = (col.header || '').toString().length;
+    const maxDataLen = rows.reduce((max, r) => {
+      const val = col.accessor(r);
+      const str = val !== null && val !== undefined ? String(val) : '';
+      return Math.max(max, str.length);
+    }, 0);
+    return { wch: Math.max(headerLen, maxDataLen, 12) + 3 };
+  });
+  worksheet['!cols'] = colWidths;
 
-  const link = document.createElement('a');
-  link.href = url;
-  link.setAttribute('download', filename.endsWith('.csv') ? filename : `${filename}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+  const cleanName = filename.replace(/\.(csv|xlsx)$/i, '');
+  XLSX.writeFile(workbook, `${cleanName}.xlsx`);
+}
+
+/**
+ * Xuất mảng dữ liệu mặc định sang file Excel (.xlsx)
+ */
+export function exportToCsv(filename, columns, rows, sheetName) {
+  return exportToExcel(filename, columns, rows, sheetName);
 }
 
 /**

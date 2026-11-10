@@ -56,6 +56,15 @@ export default function PetOwnerLayout() {
             >
               Hóa đơn của tôi
             </NavLink>
+
+            <NavLink
+              to="/profile"
+              className={({ isActive }) =>
+                `pet-owner-nav-link ${isActive ? 'active' : ''}`
+              }
+            >
+              Hồ sơ cá nhân
+            </NavLink>
           </nav>
 
           {/* User information */}

@@ -30,12 +30,18 @@ export default function BookingPage() {
   const [toast, setToast] = useState({ type: 'info', message: '' });
   const [bookedSuccess, setBookedSuccess] = useState(null);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = (() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  })();
   const [formData, setFormData] = useState({
     petId: '',
     veterinarianId: '',
     appointmentDate: todayStr,
-    appointmentTime: '09:00',
+    shift: 'MORNING', // 'MORNING' (Sáng: 08:00 - 12:00) | 'AFTERNOON' (Chiều: 13:30 - 17:30)
     serviceId: '',
     notes: '',
   });
@@ -49,7 +55,7 @@ export default function BookingPage() {
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
   const [rescheduleForm, setRescheduleForm] = useState({
     appointmentDate: todayStr,
-    appointmentTime: '09:00',
+    shift: 'MORNING',
     veterinarianId: '',
     serviceId: '',
     notes: '',
@@ -136,8 +142,8 @@ export default function BookingPage() {
       setToast({ type: 'error', message: 'Vui lòng chọn thú cưng cần đặt lịch.' });
       return;
     }
-    if (!formData.appointmentDate || !formData.appointmentTime) {
-      setToast({ type: 'error', message: 'Vui lòng chọn ngày và khung giờ khám.' });
+    if (!formData.appointmentDate || !formData.shift) {
+      setToast({ type: 'error', message: 'Vui lòng chọn ngày và buổi khám (Sáng hoặc Chiều).' });
       return;
     }
 
@@ -147,7 +153,7 @@ export default function BookingPage() {
         petId: Number(formData.petId),
         veterinarianId: formData.veterinarianId ? Number(formData.veterinarianId) : null,
         appointmentDate: formData.appointmentDate,
-        appointmentTime: formData.appointmentTime,
+        shift: formData.shift,
         serviceId: formData.serviceId ? Number(formData.serviceId) : null,
         notes: formData.notes.trim() || undefined,
       });
@@ -155,11 +161,10 @@ export default function BookingPage() {
       window.dispatchEvent(new CustomEvent('notification-refresh'));
       const updatedApps = await ownerApi.getMyAppointments();
       setMyAppointments(updatedApps || []);
-      await loadSlots(formData.appointmentDate, formData.veterinarianId, setSlots, null);
     } catch (err) {
       setToast({
         type: 'error',
-        message: err?.message || 'Đặt lịch hẹn không thành công. Vui lòng kiểm tra lại khung giờ.',
+        message: err?.message || 'Đặt lịch hẹn không thành công. Vui lòng kiểm tra lại buổi khám.',
       });
     } finally {
       setSubmitting(false);
@@ -192,6 +197,17 @@ export default function BookingPage() {
     if (!petForm.petName.trim()) {
       setToast({ type: 'error', message: 'Tên thú cưng không được để trống.' });
       return;
+    }
+    if (petForm.dateOfBirth && petForm.dateOfBirth > todayStr) {
+      setToast({ type: 'error', message: 'Ngày sinh thú cưng không được lớn hơn ngày hiện tại.' });
+      return;
+    }
+    if (petForm.weight !== '') {
+      const w = Number(petForm.weight);
+      if (Number.isNaN(w) || w <= 0 || w > 250) {
+        setToast({ type: 'error', message: 'Cân nặng phải lớn hơn 0 và không vượt quá 250 kg.' });
+        return;
+      }
     }
     setSubmitting(true);
     try {
@@ -247,7 +263,7 @@ export default function BookingPage() {
     setRescheduleTarget(app);
     setRescheduleForm({
       appointmentDate: app.appointmentDate || todayStr,
-      appointmentTime: app.appointmentTime || '09:00',
+      shift: app.shift || 'MORNING',
       veterinarianId: app.veterinarianId ? String(app.veterinarianId) : '',
       serviceId: app.serviceId ? String(app.serviceId) : '',
       notes: app.notes || '',
@@ -261,7 +277,7 @@ export default function BookingPage() {
     try {
       await ownerApi.rescheduleAppointment(rescheduleTarget.appointmentId, {
         appointmentDate: rescheduleForm.appointmentDate,
-        appointmentTime: rescheduleForm.appointmentTime,
+        shift: rescheduleForm.shift,
         veterinarianId: rescheduleForm.veterinarianId ? Number(rescheduleForm.veterinarianId) : null,
         serviceId: rescheduleForm.serviceId ? Number(rescheduleForm.serviceId) : null,
         notes: rescheduleForm.notes.trim(),
@@ -357,7 +373,7 @@ export default function BookingPage() {
               </div>
               <div>
                 <span style={{ color: '#64748b', fontSize: 12, display: 'block' }}>Thời gian hẹn</span>
-                <strong>{bookedSuccess.appointmentDateTimeDisplay || `${bookedSuccess.appointmentDate} ${bookedSuccess.appointmentTime}`}</strong>
+                <strong>{bookedSuccess.appointmentDate} • {bookedSuccess.shiftDisplay || (bookedSuccess.shift === 'AFTERNOON' ? 'Buổi chiều (13:30 - 17:30)' : 'Buổi sáng (08:00 - 12:00)')}</strong>
               </div>
               <div>
                 <span style={{ color: '#64748b', fontSize: 12, display: 'block' }}>Bác sĩ phụ trách</span>
@@ -503,32 +519,64 @@ export default function BookingPage() {
               </div>
 
               <div className="pcms-form-group" style={{ marginBottom: 16 }}>
-                <label className="pcms-label">Khung giờ khám (Cách thời điểm hiện tại ít nhất 2 giờ) *</label>
-                {slots.length === 0 ? (
-                  <p style={{ fontSize: 13, color: 'var(--pcms-text-muted)' }}>Không có khung giờ khả dụng trong ngày này.</p>
-                ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))', gap: 8 }}>
-                    {slots.map((s) => {
-                      const active = formData.appointmentTime === s.time;
-                      return (
-                        <button
-                          key={s.time}
-                          type="button"
-                          disabled={!s.available}
-                          title={s.reasonUnavailable || 'Khả dụng'}
-                          onClick={() => setFormData((prev) => ({ ...prev, appointmentTime: s.time }))}
-                          className={active ? 'pcms-btn pcms-btn-primary pcms-btn-sm' : 'pcms-btn pcms-btn-outline pcms-btn-sm'}
-                          style={{
-                            justifyContent: 'center',
-                            opacity: s.available ? 1 : 0.42,
-                          }}
-                        >
-                          {s.time}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                <label className="pcms-label">Chọn Buổi khám *</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 4 }}>
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '12px 14px',
+                      borderRadius: 8,
+                      border: formData.shift === 'MORNING' ? '2px solid var(--pcms-primary, #0ea5e9)' : '1px solid var(--pcms-border, #cbd5e1)',
+                      backgroundColor: formData.shift === 'MORNING' ? 'rgba(14, 165, 233, 0.08)' : 'transparent',
+                      cursor: 'pointer',
+                      fontWeight: formData.shift === 'MORNING' ? 600 : 400,
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="bookingShift"
+                      value="MORNING"
+                      checked={formData.shift === 'MORNING'}
+                      onChange={() => setFormData((prev) => ({ ...prev, shift: 'MORNING' }))}
+                      style={{ width: 18, height: 18, accentColor: 'var(--pcms-primary, #0ea5e9)' }}
+                    />
+                    <div>
+                      <div style={{ fontSize: 14 }}>Buổi sáng</div>
+                      <div style={{ fontSize: 12, color: 'var(--pcms-text-muted)' }}>08:00 - 12:00</div>
+                    </div>
+                  </label>
+
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '12px 14px',
+                      borderRadius: 8,
+                      border: formData.shift === 'AFTERNOON' ? '2px solid var(--pcms-primary, #0ea5e9)' : '1px solid var(--pcms-border, #cbd5e1)',
+                      backgroundColor: formData.shift === 'AFTERNOON' ? 'rgba(14, 165, 233, 0.08)' : 'transparent',
+                      cursor: 'pointer',
+                      fontWeight: formData.shift === 'AFTERNOON' ? 600 : 400,
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="bookingShift"
+                      value="AFTERNOON"
+                      checked={formData.shift === 'AFTERNOON'}
+                      onChange={() => setFormData((prev) => ({ ...prev, shift: 'AFTERNOON' }))}
+                      style={{ width: 18, height: 18, accentColor: 'var(--pcms-primary, #0ea5e9)' }}
+                    />
+                    <div>
+                      <div style={{ fontSize: 14 }}>Buổi chiều</div>
+                      <div style={{ fontSize: 12, color: 'var(--pcms-text-muted)' }}>13:30 - 17:30</div>
+                    </div>
+                  </label>
+                </div>
               </div>
 
               <div className="pcms-form-group" style={{ marginBottom: 16 }}>
@@ -575,7 +623,7 @@ export default function BookingPage() {
               <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: 15 }}>Tóm tắt yêu cầu đặt hẹn</h3>
               <div style={{ fontSize: 13.5, lineHeight: 1.8 }}>
                 <div><strong>Thú cưng:</strong> {selectedPet ? `${selectedPet.petName} (${selectedPet.species})` : 'Chưa chọn'}</div>
-                <div><strong>Ngày & Giờ:</strong> {formData.appointmentDate} lúc {formData.appointmentTime}</div>
+                <div><strong>Ngày & Buổi hẹn:</strong> {formData.appointmentDate} • {formData.shift === 'AFTERNOON' ? 'Buổi chiều (13:30 - 17:30)' : 'Buổi sáng (08:00 - 12:00)'}</div>
                 <div><strong>Bác sĩ:</strong> {selectedVet ? `BS. ${selectedVet.fullName}` : 'Phòng khám điều phối'}</div>
                 <div><strong>Dịch vụ:</strong> {selectedService ? selectedService.serviceName : 'Khám tổng quát'}</div>
                 {selectedService?.price ? (
@@ -610,7 +658,7 @@ export default function BookingPage() {
                           <strong>{app.appointmentCode} — {app.petName}</strong>
                           <StatusBadge status={app.status} />
                         </div>
-                        <div>Thời gian: <strong>{app.appointmentDateTimeDisplay || `${app.appointmentDate} ${app.appointmentTime}`}</strong></div>
+                        <div>Thời gian: <strong>{app.appointmentDate} • {app.shiftDisplay || (app.shift === 'AFTERNOON' ? 'Buổi chiều (13:30 - 17:30)' : 'Buổi sáng (08:00 - 12:00)')}</strong></div>
                         <div>Bác sĩ: {app.veterinarianName}</div>
                         <div>Dịch vụ: {app.serviceName}</div>
                         {app.rejectionReason ? (
@@ -673,6 +721,15 @@ export default function BookingPage() {
         }
       >
         <form id="owner-pet-form" onSubmit={handleSavePet} className="pcms-form-grid">
+          {toast.type === 'error' && toast.message ? (
+            <div style={{ gridColumn: '1 / -1' }}>
+              <ToastMessage
+                type="error"
+                message={toast.message}
+                onClose={() => setToast({ type: 'info', message: '' })}
+              />
+            </div>
+          ) : null}
           <div className="pcms-form-group" style={{ gridColumn: '1 / -1' }}>
             <label className="pcms-label">Tên thú cưng *</label>
             <input
@@ -794,18 +851,29 @@ export default function BookingPage() {
             </select>
           </div>
           <div className="pcms-form-group" style={{ gridColumn: '1 / -1' }}>
-            <label className="pcms-label">Khung giờ mới *</label>
-            <select
-              className="pcms-select"
-              value={rescheduleForm.appointmentTime}
-              onChange={(e) => setRescheduleForm((prev) => ({ ...prev, appointmentTime: e.target.value }))}
-            >
-              {rescheduleSlots.map((s) => (
-                <option key={s.time} value={s.time} disabled={!s.available}>
-                  {s.time} {!s.available ? `(${s.reasonUnavailable})` : ''}
-                </option>
-              ))}
-            </select>
+            <label className="pcms-label">Buổi khám mới *</label>
+            <div style={{ display: 'flex', gap: 16, marginTop: 6 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 500 }}>
+                <input
+                  type="radio"
+                  name="rescheduleShift"
+                  value="MORNING"
+                  checked={rescheduleForm.shift === 'MORNING'}
+                  onChange={() => setRescheduleForm((prev) => ({ ...prev, shift: 'MORNING' }))}
+                />
+                Buổi sáng (08:00 - 12:00)
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 500 }}>
+                <input
+                  type="radio"
+                  name="rescheduleShift"
+                  value="AFTERNOON"
+                  checked={rescheduleForm.shift === 'AFTERNOON'}
+                  onChange={() => setRescheduleForm((prev) => ({ ...prev, shift: 'AFTERNOON' }))}
+                />
+                Buổi chiều (13:30 - 17:30)
+              </label>
+            </div>
           </div>
           <div className="pcms-form-group" style={{ gridColumn: '1 / -1' }}>
             <label className="pcms-label">Ghi chú cập nhật</label>

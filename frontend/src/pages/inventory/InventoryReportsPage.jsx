@@ -3,7 +3,7 @@ import inventoryApi from '../../api/inventoryApi';
 import DataTable from '../../components/admin/ui/DataTable';
 import PageHeader from '../../components/admin/ui/PageHeader';
 import StatusBadge from '../../components/admin/ui/StatusBadge';
-import { exportToCsv, formatVnd } from '../../utils/csvExport';
+import { exportToExcel, formatVnd } from '../../utils/csvExport';
 
 export default function InventoryReportsPage() {
   const [medicines, setMedicines] = useState([]);
@@ -122,9 +122,9 @@ export default function InventoryReportsPage() {
     return stockRows;
   }, [stockRows, stockFilter]);
 
-  const handleExportStockCsv = () => {
-    exportToCsv(
-      'bao-cao-ton-kho-pcms.csv',
+  const handleExportStockExcel = () => {
+    exportToExcel(
+      'bao-cao-ton-kho-pcms.xlsx',
       [
         { header: 'Mã thuốc', accessor: (r) => r.medicineId },
         { header: 'Tên thuốc', accessor: (r) => r.medicineName },
@@ -137,7 +137,23 @@ export default function InventoryReportsPage() {
         { header: 'Hạn dùng gần nhất', accessor: (r) => r.nearestExpiry || '' },
         { header: 'Cảnh báo tồn thấp', accessor: (r) => (r.lowStock ? 'CẢNH BÁO' : 'ĐỦ TỒN') },
       ],
-      filteredStockRows
+      filteredStockRows,
+      'Tổng hợp tồn kho'
+    );
+  };
+
+  const handleExportBatchAlertsExcel = () => {
+    exportToExcel(
+      'canh-bao-lo-thuoc-can-han.xlsx',
+      [
+        { header: 'Mã lô', accessor: (r) => r.batchNumber },
+        { header: 'Tên thuốc', accessor: (r) => r.medicineName },
+        { header: 'Số lượng còn lại', accessor: (r) => r.quantityInStock },
+        { header: 'Hạn sử dụng', accessor: (r) => String(r.expirationDate || '').slice(0, 10) },
+        { header: 'Mức cảnh báo', accessor: (r) => (r.daysLeft < 0 ? 'Đã hết hạn' : `Còn ${r.daysLeft} ngày`) },
+      ],
+      alertBatches,
+      'Lô cận hạn'
     );
   };
 
@@ -173,19 +189,19 @@ export default function InventoryReportsPage() {
     {
       key: 'stockValue',
       header: 'Giá trị tồn',
-      width: '160px',
-      render: (r) => <strong>{formatVnd(r.stockValue)}</strong>,
+      width: '150px',
+      render: (r) => formatVnd(r.stockValue),
     },
     {
       key: 'nearestExpiry',
-      header: 'HSD gần nhất (FEFO)',
-      width: '150px',
+      header: 'Hạn dùng gần nhất',
+      width: '160px',
       render: (r) => r.nearestExpiry || '—',
     },
     {
-      key: 'alert',
-      header: 'Tình trạng tồn',
-      width: '150px',
+      key: 'status',
+      header: 'Định mức tồn',
+      width: '160px',
       render: (r) =>
         r.lowStock ? (
           <StatusBadge label="Cần nhập bổ sung" variant="warning" />
@@ -238,22 +254,13 @@ export default function InventoryReportsPage() {
           title="Báo cáo Tồn kho & Cảnh báo Cận hạn"
           subtitle="Tổng hợp định mức tồn kho dược phẩm, giá trị kho hiện hành và danh sách lô thuốc sắp hết hạn theo chuẩn FEFO"
           actions={
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                type="button"
-                className="pcms-btn pcms-btn-outline"
-                onClick={handleExportStockCsv}
-              >
-                Xuất CSV (Excel)
-              </button>
-              <button
-                type="button"
-                className="pcms-btn pcms-btn-primary"
-                onClick={() => window.print()}
-              >
-                In / Xuất PDF báo cáo
-              </button>
-            </div>
+            <button
+              type="button"
+              className="pcms-btn pcms-btn-primary"
+              onClick={handleExportStockExcel}
+            >
+              Xuất báo cáo Excel
+            </button>
           }
         />
       </div>
@@ -306,6 +313,7 @@ export default function InventoryReportsPage() {
           loading={loading}
           error={error}
           onRetry={fetchReportData}
+          onExportExcel={handleExportStockExcel}
           emptyTitle="Chưa có dữ liệu tồn kho"
           emptyMessage="Không có mặt hàng thuốc nào thỏa điều kiện lọc."
         />
@@ -319,6 +327,7 @@ export default function InventoryReportsPage() {
         rowKey="batchId"
         loading={loading}
         error=""
+        onExportExcel={handleExportBatchAlertsExcel}
         emptyTitle="Không có lô thuốc cận hạn hoặc hết hạn"
         emptyMessage="Tất cả các lô còn tồn kho hiện tại đều có hạn sử dụng trên 30 ngày."
       />

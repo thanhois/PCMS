@@ -276,8 +276,9 @@ public class PetOwnerPortalServiceImpl implements PetOwnerPortalService {
         }
 
         LocalDateTime aptDateTime = resolveBookingDateTime(payload);
-        // BR-09: Online appointments must be booked at least 2 hours before slot start time
-        if (aptDateTime.isBefore(LocalDateTime.now().plusHours(2))) {
+        // BR-09: If explicit appointmentTime is provided, must be at least 2 hours in advance. For shift booking, resolveBookingDateTime handles active shift boundary.
+        String explicitTime = strOrNull(payload.get("appointmentTime"));
+        if (explicitTime != null && !explicitTime.isBlank() && aptDateTime.isBefore(LocalDateTime.now().plusHours(2))) {
             throw new BadRequestException("Lịch khám trực tuyến phải đặt trước giờ bắt đầu ít nhất 2 tiếng.");
         }
 
@@ -520,14 +521,41 @@ public class PetOwnerPortalServiceImpl implements PetOwnerPortalService {
         String timeStr = strOrNull(payload.get("appointmentTime"));
         String shift = strOrDefault(payload.get("shift"), "MORNING").toUpperCase();
         LocalTime time;
-        if (timeStr != null) {
+        if (timeStr != null && !timeStr.isBlank()) {
             try {
                 time = LocalTime.parse(timeStr.length() > 5 ? timeStr.substring(0, 5) : timeStr);
             } catch (Exception e) {
                 throw new BadRequestException("Khung giờ khám không hợp lệ.");
             }
         } else {
-            time = "AFTERNOON".equals(shift) ? LocalTime.of(14, 0) : LocalTime.of(9, 0);
+            LocalDate today = LocalDate.now();
+            boolean isAfternoon = "AFTERNOON".equalsIgnoreCase(shift);
+            if (aptDate.equals(today)) {
+                LocalTime nowTime = LocalTime.now();
+                if (isAfternoon) {
+                    if (nowTime.isAfter(LocalTime.of(17, 30))) {
+                        throw new BadRequestException("Ca chiều (13:30 - 17:30) của ngày hôm nay đã kết thúc. Vui lòng chọn ngày khám từ ngày mai trở đi.");
+                    }
+                    time = nowTime.isAfter(LocalTime.of(14, 0))
+                            ? nowTime.plusMinutes(2).withSecond(0).withNano(0)
+                            : LocalTime.of(14, 0);
+                    if (time.isAfter(LocalTime.of(17, 30))) {
+                        time = LocalTime.of(17, 30);
+                    }
+                } else {
+                    if (nowTime.isAfter(LocalTime.of(12, 0))) {
+                        throw new BadRequestException("Ca sáng (08:00 - 12:00) của ngày hôm nay đã kết thúc. Vui lòng chọn Buổi chiều hoặc chọn ngày khám tiếp theo.");
+                    }
+                    time = nowTime.isAfter(LocalTime.of(9, 0))
+                            ? nowTime.plusMinutes(2).withSecond(0).withNano(0)
+                            : LocalTime.of(9, 0);
+                    if (time.isAfter(LocalTime.of(12, 0))) {
+                        time = LocalTime.of(12, 0);
+                    }
+                }
+            } else {
+                time = isAfternoon ? LocalTime.of(14, 0) : LocalTime.of(9, 0);
+            }
         }
         return LocalDateTime.of(aptDate, time);
     }

@@ -5,7 +5,7 @@ import DataTable from '../../components/admin/ui/DataTable';
 import KpiCard from '../../components/admin/ui/KpiCard';
 import PageHeader from '../../components/admin/ui/PageHeader';
 import StatusBadge from '../../components/admin/ui/StatusBadge';
-import { exportToCsv, formatVnd } from '../../utils/csvExport';
+import { exportToExcel, formatVnd } from '../../utils/csvExport';
 
 const REVENUE_SERIES_LEGEND = [
   { key: 'examinationRevenue', label: 'Khám lâm sàng', color: 'var(--pcms-chart-blue)' },
@@ -149,9 +149,9 @@ export default function AdminReportsPage() {
     },
   ];
 
-  const exportRevenueCsv = () => {
-    exportToCsv(
-      `bao-cao-doanh-thu-${fromDate}-den-${toDate}.csv`,
+  const exportRevenueExcel = () => {
+    exportToExcel(
+      `bao-cao-doanh-thu-${fromDate}-den-${toDate}.xlsx`,
       [
         { header: 'Kỳ báo cáo', accessor: (r) => r.month },
         { header: 'Số hóa đơn', accessor: (r) => r.invoiceCount },
@@ -162,7 +162,8 @@ export default function AdminReportsPage() {
         { header: 'Chiết khấu (VND)', accessor: (r) => r.discountTotal },
         { header: 'Doanh thu thực thu (VND)', accessor: (r) => r.netAmount },
       ],
-      revenueRows
+      revenueRows,
+      'Doanh thu'
     );
   };
 
@@ -231,9 +232,9 @@ export default function AdminReportsPage() {
     },
   ];
 
-  const exportInventoryCsv = () => {
-    exportToCsv(
-      `tong-hop-ton-kho-thuoc-${toDate}.csv`,
+  const exportInventoryExcel = () => {
+    exportToExcel(
+      `tong-hop-ton-kho-thuoc-${toDate}.xlsx`,
       [
         { header: 'Mã thuốc', accessor: (r) => r.medicineId },
         { header: 'Tên thuốc', accessor: (r) => r.medicineName },
@@ -244,7 +245,8 @@ export default function AdminReportsPage() {
         { header: 'Hạn dùng gần nhất', accessor: (r) => r.nearestExpirationDate || '' },
         { header: 'Trạng thái tồn', accessor: (r) => (r.lowStock ? 'Cần nhập thêm' : 'Ổn định') },
       ],
-      inventoryRows
+      inventoryRows,
+      'Tồn kho'
     );
   };
 
@@ -296,9 +298,9 @@ export default function AdminReportsPage() {
     },
   ];
 
-  const exportAppointmentsCsv = () => {
-    exportToCsv(
-      `thong-ke-lich-hen-${fromDate}-den-${toDate}.csv`,
+  const exportAppointmentsExcel = () => {
+    exportToExcel(
+      `thong-ke-lich-hen-${fromDate}-den-${toDate}.xlsx`,
       [
         { header: 'Mã trạng thái', accessor: (r) => r.status },
         { header: 'Tên trạng thái', accessor: (r) => r.label },
@@ -308,15 +310,26 @@ export default function AdminReportsPage() {
           accessor: (r) => (totalAppts > 0 ? ((r.count / totalAppts) * 100).toFixed(1) : '0'),
         },
       ],
-      appointmentRows
+      appointmentRows,
+      'Lịch hẹn'
     );
+  };
+
+  const handleExportCurrentTabExcel = () => {
+    if (activeTab === 'REVENUE') {
+      exportRevenueExcel();
+    } else if (activeTab === 'INVENTORY') {
+      exportInventoryExcel();
+    } else if (activeTab === 'APPOINTMENTS') {
+      exportAppointmentsExcel();
+    }
   };
 
   return (
     <>
       <PageHeader
         title="Báo cáo & Thống kê (Reports)"
-        subtitle="Tổng hợp Doanh thu phòng khám, Tồn kho dược phẩm và Thống kê lịch hẹn kèm xuất file CSV"
+        subtitle="Tổng hợp Doanh thu phòng khám, Tồn kho dược phẩm và Thống kê lịch hẹn kèm xuất file Excel"
         actions={
           <div className="pcms-tabs" role="tablist">
             <button
@@ -387,9 +400,9 @@ export default function AdminReportsPage() {
           <button
             type="button"
             className="pcms-btn pcms-btn-primary"
-            onClick={() => window.print()}
+            onClick={handleExportCurrentTabExcel}
           >
-            In / Xuất PDF báo cáo
+            Xuất báo cáo Excel
           </button>
         </div>
       </section>
@@ -487,7 +500,7 @@ export default function AdminReportsPage() {
             loading={loading}
             error={error}
             onRetry={fetchReports}
-            onExportCsv={exportRevenueCsv}
+            onExportExcel={exportRevenueExcel}
           />
         </>
       ) : null}
@@ -587,7 +600,7 @@ export default function AdminReportsPage() {
             loading={loading}
             error={error}
             onRetry={fetchReports}
-            onExportCsv={exportInventoryCsv}
+            onExportExcel={exportInventoryExcel}
           />
         </>
       ) : null}
@@ -678,7 +691,7 @@ export default function AdminReportsPage() {
             loading={loading}
             error={error}
             onRetry={fetchReports}
-            onExportCsv={exportAppointmentsCsv}
+            onExportExcel={exportAppointmentsExcel}
           />
         </>
       ) : null}

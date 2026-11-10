@@ -10,11 +10,14 @@ export default function DataTable({
   emptyMessage = 'Không tìm thấy bản ghi nào khớp với bộ lọc hiện tại.',
   onRetry,
   onExportCsv,
+  onExportExcel,
   actions,
 }) {
+  const handleExport = onExportExcel || onExportCsv;
+
   return (
     <section className="pcms-card">
-      {(title || subtitle || onExportCsv || actions) ? (
+      {(title || subtitle || handleExport || actions) ? (
         <div className="pcms-card-header">
           <div>
             {title ? <h3 className="pcms-card-title">{title}</h3> : null}
@@ -22,9 +25,9 @@ export default function DataTable({
           </div>
           <div className="pcms-page-actions">
             {actions}
-            {onExportCsv ? (
-              <button type="button" className="pcms-btn pcms-btn-csv" onClick={onExportCsv}>
-                <span>Xuất CSV</span>
+            {handleExport ? (
+              <button type="button" className="pcms-btn pcms-btn-csv" onClick={handleExport}>
+                <span>Xuất Excel</span>
               </button>
             ) : null}
           </div>

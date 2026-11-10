@@ -384,6 +384,13 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new BadRequestException("Không tìm thấy lịch hẹn #" + appointmentId));
 
+        LocalDate today = LocalDate.now();
+        LocalDate apptDate = appointment.getAppointmentDate() != null ? appointment.getAppointmentDate().toLocalDate() : null;
+        if (apptDate == null || !apptDate.equals(today)) {
+            throw new BadRequestException("Chỉ có thể Check-in cho lịch hẹn có ngày khám là hôm nay ("
+                    + today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ").");
+        }
+
         String currentStatus = appointment.getStatus() != null ? appointment.getStatus().toUpperCase() : "";
         if (!Set.of("CONFIRMED", "APPROVED", "PENDING_APPROVAL").contains(currentStatus)) {
             throw new BadRequestException("Chỉ có thể Check-in cho lịch hẹn đang ở trạng thái Đã xác nhận hoặc Chờ duyệt.");
@@ -700,37 +707,7 @@ public class ReceptionistServiceImpl implements ReceptionistService {
     @Override
     @Transactional
     public Map<String, Object> toggleOwnerStatus(Integer ownerId, String status, String actorUsername) {
-        PetOwner owner = petOwnerRepository.findById(ownerId)
-                .orElseThrow(() -> new BadRequestException("Không tìm thấy chủ nuôi #" + ownerId));
-
-        String targetStatus = status != null && !status.isBlank()
-                ? status.trim().toUpperCase()
-                : ("ACTIVE".equalsIgnoreCase(owner.getStatus()) ? "INACTIVE" : "ACTIVE");
-
-        if (!Set.of("ACTIVE", "INACTIVE").contains(targetStatus)) {
-            throw new BadRequestException("Trạng thái không hợp lệ.");
-        }
-
-        owner.setStatus(targetStatus);
-        owner = petOwnerRepository.save(owner);
-
-        List<Pet> ownerPets = petRepository.findByPetOwner_OwnerId(ownerId);
-        if ("INACTIVE".equalsIgnoreCase(targetStatus)) {
-            for (Pet p : ownerPets) {
-                p.setStatus("INACTIVE");
-            }
-            petRepository.saveAll(ownerPets);
-        }
-
-        if (owner.getUserAccount() != null) {
-            UserAccount ua = owner.getUserAccount();
-            ua.setStatus("ACTIVE".equalsIgnoreCase(targetStatus) ? AccountStatus.ACTIVE : AccountStatus.INACTIVE);
-            userAccountRepository.save(ua);
-        }
-
-        recordAudit(actorUsername, "CHANGE_OWNER_STATUS", "PetOwner",
-                "Đổi trạng thái chủ nuôi #" + ownerId + " (" + owner.getFullName() + ") sang " + targetStatus);
-        return toOwnerMap(owner, ownerPets);
+        throw new BadRequestException("Lễ tân không có quyền vô hiệu hóa hoặc thay đổi trạng thái chủ nuôi / người dùng.");
     }
 
     @Override
@@ -1003,11 +980,48 @@ public class ReceptionistServiceImpl implements ReceptionistService {
         if (dateStr == null || dateStr.isBlank()) {
             throw new BadRequestException("Vui lòng chọn ngày hẹn.");
         }
+        LocalDate d;
+        try {
+            d = LocalDate.parse(dateStr.trim());
+        } catch (Exception e) {
+            throw new BadRequestException("Định dạng ngày hẹn không hợp lệ.");
+        }
+        LocalDate today = LocalDate.now();
+        if (d.isBefore(today)) {
+            throw new BadRequestException("Ngày hẹn không được nằm trong quá khứ.");
+        }
+
         if (timeStr == null || timeStr.isBlank()) {
-            timeStr = "AFTERNOON".equalsIgnoreCase(shift) ? "14:00" : "09:00";
+            boolean isAfternoon = "AFTERNOON".equalsIgnoreCase(shift);
+            if (d.equals(today)) {
+                LocalTime nowTime = LocalTime.now();
+                if (isAfternoon) {
+                    if (nowTime.isAfter(LocalTime.of(17, 30))) {
+                        throw new BadRequestException("Ca chiều (13:30 - 17:30) của ngày hôm nay đã kết thúc. Vui lòng chọn ngày hẹn từ ngày mai trở đi.");
+                    }
+                    LocalTime candidate = nowTime.isAfter(LocalTime.of(14, 0))
+                            ? nowTime.plusMinutes(2).withSecond(0).withNano(0)
+                            : LocalTime.of(14, 0);
+                    if (candidate.isAfter(LocalTime.of(17, 30))) {
+                        candidate = LocalTime.of(17, 30);
+                    }
+                    return LocalDateTime.of(d, candidate);
+                } else {
+                    if (nowTime.isAfter(LocalTime.of(12, 0))) {
+                        throw new BadRequestException("Ca sáng (08:00 - 12:00) của ngày hôm nay đã kết thúc. Vui lòng chọn Buổi chiều hoặc chọn ngày khám tiếp theo.");
+                    }
+                    LocalTime candidate = nowTime.isAfter(LocalTime.of(9, 0))
+                            ? nowTime.plusMinutes(2).withSecond(0).withNano(0)
+                            : LocalTime.of(9, 0);
+                    if (candidate.isAfter(LocalTime.of(12, 0))) {
+                        candidate = LocalTime.of(12, 0);
+                    }
+                    return LocalDateTime.of(d, candidate);
+                }
+            }
+            timeStr = isAfternoon ? "14:00" : "09:00";
         }
         try {
-            LocalDate d = LocalDate.parse(dateStr);
             LocalTime t = LocalTime.parse(timeStr.length() > 5 ? timeStr.substring(0, 5) : timeStr);
             return LocalDateTime.of(d, t);
         } catch (Exception e) {

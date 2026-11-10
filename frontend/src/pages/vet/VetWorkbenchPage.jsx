@@ -14,7 +14,15 @@ export default function VetWorkbenchPage() {
   const dialog = useDialog();
   const isVet = user?.role === 'VETERINARIAN';
 
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const getLocalTodayStr = () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+  const todayStr = getLocalTodayStr();
+  const [date, setDate] = useState(() => getLocalTodayStr());
   const [status, setStatus] = useState('ALL');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -156,7 +164,7 @@ export default function VetWorkbenchPage() {
               <button
                 type="button"
                 className="vet-btn vet-btn-outline vet-btn-sm"
-                onClick={() => setDate(new Date().toISOString().split('T')[0])}
+                onClick={() => setDate(getLocalTodayStr())}
               >
                 Hôm nay
               </button>
@@ -199,6 +207,14 @@ export default function VetWorkbenchPage() {
         </div>
       </div>
 
+      {date !== todayStr && (
+        <div className="pcms-alert pcms-alert-info" style={{ marginBottom: 16 }}>
+          {date > todayStr
+            ? `Bạn đang xem lịch hẹn dự kiến ngày ${date} (tương lai). Bác sĩ chỉ được phép bắt đầu khám đối với các ca trong ngày hôm nay (${todayStr}) sau khi khách đã Check-in tại quầy.`
+            : `Bạn đang tra cứu lịch sử ca khám ngày ${date} (quá khứ). Không thể bắt đầu khám mới cho lịch hẹn đã qua.`}
+        </div>
+      )}
+
       <div className="vet-card">
         <div className="vet-card-header">
           <h3 className="vet-card-title">Danh Sách Ca Bệnh Được Phân Công ({appointments.length} ca)</h3>
@@ -234,7 +250,11 @@ export default function VetWorkbenchPage() {
                   const owner = appt.petOwner || {};
                   const isInProgress = appt.status === 'IN_PROGRESS';
                   const isCompleted = appt.status === 'COMPLETED';
-                  const isCancelled = appt.status === 'CANCELLED';
+                  const isCancelled = appt.status === 'CANCELLED' || appt.status === 'REJECTED';
+                  const isNoShow = appt.status === 'NO_SHOW';
+                  const apptDateStr = appt.appointmentDate ? appt.appointmentDate.split(' ')[0] : date;
+                  const isTodayAppt = apptDateStr === todayStr;
+                  const isCheckedInReady = appt.status === 'CHECKED_IN' || appt.status === 'WAITING';
 
                   return (
                     <tr key={appt.appointmentId} style={{ backgroundColor: isInProgress ? '#f5f3ff' : 'inherit' }}>
@@ -297,7 +317,8 @@ export default function VetWorkbenchPage() {
                           </span>
                         )}
                         {isCompleted && <span className="vet-badge vet-badge-completed">Hoàn tất</span>}
-                        {isCancelled && <span className="vet-badge vet-badge-cancelled">Đã hủy</span>}
+                        {isCancelled && <span className="vet-badge vet-badge-cancelled">{appt.status === 'REJECTED' ? 'Đã từ chối' : 'Đã hủy'}</span>}
+                        {isNoShow && <span className="vet-badge vet-badge-cancelled">Vắng mặt (No-show)</span>}
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -312,27 +333,59 @@ export default function VetWorkbenchPage() {
                           {isInProgress && appt.recordId && (
                             <button
                               type="button"
-                              className={`vet-btn vet-btn-sm ${isVet ? 'vet-btn-primary' : 'vet-btn-outline'}`}
+                              className={`vet-btn vet-btn-sm ${isVet && isTodayAppt ? 'vet-btn-primary' : 'vet-btn-outline'}`}
                               onClick={() => navigate(`/vet/examination/${appt.recordId}`)}
                             >
-                              {isVet ? 'Tiếp tục khám' : 'Xem bệnh án'}
+                              {isVet && isTodayAppt ? 'Tiếp tục khám' : 'Xem bệnh án'}
+                            </button>
+                          )}
+
+                          {isVet && isTodayAppt && isCheckedInReady && (
+                            <button
+                              type="button"
+                              className="vet-btn vet-btn-primary vet-btn-sm"
+                              disabled={actionLoading}
+                              onClick={() => handleStartExam(appt)}
+                            >
+                              Khám ngay
                             </button>
                           )}
 
                           {isVet &&
-                            (appt.status === 'WAITING' ||
-                              appt.status === 'CHECKED_IN' ||
-                              appt.status === 'CONFIRMED' ||
-                              appt.status === 'APPROVED') && (
-                              <button
-                                type="button"
-                                className="vet-btn vet-btn-primary vet-btn-sm"
-                                disabled={actionLoading}
-                                onClick={() => handleStartExam(appt)}
+                            isTodayAppt &&
+                            (appt.status === 'CONFIRMED' ||
+                              appt.status === 'APPROVED' ||
+                              appt.status === 'PENDING_APPROVAL') && (
+                              <span
+                                style={{
+                                  fontSize: 11.5,
+                                  color: '#475569',
+                                  fontWeight: 600,
+                                  padding: '4px 8px',
+                                  background: '#f1f5f9',
+                                  borderRadius: 6,
+                                  border: '1px solid #e2e8f0',
+                                }}
                               >
-                                Khám ngay
-                              </button>
+                                Chờ Check-in tại quầy
+                              </span>
                             )}
+
+                          {isVet && !isTodayAppt && !isCompleted && !isCancelled && !isNoShow && (
+                            <span
+                              style={{
+                                fontSize: 11.5,
+                                color: '#64748b',
+                                fontWeight: 600,
+                                padding: '4px 8px',
+                                background: '#f8fafc',
+                                borderRadius: 6,
+                                border: '1px solid #e2e8f0',
+                              }}
+                            >
+                              {apptDateStr > todayStr ? 'Chưa đến ngày khám' : 'Đã qua ngày khám'}
+                            </span>
+                          )}
 
                           {isCompleted && appt.recordId && (
                             <button
@@ -344,7 +397,7 @@ export default function VetWorkbenchPage() {
                             </button>
                           )}
 
-                          {isVet && !isCompleted && !isCancelled && (
+                          {isVet && isTodayAppt && !isCompleted && !isCancelled && !isNoShow && (
                             <button
                               type="button"
                               className="vet-btn vet-btn-outline vet-btn-sm"

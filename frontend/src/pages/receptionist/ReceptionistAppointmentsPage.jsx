@@ -6,8 +6,34 @@ import StatusBadge from '../../components/admin/ui/StatusBadge';
 import ToastMessage from '../../components/admin/ui/ToastMessage';
 import DoctorSlotsManager from '../../components/receptionist/DoctorSlotsManager';
 
+const getLocalTodayStr = () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const getDefaultBookingDateAndShift = () => {
+  const now = new Date();
+  const mins = now.getHours() * 60 + now.getMinutes();
+  if (mins > 17 * 60 + 30) {
+    const tmr = new Date(now);
+    tmr.setDate(now.getDate() + 1);
+    const y = tmr.getFullYear();
+    const m = String(tmr.getMonth() + 1).padStart(2, '0');
+    const d = String(tmr.getDate()).padStart(2, '0');
+    return { date: `${y}-${m}-${d}`, shift: 'MORNING' };
+  }
+  if (mins > 12 * 60) {
+    return { date: getLocalTodayStr(), shift: 'AFTERNOON' };
+  }
+  return { date: getLocalTodayStr(), shift: 'MORNING' };
+};
+
 export default function ReceptionistAppointmentsPage() {
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = getLocalTodayStr();
+  const defaultBooking = getDefaultBookingDateAndShift();
   const [activeView, setActiveView] = useState('APPOINTMENTS'); // 'APPOINTMENTS' | 'DOCTOR_SLOTS'
 
   // Bộ lọc (UC07)
@@ -34,8 +60,8 @@ export default function ReceptionistAppointmentsPage() {
     petId: '',
     veterinarianId: '',
     serviceId: '',
-    appointmentDate: todayStr,
-    shift: 'MORNING', // 'MORNING' (Sáng) | 'AFTERNOON' (Chiều)
+    appointmentDate: defaultBooking.date,
+    shift: defaultBooking.shift, // 'MORNING' (Sáng) | 'AFTERNOON' (Chiều)
     notes: '',
   });
 
@@ -208,10 +234,11 @@ export default function ReceptionistAppointmentsPage() {
 
   // UC08: Đổi lịch hẹn
   const openRescheduleModal = (apt) => {
+    const def = getDefaultBookingDateAndShift();
     setRescheduleTarget(apt);
     setRescheduleForm({
-      appointmentDate: apt.appointmentDate && apt.appointmentDate >= todayStr ? apt.appointmentDate : todayStr,
-      shift: apt.shift || 'MORNING',
+      appointmentDate: apt.appointmentDate && apt.appointmentDate >= def.date ? apt.appointmentDate : def.date,
+      shift: apt.shift || def.shift,
       veterinarianId: apt.veterinarianId ? String(apt.veterinarianId) : '',
       serviceId: apt.serviceId ? String(apt.serviceId) : '',
       notes: apt.notes || '',
@@ -299,12 +326,14 @@ export default function ReceptionistAppointmentsPage() {
             type="button"
             className="pcms-btn pcms-btn-primary"
             onClick={() => {
+              const def = getDefaultBookingDateAndShift();
+              setToast({ type: 'info', message: '' });
               setCreateForm({
                 petId: activePets[0]?.petId ? String(activePets[0].petId) : '',
                 veterinarianId: '',
                 serviceId: '',
-                appointmentDate: todayStr,
-                shift: 'MORNING',
+                appointmentDate: def.date,
+                shift: def.shift,
                 notes: '',
               });
               setCreateOpen(true);
@@ -644,6 +673,15 @@ export default function ReceptionistAppointmentsPage() {
         }
       >
         <form id="create-apt-form" onSubmit={handleCreateSubmit} className="pcms-form-grid">
+          {toast.type === 'error' && toast.message ? (
+            <div style={{ gridColumn: '1 / -1' }}>
+              <ToastMessage
+                type="error"
+                message={toast.message}
+                onClose={() => setToast({ type: 'info', message: '' })}
+              />
+            </div>
+          ) : null}
           <div className="pcms-form-group" style={{ gridColumn: '1 / -1' }}>
             <label className="pcms-label">
               Chọn Thú cưng & Chủ nuôi <span className="pcms-required">*</span>
@@ -841,6 +879,15 @@ export default function ReceptionistAppointmentsPage() {
         }
       >
         <form id="reschedule-apt-form" onSubmit={handleRescheduleSubmit} className="pcms-form-grid">
+          {toast.type === 'error' && toast.message ? (
+            <div style={{ gridColumn: '1 / -1' }}>
+              <ToastMessage
+                type="error"
+                message={toast.message}
+                onClose={() => setToast({ type: 'info', message: '' })}
+              />
+            </div>
+          ) : null}
           <div className="pcms-form-group">
             <label className="pcms-label">
               Ngày hẹn mới <span className="pcms-required">*</span>

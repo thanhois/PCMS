@@ -147,14 +147,24 @@ public class VeterinarianServiceImpl implements VeterinarianService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch hẹn #" + appointmentId));
 
         assertAssignedAppointmentVet(appt, actorUsername);
-        appt.setStatus(status.toUpperCase());
+        String targetStatus = status != null ? status.trim().toUpperCase() : "";
+        LocalDate today = LocalDate.now();
+        LocalDate apptDate = appt.getAppointmentDate() != null ? appt.getAppointmentDate().toLocalDate() : null;
+        if (Set.of("IN_PROGRESS", "EXAMINING", "COMPLETED").contains(targetStatus)) {
+            if (apptDate == null || !apptDate.equals(today)) {
+                throw new BadRequestException("Chỉ được phép thực hiện khám đối với lịch hẹn trong ngày hôm nay ("
+                        + today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ").");
+            }
+        }
+
+        appt.setStatus(targetStatus);
         if (notes != null && !notes.isBlank()) {
             appt.setNotes(notes);
         }
         appointmentRepository.save(appt);
 
         logAudit(actorUsername, "APPOINTMENT_STATUS_UPDATE", "Appointment #" + appointmentId, "SUCCESS",
-                "Cập nhật trạng thái lịch hẹn #" + appointmentId + " thành " + status);
+                "Cập nhật trạng thái lịch hẹn #" + appointmentId + " thành " + targetStatus);
         return toAppointmentDto(appt);
     }
 
@@ -165,8 +175,25 @@ public class VeterinarianServiceImpl implements VeterinarianService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch hẹn #" + appointmentId));
 
         UserAccount vet = assertAssignedAppointmentVet(appt, actorUsername);
-        if (Set.of("CANCELLED", "REJECTED", "COMPLETED").contains(appt.getStatus() != null ? appt.getStatus().toUpperCase() : "")) {
+        LocalDate today = LocalDate.now();
+        LocalDate apptDate = appt.getAppointmentDate() != null ? appt.getAppointmentDate().toLocalDate() : null;
+        if (apptDate == null || !apptDate.equals(today)) {
+            if (apptDate != null && apptDate.isAfter(today)) {
+                throw new BadRequestException("Không thể bắt đầu khám cho lịch hẹn trong tương lai (ngày "
+                        + apptDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                        + "). Bác sĩ chỉ được phép khám các ca trong ngày hôm nay ("
+                        + today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ").");
+            }
+            throw new BadRequestException("Không thể bắt đầu khám cho lịch hẹn đã qua trong quá khứ (ngày "
+                    + (apptDate != null ? apptDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "N/A") + ").");
+        }
+
+        String currentStatus = appt.getStatus() != null ? appt.getStatus().toUpperCase() : "";
+        if (Set.of("CANCELLED", "REJECTED", "COMPLETED", "NO_SHOW").contains(currentStatus)) {
             throw new BadRequestException("Không thể bắt đầu khám cho lịch hẹn đã hoàn tất hoặc đã hủy.");
+        }
+        if (!Set.of("CHECKED_IN", "WAITING", "IN_PROGRESS", "EXAMINING").contains(currentStatus)) {
+            throw new BadRequestException("Thú cưng chưa được quầy Lễ tân Check-in tiếp nhận. Vui lòng yêu cầu Lễ tân Check-in trước khi bắt đầu khám (BR-11).");
         }
 
         appt.setStatus("IN_PROGRESS");
@@ -501,21 +528,50 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         Pet pet = petRepository.findById(petId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thú cưng #" + petId));
 
+        LocalDate today = LocalDate.now();
         Appointment appt = null;
-        if (payload.containsKey("appointmentId") && payload.get("appointmentId") != null) {
+        if (payload.containsKey("appointmentId") && payload.get("appointmentId") != null && !String.valueOf(payload.get("appointmentId")).isBlank()) {
             Integer apptId = Integer.parseInt(String.valueOf(payload.get("appointmentId")));
-            appt = appointmentRepository.findById(apptId).orElse(null);
-            if (appt != null) {
-                assertAssignedAppointmentVet(appt, actorUsername);
-                if (Set.of("CANCELLED", "REJECTED").contains(appt.getStatus() != null ? appt.getStatus().toUpperCase() : "")) {
-                    throw new BadRequestException("Không thể lập bệnh án cho lịch hẹn đã hủy hoặc từ chối.");
-                }
-                appt.setStatus("IN_PROGRESS");
-                if (appt.getVeterinarian() == null) {
-                    appt.setVeterinarian(vet);
-                }
-                appointmentRepository.save(appt);
+            appt = appointmentRepository.findById(apptId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch hẹn #" + apptId));
+            assertAssignedAppointmentVet(appt, actorUsername);
+            LocalDate apptDate = appt.getAppointmentDate() != null ? appt.getAppointmentDate().toLocalDate() : null;
+            if (apptDate == null || !apptDate.equals(today)) {
+                throw new BadRequestException("Chỉ được phép lập bệnh án cho lịch hẹn trong ngày hôm nay ("
+                        + today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ").");
             }
+            String st = appt.getStatus() != null ? appt.getStatus().toUpperCase() : "";
+            if (Set.of("CANCELLED", "REJECTED", "COMPLETED", "NO_SHOW").contains(st)) {
+                throw new BadRequestException("Không thể lập bệnh án cho lịch hẹn đã hoàn tất, đã hủy hoặc từ chối.");
+            }
+            if (!Set.of("CHECKED_IN", "WAITING", "IN_PROGRESS", "EXAMINING").contains(st)) {
+                throw new BadRequestException("Thú cưng chưa được quầy Lễ tân Check-in tiếp nhận. Vui lòng Check-in trước khi lập bệnh án (BR-11).");
+            }
+            appt.setStatus("IN_PROGRESS");
+            if (appt.getVeterinarian() == null) {
+                appt.setVeterinarian(vet);
+            }
+            appointmentRepository.save(appt);
+        } else {
+            LocalDateTime startOfDay = today.atStartOfDay();
+            LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
+            appt = appointmentRepository.findAll().stream()
+                    .filter(a -> a.getPet() != null && a.getPet().getPetId().equals(petId))
+                    .filter(a -> a.getAppointmentDate() != null
+                            && !a.getAppointmentDate().isBefore(startOfDay)
+                            && !a.getAppointmentDate().isAfter(endOfDay))
+                    .filter(a -> Set.of("CHECKED_IN", "WAITING", "IN_PROGRESS", "EXAMINING")
+                            .contains(a.getStatus() != null ? a.getStatus().toUpperCase() : ""))
+                    .sorted(Comparator.comparing(Appointment::getAppointmentDate))
+                    .findFirst()
+                    .orElseThrow(() -> new BadRequestException(
+                            "Theo quy tắc BR-11, mỗi bệnh án phải gắn với một ca khám hợp lệ đã Check-in hoặc Walk-in trong ngày hôm nay. Thú cưng này hiện chưa có ca Check-in hôm nay."));
+            assertAssignedAppointmentVet(appt, actorUsername);
+            appt.setStatus("IN_PROGRESS");
+            if (appt.getVeterinarian() == null) {
+                appt.setVeterinarian(vet);
+            }
+            appointmentRepository.save(appt);
         }
 
         if (payload.containsKey("weight") && payload.get("weight") != null) {
@@ -1278,7 +1334,8 @@ public class VeterinarianServiceImpl implements VeterinarianService {
                 .filter(a -> a.getPet() != null && a.getPet().getPetId().equals(pet.getPetId()))
                 .filter(a -> a.getAppointmentDate() != null)
                 .filter(a -> !a.getAppointmentDate().isBefore(startOfDay) && !a.getAppointmentDate().isAfter(endOfDay))
-                .filter(a -> !Set.of("CANCELLED", "REJECTED", "COMPLETED").contains(a.getStatus() != null ? a.getStatus().toUpperCase() : ""))
+                .filter(a -> Set.of("CHECKED_IN", "WAITING", "IN_PROGRESS", "EXAMINING")
+                        .contains(a.getStatus() != null ? a.getStatus().toUpperCase() : ""))
                 .sorted(Comparator.comparing(Appointment::getAppointmentDate))
                 .toList();
 
